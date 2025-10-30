@@ -131,7 +131,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Valid configuration branch in constructor
             var config = new Flink.JobBuilder.Models.FlinkJobGatewayConfiguration
             {
-                BaseUrl = "http://localhost:8080"
+                BaseUrl = "http://localhost:8086"
             };
 
             using var service = new Flink.JobBuilder.Services.FlinkJobGatewayService(config, null, null);
@@ -145,7 +145,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Empty API key branch
             var config = new Flink.JobBuilder.Models.FlinkJobGatewayConfiguration
             {
-                BaseUrl = "http://localhost:8080",
+                BaseUrl = "http://localhost:8086",
                 ApiKey = "" // Empty string, not null
             };
 
@@ -160,7 +160,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Target: Null API key branch
             var config = new Flink.JobBuilder.Models.FlinkJobGatewayConfiguration
             {
-                BaseUrl = "http://localhost:8080",
+                BaseUrl = "http://localhost:8086",
                 ApiKey = null // Explicitly null
             };
 

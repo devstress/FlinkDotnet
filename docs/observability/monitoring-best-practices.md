@@ -263,7 +263,7 @@ services.AddHealthChecks()
 livenessProbe:
   httpGet:
     path: /health/live
-    port: 8080
+    port: 8086
   initialDelaySeconds: 30
   periodSeconds: 10
 
@@ -271,7 +271,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /health/ready
-    port: 8080
+    port: 8086
   initialDelaySeconds: 5
   periodSeconds: 5
 ```

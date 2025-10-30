@@ -19,13 +19,13 @@ Set the `FLINK_JOB_GATEWAY_URL` environment variable:
 
 ```bash
 # Linux/macOS
-export FLINK_JOB_GATEWAY_URL="http://localhost:8080/"
+export FLINK_JOB_GATEWAY_URL="http://localhost:8086/"
 
 # Windows
-set FLINK_JOB_GATEWAY_URL=http://localhost:8080/
+set FLINK_JOB_GATEWAY_URL=http://localhost:8086/
 
 # PowerShell
-$env:FLINK_JOB_GATEWAY_URL="http://localhost:8080/"
+$env:FLINK_JOB_GATEWAY_URL="http://localhost:8086/"
 ```
 
 ### Method 2: Appsettings.json
@@ -35,7 +35,7 @@ Add configuration to your `appsettings.json`:
 ```json
 {
   "FlinkJobGateway": {
-    "BaseUrl": "http://localhost:8080/",
+    "BaseUrl": "http://localhost:8086/",
     "HttpTimeout": "00:05:00",
     "MaxRetries": 3,
     "RetryDelay": "00:00:01",
@@ -49,7 +49,7 @@ Add configuration to your `appsettings.json`:
 ```csharp
 var config = new FlinkJobGatewayConfiguration
 {
-    BaseUrl = "http://localhost:8080/",
+    BaseUrl = "http://localhost:8086/",
     HttpTimeout = TimeSpan.FromMinutes(5),
     MaxRetries = 3,
     RetryDelay = TimeSpan.FromSeconds(1)
@@ -80,7 +80,7 @@ var app = builder.Build();
 ```json
 {
   "FlinkJobGateway": {
-    "BaseUrl": "http://localhost:8080/",
+    "BaseUrl": "http://localhost:8086/",
     "HttpTimeout": "00:05:00",
     "MaxRetries": 3,
     "RetryDelay": "00:00:01"
@@ -130,7 +130,7 @@ Unit tests can use environment variables for simplicity:
 [SetUp]
 public void SetUp()
 {
-    Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080/");
+    Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086/");
 }
 
 [TearDown]
@@ -147,7 +147,7 @@ When running in containers, use environment variables in your Dockerfile or dock
 ### Dockerfile
 
 ```dockerfile
-ENV FLINK_JOB_GATEWAY_URL=http://flink-gateway:8080/
+ENV FLINK_JOB_GATEWAY_URL=http://flink-gateway:8086/
 ```
 
 ### docker-compose.yml
@@ -157,7 +157,7 @@ services:
   myapp:
     image: myapp:latest
     environment:
-      - FLINK_JOB_GATEWAY_URL=http://flink-gateway:8080/
+      - FLINK_JOB_GATEWAY_URL=http://flink-gateway:8086/
 ```
 
 ## Aspire Integration
@@ -167,7 +167,7 @@ When using .NET Aspire, the gateway URL is automatically discovered and set via 
 ```csharp
 // In Aspire AppHost Program.cs
 var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
-    .WithHttpEndpoint(port: 8080, name: "gateway-http");
+    .WithHttpEndpoint(port: 8086, name: "gateway-http");
 
 // Tests automatically discover and set FLINK_JOB_GATEWAY_URL
 ```
@@ -185,7 +185,7 @@ var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gat
 
 ## Important Notes
 
-- **Trailing Slash**: Always include a trailing slash in the BaseUrl (e.g., `http://localhost:8080/`) for proper URL combination
+- **Trailing Slash**: Always include a trailing slash in the BaseUrl (e.g., `http://localhost:8086/`) for proper URL combination
 - **Priority**: Appsettings values take precedence over environment variables when using dependency injection
 - **Tests**: Environment variables are the simplest approach for unit tests
 - **Production**: Use appsettings.json with environment-specific files for production deployments

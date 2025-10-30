@@ -29,7 +29,7 @@ dotnet run --project LocalTesting.FlinkSqlAppHost/LocalTesting.FlinkSqlAppHost.c
 This starts:
 - Apache Kafka broker (port 29092)
 - Apache Flink cluster (JobManager + TaskManager)
-- Flink Job Gateway (port 8080)
+- Flink Job Gateway (port 8086)
 
 Wait approximately 45 seconds for all containers to be ready.
 

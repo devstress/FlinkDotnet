@@ -9,7 +9,7 @@ public class ConfigurationTests
     public void FlinkJobGatewayConfiguration_DefaultConstructor_CreatesInstance()
     {
         // Set environment variable for test
-        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://test-gateway:8080");
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://test-gateway:8086");
         try
         {
             var config = new FlinkJobGatewayConfiguration();

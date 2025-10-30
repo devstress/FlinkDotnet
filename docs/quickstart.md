@@ -42,7 +42,7 @@ var job = new JobDefinition {
 
 var gateway = new FlinkJobGatewayService(new FlinkJobGatewayConfiguration
 {
-  BaseUrl = "http://localhost:8080"
+  BaseUrl = "http://localhost:8086"
 });
 
 var result = await gateway.SubmitJobAsync(job);

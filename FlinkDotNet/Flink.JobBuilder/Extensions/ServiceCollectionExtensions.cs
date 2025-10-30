@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
     /// Example appsettings.json:
     /// {
     ///   "FlinkJobGateway": {
-    ///     "BaseUrl": "http://localhost:8080/",
+    ///     "BaseUrl": "http://localhost:8086/",
     ///     "HttpTimeout": "00:05:00",
     ///     "MaxRetries": 3,
     ///     "RetryDelay": "00:00:01"

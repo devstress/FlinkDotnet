@@ -151,6 +151,11 @@ public class PaimonCatalogBuilder
         ArgumentException.ThrowIfNullOrWhiteSpace(this._definition.CatalogName);
         ArgumentException.ThrowIfNullOrWhiteSpace(this._definition.Warehouse);
 
+        if (string.IsNullOrEmpty(this._definition.Warehouse))
+        {
+            throw new InvalidOperationException("Warehouse path is required");
+        }
+
         return new PaimonCatalog(this._definition);
     }
 }

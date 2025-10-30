@@ -962,7 +962,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
-                Sink = new HttpSinkDefinition { Url = "http://localhost:8080/api" }
+                Sink = new HttpSinkDefinition { Url = "http://localhost:8086/api" }
             };
             this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
@@ -1070,7 +1070,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
-                Source = new HttpSourceDefinition { Url = "http://localhost:8080/api" },
+                Source = new HttpSourceDefinition { Url = "http://localhost:8086/api" },
                 Sink = new ConsoleSinkDefinition()
             };
             this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
@@ -1285,7 +1285,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public void GetJobStatusAsync_WithColonInPath_ThrowsArgumentException()
         {
             // Arrange
-            var maliciousJobId = "test:8080";
+            var maliciousJobId = "test:8086";
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -2605,7 +2605,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
-                Source = new HttpSourceDefinition { Url = "http://localhost:8080/api/data" },
+                Source = new HttpSourceDefinition { Url = "http://localhost:8086/api/data" },
                 Sink = new ConsoleSinkDefinition()
             };
             this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");

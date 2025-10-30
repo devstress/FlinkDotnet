@@ -78,13 +78,13 @@ Run FlinkJobGateway as a container:
 
 ```bash
 docker pull devstress/flinkdotnet:latest
-docker run -p 8080:8080 \
+docker run -p 8086:8086 \
   -e FLINK_CLUSTER_HOST=your-flink-host \
   -e FLINK_CLUSTER_PORT=8081 \
   devstress/flinkdotnet:latest
 ```
 
-Access the API at `http://localhost:8080`.
+Access the API at `http://localhost:8086`.
 
 ### Option 3: Clone and Build from Source
 
@@ -174,7 +174,7 @@ export KAFKA_BOOTSTRAP_SERVERS=kafka:9092
 export KAFKA_CONSUMER_GROUP=flinkdotnet-group
 
 # Gateway settings
-export GATEWAY_PORT=8080
+export GATEWAY_PORT=8086
 ```
 
 ## Your First Real Job

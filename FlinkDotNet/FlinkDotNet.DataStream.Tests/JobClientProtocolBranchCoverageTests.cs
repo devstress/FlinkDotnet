@@ -22,7 +22,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_WithHttpsProtocolEnvironmentVariable_UsesHttps()
         {
             // Arrange - Set environment variable before test
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
             Environment.SetEnvironmentVariable("FLINK_PROTOCOL", "HTTPS");
 
             try
@@ -45,7 +45,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_WithLowercaseHttpsProtocolEnvironmentVariable_UsesHttps()
         {
             // Arrange - Test with lowercase "https"
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
             Environment.SetEnvironmentVariable("FLINK_PROTOCOL", "https");
 
             try
@@ -67,7 +67,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_WithInvalidProtocolEnvironmentVariable_DefaultsToHttp()
         {
             // Arrange - Set an invalid protocol value
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
             Environment.SetEnvironmentVariable("FLINK_PROTOCOL", "ftp"); // Invalid protocol
 
             try
@@ -89,7 +89,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_WithEmptyProtocolEnvironmentVariable_DefaultsToHttp()
         {
             // Arrange - Set empty string as protocol
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
             Environment.SetEnvironmentVariable("FLINK_PROTOCOL", "");
 
             try
@@ -111,7 +111,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_WithWhitespaceProtocolEnvironmentVariable_DefaultsToHttp()
         {
             // Arrange - Set whitespace as protocol
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
             Environment.SetEnvironmentVariable("FLINK_PROTOCOL", "   ");
 
             try
@@ -133,7 +133,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_WithMixedCaseHttpsProtocol_UsesHttps()
         {
             // Arrange - Test with mixed case "HtTpS"
-            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8080");
+            Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", "http://localhost:8086");
             Environment.SetEnvironmentVariable("FLINK_PROTOCOL", "HtTpS");
 
             try

@@ -134,7 +134,7 @@ Screenshots are also saved alongside videos:
 
 **Workflow**:
 1. Starts Exercise1 (capitalize strings) in background to generate real message flow
-2. Navigates to Flink Dashboard (http://localhost:8080)
+2. Navigates to Flink Dashboard (http://localhost:8086)
    - Shows running jobs and task managers
    - Captures job execution state
 3. Navigates to Prometheus for metrics queries
@@ -181,7 +181,7 @@ Screenshots are also saved alongside videos:
 4. **Visualization**: Switches to Graph view to show time-series visualization of message flow
 5. **Message Output Tracking**: Queries `flink_taskmanager_job_task_operator_numRecordsOut` to track messages sent by Flink operators
 6. **Throughput Analysis**: Calculates message processing rate using `rate(flink_taskmanager_job_task_operator_numRecordsOut[1m])` to show messages/second
-7. **Flink Dashboard Integration**: Navigates to Flink Dashboard (http://localhost:8080) to show:
+7. **Flink Dashboard Integration**: Navigates to Flink Dashboard (http://localhost:8086) to show:
    - Running jobs and task managers
    - Job execution state and parallelism
    - Visual correlation with Prometheus metrics

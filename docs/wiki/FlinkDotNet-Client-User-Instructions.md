@@ -85,7 +85,7 @@ Create an `appsettings.json` file:
 {
   "Flink": {
     "JobManagerRestAddress": "http://localhost:8081",
-    "GatewayUrl": "http://localhost:8080"
+    "GatewayUrl": "http://localhost:8086"
   }
 }
 ```
@@ -94,7 +94,7 @@ Or set via environment variables:
 
 ```bash
 export FLINK_JOBMANAGER_URL=http://localhost:8081
-export FLINK_GATEWAY_URL=http://localhost:8080
+export FLINK_GATEWAY_URL=http://localhost:8086
 ```
 
 ### 4. Run Your Application
@@ -269,7 +269,7 @@ var enriched = orders
 {
   "Flink": {
     "JobManagerRestAddress": "http://flink-jobmanager:8081",
-    "GatewayUrl": "http://gateway:8080",
+    "GatewayUrl": "http://gateway:8086",
     "DefaultParallelism": 4,
     "CheckpointInterval": "00:00:30",
     "CheckpointMode": "ExactlyOnce",
@@ -292,7 +292,7 @@ var enriched = orders
 ```bash
 # Flink connection
 export FLINK_JOBMANAGER_URL=http://localhost:8081
-export FLINK_GATEWAY_URL=http://localhost:8080
+export FLINK_GATEWAY_URL=http://localhost:8086
 
 # Kafka configuration
 export KAFKA_BOOTSTRAP_SERVERS=localhost:9092

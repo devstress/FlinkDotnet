@@ -157,7 +157,7 @@ For the latest implementation status, see: `TODO/TRACKING.md`
 ### Prerequisites Setup
 1. **Verify .NET 9.0 SDK**: `dotnet --version` (should return 9.0.x+)
 2. **Check Docker**: `docker version` (Docker Desktop or Podman running)
-3. **Validate Ports**: Ensure ports 8081 (Flink UI) and 8080 (Gateway) are available
+3. **Validate Ports**: Ensure ports 8081 (Flink UI) and 8086 (Gateway) are available
 
 ### Validate LocalTesting Stack
 ```bash
@@ -170,7 +170,7 @@ dotnet run --project ../../LocalTesting/LocalTesting.FlinkSqlAppHost/LocalTestin
 
 ### Access UIs
 - Flink UI: http://localhost:8081
-- Gateway health: http://localhost:8080/api/v1/health
+- Gateway health: http://localhost:8086/api/v1/health
 
 ## 📋 Today's Exercises (Completion Order)
 
