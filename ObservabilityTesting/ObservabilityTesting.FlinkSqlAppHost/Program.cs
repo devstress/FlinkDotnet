@@ -63,7 +63,8 @@ if (File.Exists(metricsJarPath))
 
 // 3. Flink TaskManager with Prometheus metrics enabled  
 Console.WriteLine("[INFO] Configuring Flink TaskManager with Prometheus metrics...");
-var taskManagerFlinkProperties = $"taskmanager.memory.process.size: {taskManagerMemoryMb}m\n" +
+var taskManagerFlinkProperties = $"jobmanager.rpc.address: flink-jobmanager\n" + // CRITICAL: TaskManager must know JobManager address
+    $"taskmanager.memory.process.size: {taskManagerMemoryMb}m\n" +
     "metrics.reporters: prom\n" +
     "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
     "metrics.reporter.prom.port: 9251\n" +

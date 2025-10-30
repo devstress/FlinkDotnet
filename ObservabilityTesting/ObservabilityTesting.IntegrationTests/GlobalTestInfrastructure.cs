@@ -17,7 +17,7 @@ namespace ObservabilityTesting.IntegrationTests;
 public class GlobalTestInfrastructure
 {
 
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(30); // Following ReleasePackageVerification pattern where everything starts in 30s
     private static string? _previousLearningCourseMode;
 
     public static DistributedApplication? AppHost
@@ -55,11 +55,10 @@ public class GlobalTestInfrastructure
         try
         {
             _previousLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE");
-            if (string.Equals(_previousLearningCourseMode, "true", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.WriteLine("⚠️ LEARNINGCOURSE=true detected - forcing Aspire integration-test profile.");
-            }
-            Environment.SetEnvironmentVariable("LEARNINGCOURSE", "false");
+            // CRITICAL: ObservabilityTesting requires LEARNINGCOURSE=true for Prometheus/Grafana stack
+            // Override the default LocalTesting behavior of disabling LEARNINGCOURSE mode
+            Console.WriteLine("✅ Setting LEARNINGCOURSE=true for ObservabilityTesting (requires Prometheus/Grafana)");
+            Environment.SetEnvironmentVariable("LEARNINGCOURSE", "true");
 
             // Clean up test-logs directory from previous test runs
             CleanupTestLogsDirectory();
