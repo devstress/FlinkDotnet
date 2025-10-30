@@ -299,12 +299,9 @@ public class MaterializedTableBuilder
             throw new InvalidOperationException("Table name is required");
         }
 
-        if (string.IsNullOrEmpty(this._definition.Query) && this._definition.Schema.Count == 0)
-        {
-            throw new InvalidOperationException("Either query or schema must be specified");
-        }
-
-        return new MaterializedTable(this._definition);
+        return string.IsNullOrEmpty(this._definition.Query) && this._definition.Schema.Count == 0
+            ? throw new InvalidOperationException("Either query or schema must be specified")
+            : new MaterializedTable(this._definition);
     }
 }
 

@@ -10,15 +10,10 @@ namespace FlinkDotNet.DataStream;
 /// Represents an AI/ML model in Apache Flink 2.1+
 /// Provides CREATE MODEL DDL support for AI/ML integration
 /// </summary>
-public class Model
+/// <param name="definition">The model definition</param>
+public class Model(ModelDefinition definition)
 {
-    private readonly ModelDefinition _definition;
-
-    /// <summary>
-    /// Creates a new Model instance with the given definition
-    /// </summary>
-    /// <param name="definition">The model definition</param>
-    public Model(ModelDefinition definition) => this._definition = definition;
+    private readonly ModelDefinition _definition = definition;
 
     /// <summary>
     /// Gets the model name
@@ -71,17 +66,13 @@ public class Model
         // Input schema
         if (this._definition.InputSchema.Count > 0)
         {
-            sql.Append("  INPUT (")
-               .Append(string.Join(", ", this._definition.InputSchema.Select(kvp => $"{kvp.Key} {kvp.Value}")))
-               .AppendLine(")");
+            sql.AppendLine($"  INPUT ({string.Join(", ", this._definition.InputSchema.Select(kvp => $"{kvp.Key} {kvp.Value}"))})");
         }
 
         // Output schema
         if (this._definition.OutputSchema.Count > 0)
         {
-            sql.Append("  OUTPUT (")
-               .Append(string.Join(", ", this._definition.OutputSchema.Select(kvp => $"{kvp.Key} {kvp.Value}")))
-               .AppendLine(")");
+            sql.AppendLine($"  OUTPUT ({string.Join(", ", this._definition.OutputSchema.Select(kvp => $"{kvp.Key} {kvp.Value}"))})");
         }
 
         sql.AppendLine(")");
@@ -105,9 +96,7 @@ public class Model
                 properties.Add($"  '{prop.Key}' = '{prop.Value}'");
             }
 
-            sql.Append(string.Join(",\n", properties))
-               .AppendLine()
-               .Append(")");
+            sql.AppendLine($"{string.Join(",\n", properties)}\n)");
         }
 
         return sql.ToString();
