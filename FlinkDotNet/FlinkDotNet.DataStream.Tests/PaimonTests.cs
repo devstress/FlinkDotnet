@@ -439,7 +439,7 @@ namespace FlinkDotNet.DataStream.Tests
                 .WithPrimaryKey("id");
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => builder.Build());
+            Assert.Throws<ArgumentException>(() => builder.Build());
         }
 
         [Test]
@@ -450,7 +450,7 @@ namespace FlinkDotNet.DataStream.Tests
                 .WithColumn("id", "BIGINT");
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => builder.Build());
+            Assert.Throws<ArgumentException>(() => builder.Build());
         }
 
         [Test]
