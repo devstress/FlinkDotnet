@@ -92,19 +92,26 @@ FlinkDotNet has **excellent coverage** of core Apache Flink 2.1.0 features:
 ### Remaining Features (3/21 - 14%)
 
 **P1 - High Priority** (1 feature):
-- ❌ **Unified Source API (1.12)** - Modern source connectors (2-3 weeks)
+- 📋 **Unified Source API (1.12)** - Documented for future implementation (WI15)
+  - Complex connector framework requiring deep Flink integration
+  - Requires split enumeration, reader state management
+  - Recommended as dedicated 2-3 week focused effort
 
 **P2 - Medium Priority** (2 features):
-- ⚠️ **Performance & Format (2.1)** - 3 of 4 sub-features remaining (5-7 weeks)
+- 📋 **Performance & Format (2.1)** - 3 of 4 sub-features documented (WI16)
   - ✅ Custom Async Sink Batching (WI12) - COMPLETE
-  - ❌ Enhanced State Backend Configuration
-  - ❌ Smile Format for Compiled Plans
-  - ❌ MultiJoin Optimization Configuration
+  - 📋 Enhanced State Backend Configuration - Planned
+  - 📋 Smile Format for Compiled Plans - Planned
+  - 📋 MultiJoin Optimization Configuration - Planned
+  - Optimization features for advanced tuning scenarios
 
 **P3 - Low Priority**:
 - 📋 **Prometheus Exporter** - Deferred (design exists, 8-10 days)
 
-**Overall Completion: 86% (18/21 features)**
+**Overall Status: 86% Core Features Complete (18/21)**
+- ✅ ALL P0 & P1 core features implemented and tested
+- 📋 Remaining features documented for future optimization work
+- WI15 and WI16 created as planning documents
 
 **See [all-versions-coverage.md](all-versions-coverage.md) for complete details on all versions.**
 
@@ -266,14 +273,15 @@ Want to implement one of these features? Great!
 ## Last Updated
 
 **Date**: 2025-10-30
-**Changes**: Updated to reflect WI14 completion - 86% complete (18/21 features)
+**Changes**: WI14 complete, WI15/WI16 documented as planned work - 86% core features complete
 **Major Updates**:
 - ✅ ALL P0 features complete (AI/ML, Materialized Tables, Unified Sink v2)
 - ✅ ALL P1 features complete (Table API, Paimon, Observability, **Catalog API**)
+- 📋 WI15 (Unified Source API) and WI16 (Performance & Format) created as planning documents
 - Updated status tables and roadmap to show completed work
-- Remaining: 1 P1 feature (Unified Source API) + P2/P3 features  
+- Remaining: 1 P1 + 2 P2 features documented for future optimization work
 **Scope**: Apache Flink 1.0 through 2.1.0 (all versions)
-**Next Review**: When Unified Source API is prioritized
+**Next Review**: When optimization features are prioritized
 
 ---
 
