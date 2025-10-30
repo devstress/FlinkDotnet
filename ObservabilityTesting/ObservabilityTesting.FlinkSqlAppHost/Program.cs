@@ -22,6 +22,15 @@ Console.WriteLine("[INFO] Memory resources validated\n");
 var builder = DistributedApplication.CreateBuilder(args);
 var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
 
+// Detect LEARNINGCOURSE mode for conditional Prometheus/Grafana setup
+var isLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
+Console.WriteLine($"🔍 Running in {(isLearningCourseMode ? "LEARNINGCOURSE" : "STANDARD")} mode");
+if (!isLearningCourseMode)
+{
+    Console.WriteLine("   ℹ️  Prometheus and Grafana will be DISABLED to reduce resource usage");
+    Console.WriteLine("   ℹ️  Set LEARNINGCOURSE=true to enable full observability stack");
+}
+
 // 1. Kafka - Message broker for test data
 Console.WriteLine("[INFO] Configuring Kafka...");
 #pragma warning disable S1481 // kafka resource is created and used by Aspire infrastructure
@@ -75,24 +84,31 @@ if (File.Exists(metricsJarPath))
     Console.WriteLine("   [INFO] Prometheus metrics JAR mounted for TaskManager");
 }
 
-// 4. Prometheus - Metrics collection
-Console.WriteLine("[INFO] Configuring Prometheus...");
-var prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
-var prometheus = builder.AddContainer("prometheus", "prom/prometheus", LatestTag)
-    .WithHttpEndpoint(targetPort: Ports.PrometheusHostPort, name: "prometheus-http")
-    .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true);
+// 4. Prometheus - Metrics collection (LEARNINGCOURSE mode only)
+if (isLearningCourseMode)
+{
+    Console.WriteLine("[INFO] Configuring Prometheus...");
+    var prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
+    var prometheus = builder.AddContainer("prometheus", "prom/prometheus", LatestTag)
+        .WithHttpEndpoint(targetPort: Ports.PrometheusHostPort, name: "prometheus-http")
+        .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true);
 
-// 5. Grafana - Metrics visualization
-Console.WriteLine("[INFO] Configuring Grafana...");
+    // 5. Grafana - Metrics visualization
+    Console.WriteLine("[INFO] Configuring Grafana...");
 #pragma warning disable S1481 // grafana resource is created and used by Aspire infrastructure
-var grafana = builder.AddContainer("grafana", "grafana/grafana", LatestTag)
-    .WithHttpEndpoint(targetPort: Ports.GrafanaHostPort, name: "grafana-http")
-    .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
-    .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
-    .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
-    .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
-    .WaitFor(prometheus);
+    var grafana = builder.AddContainer("grafana", "grafana/grafana", LatestTag)
+        .WithHttpEndpoint(targetPort: Ports.GrafanaHostPort, name: "grafana-http")
+        .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
+        .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
+        .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
+        .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
+        .WaitFor(prometheus);
 #pragma warning restore S1481
+}
+else
+{
+    Console.WriteLine("[INFO] Skipping Prometheus and Grafana (LEARNINGCOURSE mode disabled)");
+}
 
 // 6. Gateway - FlinkDotNet job submission endpoint (built from Dockerfile)
 Console.WriteLine("[INFO] Configuring Gateway to build from Dockerfile...");
@@ -118,6 +134,18 @@ Console.WriteLine($"   [INFO] Gateway will be built from Dockerfile: {gatewayDoc
 
 Console.WriteLine("[INFO] All services configured successfully");
 Console.WriteLine($"   - Kafka: Port {Ports.KafkaExternalPort}");
+Console.WriteLine("   - Flink JobManager: Port 8081");
+Console.WriteLine("   - Flink TaskManager: 8 task slots");
+Console.WriteLine("   - Gateway: Port 8086");
+if (isLearningCourseMode)
+{
+    Console.WriteLine($"   - Prometheus: Port {Ports.PrometheusHostPort}");
+    Console.WriteLine($"   - Grafana: Port {Ports.GrafanaHostPort}");
+}
+else
+{
+    Console.WriteLine("   ⚠️  Prometheus and Grafana: DISABLED (set LEARNINGCOURSE=true to enable)");
+}
 Console.WriteLine("   - Flink JobManager: Port 8081, Metrics: 9250");
 Console.WriteLine("   - Flink TaskManager: Metrics: 9251");
 Console.WriteLine($"   - Prometheus: Port {Ports.PrometheusHostPort}");
