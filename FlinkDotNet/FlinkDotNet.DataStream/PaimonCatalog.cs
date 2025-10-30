@@ -144,17 +144,12 @@ public class PaimonCatalogBuilder
     /// Builds the PaimonCatalog instance
     /// </summary>
     /// <returns>A new PaimonCatalog instance</returns>
-    /// <exception cref="InvalidOperationException">Thrown when required configuration is missing</exception>
+    /// <exception cref="ArgumentException">Thrown when required configuration is missing</exception>
     public PaimonCatalog Build()
     {
         // Validate required fields
         ArgumentException.ThrowIfNullOrWhiteSpace(this._definition.CatalogName);
         ArgumentException.ThrowIfNullOrWhiteSpace(this._definition.Warehouse);
-
-        if (string.IsNullOrEmpty(this._definition.Warehouse))
-        {
-            throw new InvalidOperationException("Warehouse path is required");
-        }
 
         return new PaimonCatalog(this._definition);
     }

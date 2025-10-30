@@ -225,13 +225,13 @@ public class PaimonIntegrationTests
         Assert.That(sql2, Does.Contain("'hadoop-conf-dir' = '/path/to/hadoop/conf'"));
 
         // Part C: Validation - missing warehouse
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<ArgumentException>(() =>
         {
             PaimonCatalog.Builder("test_catalog").Build();
         });
 
         // Part D: Validation - missing catalog name
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<ArgumentException>(() =>
         {
             new PaimonCatalogBuilder("").WithWarehouse("file:/tmp").Build();
         });
@@ -332,19 +332,19 @@ public class PaimonIntegrationTests
         Assert.That(sql4, Does.Contain("'snapshot.time-retained' = '1h'"));
 
         // Part E: Validation tests
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<ArgumentException>(() =>
         {
             PaimonTable.Builder("cat", "tbl").Build(); // No columns
         });
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<ArgumentException>(() =>
         {
             PaimonTable.Builder("cat", "tbl")
                 .WithColumn("id", "BIGINT")
                 .Build(); // No primary key
         });
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<ArgumentException>(() =>
         {
             PaimonTable.Builder("", "tbl")
                 .WithColumn("id", "BIGINT")
@@ -352,7 +352,7 @@ public class PaimonIntegrationTests
                 .Build(); // Empty catalog name
         });
 
-        Assert.Throws<InvalidOperationException>(() =>
+        Assert.Throws<ArgumentException>(() =>
         {
             PaimonTable.Builder("cat", "")
                 .WithColumn("id", "BIGINT")
