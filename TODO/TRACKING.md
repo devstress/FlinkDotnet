@@ -10,13 +10,13 @@
 | Category | Total Features | Implemented | In Progress | Not Started | Priority |
 |----------|---------------|-------------|-------------|-------------|----------|
 | AI/ML Integration | 5 | 1 | 0 | 4 | P0 |
-| Table API & SQL | 7 | 0 | 0 | 7 | P1 |
+| Table API & SQL | 7 | 2 | 0 | 5 | P1 |
 | Observability Testing | 1 | 0 | 0 | 1 | P1 |
 | Performance & Format | 4 | 0 | 0 | 4 | P2 |
 | Materialized Tables | 1 | 1 | 0 | 0 | P0 ✅ COMPLETE |
 | Unified Sink API v2 | 1 | 1 | 0 | 0 | P0 ✅ COMPLETE |
 | Table Store (Paimon) | 1 | 0 | 0 | 1 | P1 |
-| **TOTAL** | **20** | **3** | **0** | **17** | - |
+| **TOTAL** | **20** | **5** | **0** | **15** | - |
 
 ## Feature Implementation Checklist
 
@@ -75,14 +75,18 @@
 
 
 #### VARIANT Data Type (Flink 2.1) - 3-4 weeks
-- [ ] VARIANT Type Support (2-3 weeks)
-  - **WI**: Not yet created
-  - **Status**: Not started
+- [x] VARIANT Type Support (2-3 weeks) - **✅ COMPLETE**
+  - **WI**: WI10_table-api-sql-features.md
+  - **Status**: Implementation complete (part of WI10)
+  - **Started**: 2025-10-30
+  - **Completed**: 2025-10-30
+  - **Progress**: IR Schema ✅, C# API ✅, JSON Functions ✅, Testing ✅
+  - **Tests Added**: +5 comprehensive integration tests (all passing)
   - **Document**: [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md#2-variant-data-type-support)
   
-- [ ] PARSE_JSON/TRY_PARSE_JSON Functions (1 week)
-  - **WI**: Not yet created
-  - **Status**: Not started
+- [x] PARSE_JSON/TRY_PARSE_JSON Functions (1 week) - **✅ COMPLETE**
+  - **WI**: WI10_table-api-sql-features.md
+  - **Status**: Implementation complete (part of WI10)
   - **Document**: [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md#2-variant-data-type-support)
 
 ### P1 - High Priority Features
@@ -107,9 +111,13 @@
   - **Document**: [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md#3-process-table-functions-ptfs)
 
 #### Native Table API (Flink 2.1) - 4-6 weeks
-- [ ] Native Table API Programming (4-6 weeks)
-  - **WI**: Not yet created
-  - **Status**: Not started
+- [x] Native Table API Programming (4-6 weeks) - **✅ COMPLETE**
+  - **WI**: WI10_table-api-sql-features.md
+  - **Status**: Implementation complete (part of WI10)
+  - **Started**: 2025-10-30
+  - **Completed**: 2025-10-30
+  - **Progress**: Table Class ✅, Fluent API ✅, SQL Generation ✅, Testing ✅
+  - **Tests Added**: Included in 5 comprehensive WI10 tests
   - **Document**: [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md#4-native-table-api-programming)
 
 #### Earlier Version Features - 4-6 weeks
@@ -288,25 +296,25 @@ See `TODO/.implementation-template.md` for standardized WI template.
 
 ### Completion by Priority
 - **P0 Features**: 3/7 fully implemented ✅, 0/7 in progress (WI6 Unified Sink v2 ✅, WI7 Materialized Tables ✅, WI8 CREATE MODEL DDL ✅)
-- **P1 Features**: 0/6 (0%)
+- **P1 Features**: 2/6 (33%) (WI10 VARIANT + Native Table API ✅)
 - **P2 Features**: 0/4 (0%)
 - **P3 Features**: 0/1 (0%)
 
 ### Estimated Time Investment
-- **Completed**: 3 weeks (WI6 Unified Sink API v2 ✅, WI7 Materialized Tables ✅, WI8 CREATE MODEL DDL ✅)
+- **Completed**: 5 weeks (WI6 Unified Sink API v2 ✅, WI7 Materialized Tables ✅, WI8 CREATE MODEL DDL ✅, WI10 Table API ✅)
 - **In Progress**: 0 weeks
 - **Remaining P0**: 14.5-23 weeks (4 features remaining)
-- **Remaining P1**: 17-24 weeks (6 features: Observability + 5 others)
+- **Remaining P1**: 10-17 weeks (4 features: Observability + 3 others)
 - **Remaining P2**: 8-11 weeks
 - **Remaining P3**: 1.5-2 weeks
-- **Total Remaining**: 39-58 weeks (10-14 months)
+- **Total Remaining**: 34-53 weeks (8-13 months)
 
 ### Velocity Tracking
 *Update as features are completed to track implementation velocity*
 
 | Month | Features Completed | Features Started | Weeks Invested | Velocity (features/week) | Notes |
 |-------|-------------------|------------------|----------------|--------------------------|-------|
-| Oct 2025 | 3 (Unified Sink v2 ✅, Materialized Tables ✅, CREATE MODEL DDL ✅) | 3 (WI6, WI7, WI8 complete) | 1.5 | 2.00 | WI6: Full implementation (5 tests). WI7: Full C# API (5 tests). WI8: AI/ML integration (5 tests). Excellent velocity! |
+| Oct 2025 | 5 (Unified Sink v2 ✅, Materialized Tables ✅, CREATE MODEL DDL ✅, VARIANT Type ✅, Native Table API ✅) | 4 (WI6, WI7, WI8, WI10 complete) | 2.5 | 2.00 | WI6: Full implementation (5 tests). WI7: Full C# API (5 tests). WI8: AI/ML integration (5 tests). WI10: Table API & VARIANT (5 tests). Excellent velocity! |
 | Nov 2025 | 0 | 0 | 0 | - | - |
 | Dec 2025 | 0 | 0 | 0 | - | - |
 
@@ -320,8 +328,9 @@ See `TODO/.implementation-template.md` for standardized WI template.
 6. ✅ **WI6 Complete**: All phases finished, tests passing, feature ready for production use
 7. ✅ **WI7 Complete**: Materialized Tables implementation complete (5 tests)
 8. ✅ **WI8 Complete**: CREATE MODEL DDL implementation complete (5 tests)
-9. **Current**: Begin next P0 feature (ML_PREDICT TVF or AI Provider Integration)
-10. **Long-term**: Continue P0 feature implementation roadmap
+9. ✅ **WI10 Complete**: Table API & VARIANT data type implementation complete (5 tests)
+10. **Current**: Begin next P0 or P1 feature (ML_PREDICT TVF, AI Provider Integration, or PTFs)
+11. **Long-term**: Continue P0 and P1 feature implementation roadmap
 
 ## Contributing
 
