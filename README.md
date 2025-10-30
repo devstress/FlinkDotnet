@@ -29,16 +29,14 @@ This repo also provides a comprehensive distributed message-oriented architectur
 [![Microsoft Aspire](https://img.shields.io/badge/Aspire-latest-512BD4)](https://learn.microsoft.com/en-us/dotnet/aspire/)
 
 ## What is FlinkDotNet?
+FlinkDotNet lets you write **Apache Flink 2.1** streaming jobs in C# and submit them to Flink clusters. No Java required.
+A complete distributed message-oriented architecture for building enterprise stream processing applications in .NET, it combines:
 
-FlinkDotNet provides a complete distributed message-oriented architecture for building enterprise stream processing applications in .NET. It combines:
-
-- **Apache Flink 2.1** - Production-grade stream processing engine
-- **Apache Kafka** - Distributed message streaming platform
-- **Temporal** - Durable workflow orchestration
-- **Microsoft Aspire** - Local development orchestration and service discovery
+- **Apache Flink 2.1** - distributed stream processing engine with state management.
+- **Apache Kafka** - Distributed message streaming/queue
+- **Temporal** - Durable workflow orchestration/Durable execution solution.
+- **Microsoft Aspire** - Local development containerised orchestration.
 - **FlinkDotNet SDK** - Native .NET API for writing Flink jobs in C#
-
-Write streaming jobs in C# and deploy them to production Flink clusters - no Java required.
 
 ```csharp
 var env = Flink.GetExecutionEnvironment();
