@@ -146,11 +146,11 @@ jobs:
           COVERAGE=$(grep -oP 'line-rate="\K[^"]+' FlinkDotNet/CoverageReport/Cobertura.xml | head -1)
           COVERAGE_PERCENT=$(echo "$COVERAGE * 100" | bc)
           echo "Code Coverage: ${COVERAGE_PERCENT}%"
-          if (( $(echo "$COVERAGE_PERCENT < 80" | bc -l) )); then
-            echo "ERROR: Code coverage ${COVERAGE_PERCENT}% is below the required 80% threshold"
+          if (( $(echo "$COVERAGE_PERCENT < 85" | bc -l) )); then
+            echo "ERROR: Code coverage ${COVERAGE_PERCENT}% is below the required 85% threshold"
             exit 1
           fi
-          echo "SUCCESS: Code coverage ${COVERAGE_PERCENT}% meets the 80% threshold"
+          echo "SUCCESS: Code coverage ${COVERAGE_PERCENT}% meets the 85% threshold"
 
       - name: Upload Coverage Report
         if: always()

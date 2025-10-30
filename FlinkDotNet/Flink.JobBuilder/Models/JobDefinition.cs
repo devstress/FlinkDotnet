@@ -357,6 +357,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(TimerOperationDefinition), "timer")]
     [JsonDerivedType(typeof(RetryOperationDefinition), "retry")]
     [JsonDerivedType(typeof(SideOutputOperationDefinition), "sideOutput")]
+    [JsonDerivedType(typeof(MLPredictDefinition), "ml_predict")]
     public interface IOperationDefinition
     {
         public string Type
@@ -1217,5 +1218,50 @@ namespace Flink.JobBuilder.Models
         {
             get; set;
         } = "gateway";
+    }
+
+    /// <summary>
+    /// ML_PREDICT Table Value Function operation definition (Flink 2.1+)
+    /// Enables real-time AI inference on streaming data using registered models.
+    /// </summary>
+    public class MLPredictDefinition : IOperationDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier for ML_PREDICT operation
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "ml_predict";
+
+        /// <summary>
+        /// Name of the registered model to use for predictions
+        /// </summary>
+        public string ModelName
+        {
+            get; set;
+        } = string.Empty;
+
+        /// <summary>
+        /// List of input column names to pass to the model (used in DESCRIPTOR clause)
+        /// </summary>
+        public List<string> InputColumns
+        {
+            get; init;
+        } = [];
+
+        /// <summary>
+        /// List of output column names from the model prediction
+        /// </summary>
+        public List<string> OutputColumns
+        {
+            get; init;
+        } = [];
+
+        /// <summary>
+        /// Optional output prefix/alias for ML_PREDICT result (e.g., "ml" in "AS ml")
+        /// </summary>
+        public string? OutputPrefix
+        {
+            get; set;
+        }
     }
 }
