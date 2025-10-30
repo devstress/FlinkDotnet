@@ -77,6 +77,16 @@ jobs:
           echo "CPU info: $(nproc) cores"
           cat /proc/cpuinfo | grep "model name" | head -1
 
+      - name: Build Gateway Docker image
+        run: |
+          echo "🐳 Building FlinkDotNet Gateway Docker image..."
+          docker build \
+            -f FlinkDotNet/FlinkDotNet.JobGateway/Dockerfile \
+            -t flinkdotnet-gateway:latest \
+            .
+          echo "✅ Gateway Docker image built successfully"
+          docker images | grep flinkdotnet-gateway
+
       - name: Build ObservabilityTesting solution
         run: |
           echo "🔨 Building ObservabilityTesting solution..."
