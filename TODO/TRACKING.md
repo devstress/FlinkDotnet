@@ -96,8 +96,10 @@
 
 #### Table Store / Apache Paimon (Flink 1.15) - 3-4 weeks
 - [ ] Table Store Integration (3-4 weeks)
-  - **WI**: Not yet created
-  - **Status**: Not started
+  - **WI**: WI13_table-store-paimon.md
+  - **Status**: Investigation phase (In Progress)
+  - **Started**: 2025-10-30
+  - **Progress**: Investigation ⏳ (catalog analysis, changelog modes, IR design planning)
   - **Document**: [all-versions-coverage.md](all-versions-coverage.md#missing-from-115-may-2022)
 
 #### Process Table Functions (Flink 2.1) - 3-4 weeks
@@ -306,7 +308,7 @@ See `TODO/.implementation-template.md` for standardized WI template.
 
 | Month | Features Completed | Features Started | Weeks Invested | Velocity (features/week) | Notes |
 |-------|-------------------|------------------|----------------|--------------------------|-------|
-| Oct 2025 | 3 (Unified Sink v2 ✅, Materialized Tables ✅, CREATE MODEL DDL ✅) | 3 (WI6, WI7, WI8 complete) | 1.5 | 2.00 | WI6: Full implementation (5 tests). WI7: Full C# API (5 tests). WI8: AI/ML integration (5 tests). Excellent velocity! |
+| Oct 2025 | 3 (Unified Sink v2 ✅, Materialized Tables ✅, CREATE MODEL DDL ✅) | 4 (WI6, WI7, WI8 complete, WI13 started) | 1.5 | 2.00 | WI6: Full implementation (5 tests). WI7: Full C# API (5 tests). WI8: AI/ML integration (5 tests). WI13: Investigation phase started. |
 | Nov 2025 | 0 | 0 | 0 | - | - |
 | Dec 2025 | 0 | 0 | 0 | - | - |
 
@@ -320,7 +322,8 @@ See `TODO/.implementation-template.md` for standardized WI template.
 6. ✅ **WI6 Complete**: All phases finished, tests passing, feature ready for production use
 7. ✅ **WI7 Complete**: Materialized Tables implementation complete (5 tests)
 8. ✅ **WI8 Complete**: CREATE MODEL DDL implementation complete (5 tests)
-9. **Current**: Begin next P0 feature (ML_PREDICT TVF or AI Provider Integration)
+9. ✅ **WI13 Started**: Table Store (Paimon) investigation phase in progress
+10. **Current**: Complete WI13 Investigation phase, then proceed to Design and TDD
 10. **Long-term**: Continue P0 feature implementation roadmap
 
 ## Contributing
