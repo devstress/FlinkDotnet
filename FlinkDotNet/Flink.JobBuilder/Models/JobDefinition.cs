@@ -345,6 +345,7 @@ namespace Flink.JobBuilder.Models
     [JsonDerivedType(typeof(SideOutputOperationDefinition), "sideOutput")]
     [JsonDerivedType(typeof(TableOperationDefinition), "table")]
     [JsonDerivedType(typeof(ParseJsonOperationDefinition), "parseJson")]
+    [JsonDerivedType(typeof(ProcessTableFunctionDefinition), "processTableFunction")]
     public interface IOperationDefinition
     {
         public string Type
@@ -1199,6 +1200,60 @@ namespace Flink.JobBuilder.Models
 
         /// <summary>
         /// Additional table properties
+        /// </summary>
+        public Dictionary<string, string> Properties { get; init; } = [];
+    }
+
+    /// <summary>
+    /// Process Table Function (PTF) operation definition for stateful table UDFs
+    /// Supports advanced stateful processing with timers and managed state
+    /// </summary>
+    public class ProcessTableFunctionDefinition : IOperationDefinition
+    {
+        /// <summary>
+        /// Gets the type identifier
+        /// </summary>
+        [JsonIgnore]
+        public string Type => "processTableFunction";
+
+        /// <summary>
+        /// Function name for registration in table environment
+        /// </summary>
+        public string FunctionName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Fully qualified class name of the PTF implementation
+        /// </summary>
+        public string ClassName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Input column names that the function processes
+        /// </summary>
+        public List<string> InputColumns { get; init; } = [];
+
+        /// <summary>
+        /// Output column names that the function produces
+        /// </summary>
+        public List<string> OutputColumns { get; init; } = [];
+
+        /// <summary>
+        /// State descriptors for managed state used by the function
+        /// Key: state name, Value: state type (e.g., "ValueState<SessionData>")
+        /// </summary>
+        public Dictionary<string, string> StateDescriptors { get; init; } = [];
+
+        /// <summary>
+        /// Whether the function uses event-time timers
+        /// </summary>
+        public bool UsesEventTimeTimers { get; set; }
+
+        /// <summary>
+        /// Whether the function uses processing-time timers
+        /// </summary>
+        public bool UsesProcessingTimeTimers { get; set; }
+
+        /// <summary>
+        /// Function-specific properties and configuration
         /// </summary>
         public Dictionary<string, string> Properties { get; init; } = [];
     }

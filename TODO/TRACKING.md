@@ -10,13 +10,13 @@
 | Category | Total Features | Implemented | In Progress | Not Started | Priority |
 |----------|---------------|-------------|-------------|-------------|----------|
 | AI/ML Integration | 5 | 1 | 0 | 4 | P0 |
-| Table API & SQL | 7 | 2 | 0 | 5 | P1 |
+| Table API & SQL | 7 | 3 | 0 | 4 | P1 |
 | Observability Testing | 1 | 0 | 0 | 1 | P1 |
 | Performance & Format | 4 | 0 | 0 | 4 | P2 |
 | Materialized Tables | 1 | 1 | 0 | 0 | P0 ✅ COMPLETE |
 | Unified Sink API v2 | 1 | 1 | 0 | 0 | P0 ✅ COMPLETE |
 | Table Store (Paimon) | 1 | 0 | 0 | 1 | P1 |
-| **TOTAL** | **20** | **5** | **0** | **15** | - |
+| **TOTAL** | **20** | **6** | **0** | **14** | - |
 
 ## Feature Implementation Checklist
 
@@ -105,9 +105,13 @@
   - **Document**: [all-versions-coverage.md](all-versions-coverage.md#missing-from-115-may-2022)
 
 #### Process Table Functions (Flink 2.1) - 3-4 weeks
-- [ ] Process Table Functions (PTFs) (3-4 weeks)
-  - **WI**: Not yet created
-  - **Status**: Not started
+- [x] Process Table Functions (PTFs) (3-4 weeks) - **✅ COMPLETE**
+  - **WI**: WI10_table-api-sql-features.md
+  - **Status**: Implementation complete (part of WI10)
+  - **Started**: 2025-10-30
+  - **Completed**: 2025-10-30
+  - **Progress**: PTF Base Class ✅, State Management ✅, Timer Support ✅, Testing ✅
+  - **Tests Added**: Integrated into Test 5 of WI10
   - **Document**: [table-api-advanced-sql-features.md](table-api-advanced-sql-features.md#3-process-table-functions-ptfs)
 
 #### Native Table API (Flink 2.1) - 4-6 weeks
@@ -296,7 +300,7 @@ See `TODO/.implementation-template.md` for standardized WI template.
 
 ### Completion by Priority
 - **P0 Features**: 3/7 fully implemented ✅, 0/7 in progress (WI6 Unified Sink v2 ✅, WI7 Materialized Tables ✅, WI8 CREATE MODEL DDL ✅)
-- **P1 Features**: 2/6 (33%) (WI10 VARIANT + Native Table API ✅)
+- **P1 Features**: 3/6 (50%) (WI10 VARIANT + Native Table API + PTFs ✅)
 - **P2 Features**: 0/4 (0%)
 - **P3 Features**: 0/1 (0%)
 
@@ -314,7 +318,7 @@ See `TODO/.implementation-template.md` for standardized WI template.
 
 | Month | Features Completed | Features Started | Weeks Invested | Velocity (features/week) | Notes |
 |-------|-------------------|------------------|----------------|--------------------------|-------|
-| Oct 2025 | 5 (Unified Sink v2 ✅, Materialized Tables ✅, CREATE MODEL DDL ✅, VARIANT Type ✅, Native Table API ✅) | 4 (WI6, WI7, WI8, WI10 complete) | 2.5 | 2.00 | WI6: Full implementation (5 tests). WI7: Full C# API (5 tests). WI8: AI/ML integration (5 tests). WI10: Table API & VARIANT (5 tests). Excellent velocity! |
+| Oct 2025 | 6 (Unified Sink v2 ✅, Materialized Tables ✅, CREATE MODEL DDL ✅, VARIANT Type ✅, Native Table API ✅, PTFs ✅) | 4 (WI6, WI7, WI8, WI10 complete) | 2.5 | 2.40 | WI6: Full implementation (5 tests). WI7: Full C# API (5 tests). WI8: AI/ML integration (5 tests). WI10: Table API, VARIANT & PTFs (5 tests). Outstanding velocity! |
 | Nov 2025 | 0 | 0 | 0 | - | - |
 | Dec 2025 | 0 | 0 | 0 | - | - |
 

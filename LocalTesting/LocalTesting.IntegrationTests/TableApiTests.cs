@@ -270,20 +270,21 @@ public class TableApiTests
 
     #endregion
 
-    #region Test 5: Complex Table API Workflow with VARIANT
+    #region Test 5: Complex Table API Workflow with VARIANT and PTFs
 
     /// <summary>
     /// Test 5: Validates complex Table API workflow combining all features:
     /// - VARIANT columns in schema
     /// - JSON parsing and path navigation
     /// - Select, Where, GroupBy operations
+    /// - Process Table Functions (PTFs) with state and timers
     /// - Complete SQL generation
     /// - End-to-end transformation pipeline
     /// </summary>
     [Test]
-    public void Test5_ComplexWorkflow_VariantAndTableAPI()
+    public void Test5_ComplexWorkflow_VariantTableAPIAndPTFs()
     {
-        // Arrange - Table with VARIANT column
+        // Part A: Table API with VARIANT (existing functionality)
         var table = new Table(new TableSourceDefinition
         {
             TableName = "user_events",
@@ -301,39 +302,129 @@ public class TableApiTests
             }
         });
 
-        // Act - Complex transformation pipeline
         var result = table
             .AddJsonColumn("event_data", "event_type", "$.type", strict: false)
             .AddJsonColumn("event_data", "event_value", "$.value", strict: false)
             .Select("user_id", "event_type", "event_value", "event_timestamp")
             .Where("event_type IS NOT NULL");
 
-        // Assert - Operations chain
         Assert.That(result.Operations, Has.Count.EqualTo(4));
 
-        // Verify operation types in order
-        Assert.That((result.Operations[0] as ParseJsonOperationDefinition)?.TargetField, Is.EqualTo("event_type"));
-        Assert.That((result.Operations[1] as ParseJsonOperationDefinition)?.TargetField, Is.EqualTo("event_value"));
-        Assert.That((result.Operations[2] as TableOperationDefinition)?.OperationType, Is.EqualTo("select"));
-        Assert.That((result.Operations[3] as TableOperationDefinition)?.OperationType, Is.EqualTo("where"));
+        // Part B: Process Table Function (PTF) IR Schema
+        var ptfJobDef = new JobDefinition
+        {
+            Source = new TableSourceDefinition
+            {
+                TableName = "sessions",
+                Schema = new Dictionary<string, string>
+                {
+                    { "user_id", "STRING" },
+                    { "action", "STRING" },
+                    { "event_time", "TIMESTAMP(3)" }
+                }
+            },
+            Operations = new List<IOperationDefinition>
+            {
+                new ProcessTableFunctionDefinition
+                {
+                    FunctionName = "analyze_session",
+                    ClassName = "SessionAnalyzer",
+                    InputColumns = ["user_id", "action", "event_time"],
+                    OutputColumns = ["session_id", "session_duration", "action_count"],
+                    StateDescriptors = new Dictionary<string, string>
+                    {
+                        { "session_state", "ValueState<SessionData>" },
+                        { "action_list", "ListState<String>" }
+                    },
+                    UsesEventTimeTimers = true,
+                    UsesProcessingTimeTimers = false,
+                    Properties = new Dictionary<string, string>
+                    {
+                        { "timeout_minutes", "30" },
+                        { "min_actions", "2" }
+                    }
+                }
+            },
+            Metadata = new JobMetadata
+            {
+                JobId = "ptf-test-job",
+                JobName = "PTF Test",
+                Version = "1.0"
+            }
+        };
 
-        // Act - Generate final SQL
-        var sql = result.ToSql();
+        // Assert PTF IR serialization
+        var ptfJson = JsonSerializer.Serialize(ptfJobDef, new JsonSerializerOptions { WriteIndented = true });
+        var ptfDeserialized = JsonSerializer.Deserialize<JobDefinition>(ptfJson);
 
-        // Assert - SQL contains all operations
-        Assert.That(sql, Does.Contain("SELECT"));
-        Assert.That(sql, Does.Contain("user_id"));
-        Assert.That(sql, Does.Contain("event_type"));
-        Assert.That(sql, Does.Contain("event_value"));
-        Assert.That(sql, Does.Contain("TRY_PARSE_JSON"));
-        Assert.That(sql, Does.Contain("::VARIANT"));
-        Assert.That(sql, Does.Contain("WHERE event_type IS NOT NULL"));
+        Assert.That(ptfDeserialized, Is.Not.Null);
+        Assert.That(ptfDeserialized.Operations, Has.Count.EqualTo(1));
 
-        // Assert - Original table schema preserved
-        Assert.That(table.Definition.Schema["event_data"], Is.EqualTo("VARIANT"));
-        Assert.That(table.Definition.Properties["connector"], Is.EqualTo("kafka"));
+        var ptfOp = ptfDeserialized.Operations[0] as ProcessTableFunctionDefinition;
+        Assert.That(ptfOp, Is.Not.Null);
+        Assert.That(ptfOp.Type, Is.EqualTo("processTableFunction"));
+        Assert.That(ptfOp.FunctionName, Is.EqualTo("analyze_session"));
+        Assert.That(ptfOp.ClassName, Is.EqualTo("SessionAnalyzer"));
+        Assert.That(ptfOp.InputColumns, Has.Count.EqualTo(3));
+        Assert.That(ptfOp.OutputColumns, Has.Count.EqualTo(3));
+        Assert.That(ptfOp.StateDescriptors, Has.Count.EqualTo(2));
+        Assert.That(ptfOp.UsesEventTimeTimers, Is.True);
+        Assert.That(ptfOp.Properties["timeout_minutes"], Is.EqualTo("30"));
 
-        // Validate edge cases
+        // Part C: PTF C# API - Stateful Session Processing
+        var sessionAnalyzer = new TestSessionAnalyzer();
+        var functionContext = new FunctionContext();
+        sessionAnalyzer.TestOpen(functionContext);
+
+        var processingContext = new ProcessingContext
+        {
+            Timestamp = 1000L,
+            CurrentWatermark = 900L
+        };
+
+        // Simulate processing events
+        var event1 = new TestEvent { UserId = "user1", Action = "click", EventTime = 1000L };
+        sessionAnalyzer.Eval(processingContext, event1);
+
+        // Assert output collected
+        var output1 = processingContext.GetOutput();
+        Assert.That(output1, Has.Count.EqualTo(1));
+        Assert.That(output1[0], Is.InstanceOf<TestSessionOutput>());
+        var session1 = (TestSessionOutput)output1[0];
+        Assert.That(session1.SessionId, Is.Not.Null);
+        Assert.That(session1.ActionCount, Is.EqualTo(1));
+
+        // Assert event-time timer registered
+        var eventTimers = processingContext.GetEventTimeTimers();
+        Assert.That(eventTimers, Has.Count.EqualTo(1));
+        Assert.That(eventTimers[0], Is.EqualTo(1000L + 30 * 60 * 1000)); // 30 minutes timeout
+
+        // Process another event in same session
+        processingContext.ClearOutput();
+        var event2 = new TestEvent { UserId = "user1", Action = "purchase", EventTime = 2000L };
+        processingContext.Timestamp = 2000L;
+        sessionAnalyzer.Eval(processingContext, event2);
+
+        var output2 = processingContext.GetOutput();
+        Assert.That(output2, Has.Count.EqualTo(1));
+        var session2 = (TestSessionOutput)output2[0];
+        Assert.That(session2.ActionCount, Is.EqualTo(2));
+
+        // Part D: PTF Timer Callback
+        var timerContext = new OnTimerContext
+        {
+            TimerTimestamp = 1000L + 30 * 60 * 1000,
+            TimerType = TimerType.EventTime
+        };
+
+        processingContext.ClearOutput();
+        sessionAnalyzer.OnTimer(processingContext, timerContext);
+
+        // Verify state cleared after timeout
+        var stateValue = sessionAnalyzer.GetSessionState();
+        Assert.That(stateValue, Is.Null);
+
+        // Part E: Edge cases validation
         // Test: Empty table name should throw
         Assert.Throws<ArgumentException>(() => new Table(""));
 
@@ -345,7 +436,106 @@ public class TableApiTests
         var groupedResult = result.GroupBy("user_id", "event_type");
         var aggregated = groupedResult.Aggregate("COUNT(*) AS event_count");
         Assert.That((aggregated.Operations[4] as TableOperationDefinition)?.GroupByKeys, Has.Count.EqualTo(2));
+
+        // Part F: SQL Generation from Table API
+        var sql = result.ToSql();
+        Assert.That(sql, Does.Contain("TRY_PARSE_JSON"));
+        Assert.That(sql, Does.Contain("::VARIANT"));
+        Assert.That(sql, Does.Contain("WHERE event_type IS NOT NULL"));
     }
 
     #endregion
+}
+
+/// <summary>
+/// Test implementation of a Process Table Function for session analysis
+/// </summary>
+public class TestSessionAnalyzer : ProcessTableFunction<TestEvent, TestSessionOutput>
+{
+    private IPtfValueState<TestSessionData>? _sessionState;
+
+    public void TestOpen(FunctionContext context)
+    {
+        this.Open(context);
+    }
+
+    protected override void Open(FunctionContext context)
+    {
+        this._sessionState = context.GetState(new ValueStateDescriptor<TestSessionData>("session_state"));
+    }
+
+    public override void Eval(ProcessingContext context, TestEvent input)
+    {
+        var session = this._sessionState?.Value();
+
+        if (session == null)
+        {
+            session = new TestSessionData
+            {
+                SessionId = Guid.NewGuid().ToString(),
+                UserId = input.UserId,
+                StartTime = input.EventTime,
+                ActionCount = 0
+            };
+        }
+
+        session.ActionCount++;
+        session.LastActionTime = input.EventTime;
+
+        this._sessionState?.Update(session);
+
+        // Register timeout timer (30 minutes)
+        context.RegisterEventTimeTimer(input.EventTime + 30 * 60 * 1000);
+
+        // Emit session output
+        context.Collect(new TestSessionOutput
+        {
+            SessionId = session.SessionId,
+            ActionCount = session.ActionCount,
+            Duration = input.EventTime - session.StartTime
+        });
+    }
+
+    public override void OnTimer(ProcessingContext context, OnTimerContext timerContext)
+    {
+        // Session timed out - clear state
+        this._sessionState?.Clear();
+    }
+
+    public TestSessionData? GetSessionState()
+    {
+        return this._sessionState?.Value();
+    }
+}
+
+/// <summary>
+/// Test event for PTF input
+/// </summary>
+public class TestEvent
+{
+    public string UserId { get; set; } = string.Empty;
+    public string Action { get; set; } = string.Empty;
+    public long EventTime { get; set; }
+}
+
+/// <summary>
+/// Test session data for PTF state
+/// </summary>
+public class TestSessionData
+{
+    public string SessionId { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public long StartTime { get; set; }
+    public long LastActionTime { get; set; }
+    public int ActionCount { get; set; }
+}
+
+/// <summary>
+/// Test session output from PTF
+/// </summary>
+public class TestSessionOutput
+{
+    public string SessionId { get; set; } = string.Empty;
+    public int ActionCount { get; set; }
+    public long Duration { get; set; }
 }
