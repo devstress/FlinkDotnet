@@ -82,8 +82,8 @@ public class PaimonTable
         sb.AppendLine($"CREATE TABLE {this._definition.CatalogName}.{this._definition.TableName} (");
 
         // Add columns
-        string[] columns = this._definition.Schema.Select(kvp => $"  {kvp.Key} {kvp.Value}").ToArray();
-        sb.AppendLine(string.Join("," + Environment.NewLine, columns));
+        string[] columns = [.. this._definition.Schema.Select(kvp => $"  {kvp.Key} {kvp.Value}")];
+        sb.AppendJoin("," + Environment.NewLine, columns).AppendLine();
 
         // Add primary key if specified
         if (this._definition.PrimaryKey.Count > 0)
@@ -135,8 +135,8 @@ public class PaimonTable
                 properties.Add($"  '{prop.Key}' = '{prop.Value}'");
             }
 
-            sb.AppendLine(string.Join("," + Environment.NewLine, properties));
-            sb.AppendLine().Append(")");
+            sb.AppendJoin("," + Environment.NewLine, properties).AppendLine()
+                .AppendLine().Append(")");
         }
 
         return sb.ToString();
@@ -271,11 +271,8 @@ public class PaimonTableBuilder
             throw new InvalidOperationException("At least one column is required");
         }
 
-        if (this._definition.PrimaryKey.Count == 0)
-        {
-            throw new InvalidOperationException("Primary key is required for Paimon ACID tables");
-        }
-
-        return new PaimonTable(this._definition);
+        return this._definition.PrimaryKey.Count == 0
+            ? throw new InvalidOperationException("Primary key is required for Paimon ACID tables")
+            : new PaimonTable(this._definition);
     }
 }
