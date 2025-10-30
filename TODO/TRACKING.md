@@ -11,12 +11,12 @@
 |----------|---------------|-------------|-------------|-------------|----------|
 | AI/ML Integration | 5 | 1 | 0 | 4 | P0 |
 | Table API & SQL | 7 | 0 | 0 | 7 | P1 |
-| Observability Testing | 1 | 0 | 0 | 1 | P1 |
+| Observability Testing | 1 | 0 | 1 | 0 | P1 🚧 |
 | Performance & Format | 4 | 0 | 0 | 4 | P2 |
 | Materialized Tables | 1 | 1 | 0 | 0 | P0 ✅ COMPLETE |
 | Unified Sink API v2 | 1 | 1 | 0 | 0 | P0 ✅ COMPLETE |
 | Table Store (Paimon) | 1 | 0 | 0 | 1 | P1 |
-| **TOTAL** | **20** | **3** | **0** | **17** | - |
+| **TOTAL** | **20** | **3** | **1** | **16** | - |
 
 ## Feature Implementation Checklist
 
@@ -88,11 +88,14 @@
 ### P1 - High Priority Features
 
 #### Observability Testing (All Versions) - 2-3 weeks
-- [ ] Comprehensive Observability Tests in ReleasePackageVerification (2-3 weeks)
-  - **WI**: Not yet created
-  - **Status**: Not started - basic features exist in LocalTesting, need ReleasePackageVerification tests
+- [x] Comprehensive Observability Tests in LocalTesting (2-3 weeks) - **🚧 IN PROGRESS (WI11)**
+  - **WI**: WI11_observability-testing.md
+  - **Status**: Implementation complete, testing in progress
+  - **Started**: 2025-10-30
+  - **Progress**: 5 comprehensive tests implemented ✅, awaiting validation
+  - **Tests Added**: Test1_GatewayMetrics, Test2_PrometheusIntegration, Test3_GrafanaIntegration, Test4_BackpressureAndCheckpoints, Test5_EndToEndObservability
   - **Document**: [observability-features.md](observability-features.md)
-  - **Note**: Tests must be in ReleasePackageVerification (not LocalTesting) due to Aspire network requirements
+  - **Note**: Tests cover Gateway metrics, Prometheus, Grafana, backpressure, and end-to-end workflow
 
 #### Table Store / Apache Paimon (Flink 1.15) - 3-4 weeks
 - [ ] Table Store Integration (3-4 weeks)
