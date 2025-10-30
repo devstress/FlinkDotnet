@@ -14,14 +14,14 @@ public interface IModelProvider
     /// <summary>
     /// Gets the provider name (e.g., "openai", "azure_openai", "custom")
     /// </summary>
-    string ProviderName { get; }
+    public string ProviderName { get; }
 
     /// <summary>
     /// Validates provider configuration
     /// </summary>
     /// <param name="properties">Provider-specific configuration properties</param>
     /// <returns>True if configuration is valid</returns>
-    bool ValidateConfiguration(Dictionary<string, string> properties);
+    public bool ValidateConfiguration(Dictionary<string, string> properties);
 
     /// <summary>
     /// Executes inference using the provider's API
@@ -31,8 +31,8 @@ public interface IModelProvider
     /// <param name="properties">Provider-specific properties</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Inference results</returns>
-    Task<Dictionary<string, object>> InferAsync(
-        string modelName, 
+    public Task<Dictionary<string, object>> InferAsync(
+        string modelName,
         Dictionary<string, object> input,
         Dictionary<string, string> properties,
         CancellationToken cancellationToken = default);

@@ -12,11 +12,9 @@ public class TableEnvironment
     private readonly Dictionary<string, Model> _registeredModels = new();
     private readonly Dictionary<string, Table> _registeredTables = new();
 
-    internal TableEnvironment(StreamExecutionEnvironment env)
-    {
+    internal TableEnvironment(StreamExecutionEnvironment env) =>
         // Store reference for future use
         _ = env;
-    }
 
     /// <summary>
     /// Creates and registers a model programmatically

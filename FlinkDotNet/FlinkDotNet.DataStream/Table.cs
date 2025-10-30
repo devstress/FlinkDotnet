@@ -32,6 +32,7 @@ public class Table
     /// <summary>
     /// Gets the table name
     /// </summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "RCS1085:Use auto-implemented property", Justification = "Property returns value from private readonly field")]
     public string TableName => this._tableName;
 
     /// <summary>
@@ -134,15 +135,15 @@ public class Table
         }
 
         StringBuilder sql = new();
-        sql.Append("SELECT * FROM ML_PREDICT(\n");
-        sql.Append($"  TABLE {this._tableName},\n");
+        sql.Append("SELECT * FROM ML_PREDICT(\n")
+           .Append($"  TABLE {this._tableName},\n");
 
         MLPredictDefinition mlPredict = this._mlPredictOperations[^1];
         sql.Append($"  MODEL {mlPredict.ModelName},\n");
 
         string columns = string.Join(", ", mlPredict.InputColumns);
-        sql.Append($"  DESCRIPTOR({columns})\n");
-        sql.Append(")");
+        sql.Append($"  DESCRIPTOR({columns})\n")
+           .Append(")");
 
         if (!string.IsNullOrWhiteSpace(mlPredict.OutputPrefix))
         {
@@ -157,10 +158,8 @@ public class Table
     /// </summary>
     /// <param name="columnName">Column name</param>
     /// <param name="dataType">Flink SQL data type</param>
-    internal void AddColumn(string columnName, string dataType)
-    {
+    internal void AddColumn(string columnName, string dataType) =>
         this._schema[columnName] = dataType;
-    }
 }
 
 /// <summary>
