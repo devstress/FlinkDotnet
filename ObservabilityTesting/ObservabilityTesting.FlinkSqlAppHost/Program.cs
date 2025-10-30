@@ -94,15 +94,22 @@ var grafana = builder.AddContainer("grafana", "grafana/grafana", LatestTag)
     .WaitFor(prometheus);
 #pragma warning restore S1481
 
-// 6. Gateway - FlinkDotNet job submission endpoint
-Console.WriteLine("[INFO] Configuring Gateway...");
-var gatewayJarPath = FindGatewayJarPath(repoRoot);
+// 6. Gateway - FlinkDotNet job submission endpoint (Docker container)
+Console.WriteLine("[INFO] Configuring Gateway Docker container...");
+
+// The Gateway image should be built with: docker build -f FlinkDotNet/FlinkDotNet.JobGateway/Dockerfile -t flinkdotnet-gateway:latest .
+// For now, we'll use AddContainer assuming the image exists or will be built by the workflow
+const string gatewayImageName = "flinkdotnet-gateway";
+const string gatewayImageTag = "latest";
+
 #pragma warning disable S1481 // gateway resource is created and used by Aspire infrastructure
-var gateway = builder.AddExecutable("gateway", "java", repoRoot, "-jar", gatewayJarPath)
-    .WithHttpEndpoint(targetPort: Ports.GatewayHostPort, name: "gateway-http")
+var gateway = builder.AddContainer("gateway", gatewayImageName, gatewayImageTag)
+    .WithHttpEndpoint(targetPort: 8080, port: Ports.GatewayHostPort, name: "gateway-http")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WaitFor(jobManager);
 #pragma warning restore S1481
+
+Console.WriteLine($"   [INFO] Gateway will use Docker image: {gatewayImageName}:{gatewayImageTag}");
 
 Console.WriteLine("[INFO] All services configured successfully");
 Console.WriteLine($"   - Kafka: Port {Ports.KafkaExternalPort}");
@@ -113,15 +120,3 @@ Console.WriteLine($"   - Grafana: Port {Ports.GrafanaHostPort}");
 Console.WriteLine($"   - Gateway: Port {Ports.GatewayHostPort}");
 
 builder.Build().Run();
-
-static string FindGatewayJarPath(string repoRoot)
-{
-    var candidates = new[]
-    {
-        Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "bin", "Release", "net9.0", "flink-ir-runner-java17.jar"),
-        Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "bin", "Debug", "net9.0", "flink-ir-runner-java17.jar")
-    };
-
-    return candidates.FirstOrDefault(File.Exists)
-        ?? throw new FileNotFoundException("Gateway JAR not found. Please build FlinkDotNet.JobGateway first.");
-}
