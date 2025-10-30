@@ -439,6 +439,7 @@ dotnet_diagnostic.IDE0029.severity = warning # Use coalesce expression
 dotnet_diagnostic.IDE0030.severity = warning # Use coalesce expression
 dotnet_diagnostic.IDE0031.severity = warning # Use null propagation
 dotnet_diagnostic.IDE0045.severity = warning # Use conditional expression for assignment
+dotnet_style_prefer_conditional_expression_over_return = false:warning
 dotnet_diagnostic.IDE0046.severity = warning # Use conditional expression for return
 dotnet_diagnostic.IDE0074.severity = warning # Use compound assignment
 dotnet_diagnostic.IDE0075.severity = warning # Simplify conditional expression
