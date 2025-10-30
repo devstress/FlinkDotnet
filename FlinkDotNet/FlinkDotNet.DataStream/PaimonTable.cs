@@ -103,7 +103,7 @@ public class PaimonTable
 
         // Add table properties
         bool hasProperties = this._definition.Buckets.HasValue ||
-                             !string.IsNullOrEmpty(this._definition.ChangelogProducerMode) ||
+                             (!string.IsNullOrEmpty(this._definition.ChangelogProducerMode) && this._definition.ChangelogProducerMode != "none") ||
                              this._definition.TableProperties.Count > 0;
 
         if (hasProperties)
