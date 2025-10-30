@@ -1,6 +1,7 @@
 # FlinkDotNet
 
-**FlinkDotNet** is a comprehensive distributed message-oriented architecture that enables developers to build production-grade stream processing applications using Apache Flink 2.1, Apache Kafka, Temporal workflows, and Microsoft Aspire orchestration - all accessible through a native .NET SDK.
+**FlinkDotNet** is a .NET framework that enables developers to write Apache Flink 2.1 streaming jobs in C# and submit them to production Flink clusters.
+This repo also provides a comprehensive distributed message-oriented architecture that enables developers to build production-grade stream processing applications using Apache Flink 2.1, Apache Kafka, Temporal workflows, and Microsoft Aspire orchestration - all accessible through a native .NET SDK.
 
 <!-- Build & Test Status -->
 [![Build](https://github.com/devstress/FlinkDotnet/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/devstress/FlinkDotnet/actions/workflows/unit-tests.yml)
