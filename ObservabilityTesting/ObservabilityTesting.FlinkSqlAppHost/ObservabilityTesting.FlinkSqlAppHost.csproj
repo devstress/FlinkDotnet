@@ -29,8 +29,8 @@
     </ProjectReference>
   </ItemGroup>
 
-  <!-- Build Gateway Docker image before AppHost runs -->
-  <Target Name="BuildGatewayDockerImage" BeforeTargets="Build">
+  <!-- Build Gateway Docker image during 'dotnet build' only, not during 'dotnet run' -->
+  <Target Name="BuildGatewayDockerImage" BeforeTargets="Build" Condition="'$(DOTNET_RUNNING_IN_CONTAINER)' == '' AND '$(MSBuildRuntimeType)' == 'Core'">
     <PropertyGroup>
       <!-- Use forward slashes for cross-platform compatibility -->
       <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../'))</RepoRoot>
