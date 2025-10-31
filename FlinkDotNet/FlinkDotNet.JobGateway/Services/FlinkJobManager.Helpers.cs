@@ -720,9 +720,22 @@ public partial class FlinkJobManager
                 continue;
             }
 
-            if (existingEntries.Contains(entry.FullName))
+            // Skip JAR metadata files to avoid conflicts, but allow all other files including duplicates
+            // Connector JARs contain essential Kafka client classes that must be included
+            if (entry.FullName.Equals("META-INF/MANIFEST.MF", StringComparison.OrdinalIgnoreCase) ||
+                entry.FullName.StartsWith("META-INF/maven/", StringComparison.OrdinalIgnoreCase) ||
+                entry.FullName.Equals("META-INF/LICENSE", StringComparison.OrdinalIgnoreCase) ||
+                entry.FullName.Equals("META-INF/NOTICE", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
+            }
+
+            // If entry already exists, delete it first so connector JAR can override
+            if (existingEntries.Contains(entry.FullName))
+            {
+                ZipArchiveEntry? existingEntry = outputZip.Entries.FirstOrDefault(e =>
+                    e.FullName.Equals(entry.FullName, StringComparison.OrdinalIgnoreCase));
+                existingEntry?.Delete();
             }
 
             CopyZipEntry(entry, outputZip);

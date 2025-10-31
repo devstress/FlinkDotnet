@@ -34,9 +34,19 @@ if (!isLearningCourseMode)
 
 // 1. Kafka - Message broker for test data
 Console.WriteLine("[INFO] Configuring Kafka...");
-builder.AddKafka("kafka")
-    .WithKafkaUI()
+IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
     .WithLifetime(ContainerLifetime.Persistent);
+
+// Configure Kafka advertised listeners to use container name for inter-container communication
+// This fixes the issue where Flink jobs can't connect to Kafka because it advertises localhost
+// PLAINTEXT is for internal (container-to-container), PLAINTEXT_HOST is for external (host-to-container)
+kafka.WithEnvironment("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093,CONTROLLER://kafka:29093");
+kafka.WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT");
+kafka.WithEnvironment("KAFKA_LISTENERS", "PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:9093,CONTROLLER://0.0.0.0:29093");
+kafka.WithEnvironment("KAFKA_INTER_BROKER_LISTENER_NAME", "PLAINTEXT");
+kafka.WithEnvironment("KAFKA_CONTROLLER_LISTENER_NAMES", "CONTROLLER");
+
+kafka.WithKafkaUI();
 
 // Flink configuration file with correct jobmanager.rpc.address
 string flinkConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-config.yaml");
