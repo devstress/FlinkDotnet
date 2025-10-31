@@ -84,10 +84,18 @@ jobs:
           dotnet restore ObservabilityTesting/ObservabilityTesting.sln
           # Build AppHost first to trigger Gateway Docker image build via MSBuild target
           dotnet build ObservabilityTesting/ObservabilityTesting.FlinkSqlAppHost/ObservabilityTesting.FlinkSqlAppHost.csproj --configuration ${{ env.configuration }} --no-restore
+          echo "   Verifying Gateway Docker image was created..."
+          docker images | grep flinkdotnet-gateway
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: Gateway Docker image not found!"
+            echo "Available Docker images:"
+            docker images
+            exit 1
+          fi
+          echo "✅ Gateway Docker image created: flinkdotnet-gateway:local"
           # Build the rest of the solution
           dotnet build ObservabilityTesting/ObservabilityTesting.sln --configuration ${{ env.configuration }} --no-restore
-          # Verify Gateway Docker image was created
-          docker images | grep flinkdotnet-gateway || echo "⚠️ Warning: Gateway Docker image not found"
+          echo "✅ Build complete"
 
       - name: Run Observability Integration Tests
         timeout-minutes: 20
