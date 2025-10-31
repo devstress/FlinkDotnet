@@ -40,12 +40,13 @@ namespace FlinkDotNet.DataStream
             KafkaStartingOffsets startingOffsets,
             KafkaStoppingOffsets stoppingOffsets)
         {
-            _bootstrapServers = bootstrapServers;
-            _topics = topics;
-            _groupId = groupId;
+            this._bootstrapServers = bootstrapServers;
+            this._topics = topics;
+            this._groupId = groupId;
             // deserializer is used in ToDefinition() method for schema information
-            _startingOffsets = startingOffsets;
-            _stoppingOffsets = stoppingOffsets;
+            _ = deserializer; // Suppress unused parameter warning - will be used in future ToDefinition() implementation
+            this._startingOffsets = startingOffsets;
+            this._stoppingOffsets = stoppingOffsets;
         }
 
         /// <summary>
@@ -57,27 +58,27 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the bootstrap servers configuration.
         /// </summary>
-        public string BootstrapServers => _bootstrapServers;
+        public string BootstrapServers => this._bootstrapServers;
 
         /// <summary>
         /// Gets the list of topics to consume from.
         /// </summary>
-        public IReadOnlyList<string> Topics => _topics.AsReadOnly();
+        public IReadOnlyList<string> Topics => this._topics.AsReadOnly();
 
         /// <summary>
         /// Gets the consumer group ID (null for no group).
         /// </summary>
-        public string? GroupId => _groupId;
+        public string? GroupId => this._groupId;
 
         /// <summary>
         /// Gets the starting offsets strategy.
         /// </summary>
-        public KafkaStartingOffsets StartingOffsets => _startingOffsets;
+        public KafkaStartingOffsets StartingOffsets => this._startingOffsets;
 
         /// <summary>
         /// Gets the stopping offsets strategy (Bounded sources only).
         /// </summary>
-        public KafkaStoppingOffsets StoppingOffsets => _stoppingOffsets;
+        public KafkaStoppingOffsets StoppingOffsets => this._stoppingOffsets;
 
         /// <summary>
         /// Builder for Kafka sources.
@@ -98,7 +99,7 @@ namespace FlinkDotNet.DataStream
             /// <returns>This builder</returns>
             public KafkaSourceBuilder<TElement> SetBootstrapServers(string servers)
             {
-                _bootstrapServers = servers;
+                this._bootstrapServers = servers;
                 return this;
             }
 
@@ -109,7 +110,7 @@ namespace FlinkDotNet.DataStream
             /// <returns>This builder</returns>
             public KafkaSourceBuilder<TElement> SetTopic(string topic)
             {
-                _topics.Add(topic);
+                this._topics.Add(topic);
                 return this;
             }
 
@@ -120,7 +121,7 @@ namespace FlinkDotNet.DataStream
             /// <returns>This builder</returns>
             public KafkaSourceBuilder<TElement> SetTopics(params string[] topics)
             {
-                _topics.AddRange(topics);
+                this._topics.AddRange(topics);
                 return this;
             }
 
@@ -131,7 +132,7 @@ namespace FlinkDotNet.DataStream
             /// <returns>This builder</returns>
             public KafkaSourceBuilder<TElement> SetGroupId(string groupId)
             {
-                _groupId = groupId;
+                this._groupId = groupId;
                 return this;
             }
 
@@ -142,7 +143,7 @@ namespace FlinkDotNet.DataStream
             /// <returns>This builder</returns>
             public KafkaSourceBuilder<TElement> SetDeserializer(DeserializationSchema<TElement> schema)
             {
-                _deserializer = schema;
+                this._deserializer = schema;
                 return this;
             }
 
@@ -153,7 +154,7 @@ namespace FlinkDotNet.DataStream
             /// <returns>This builder</returns>
             public KafkaSourceBuilder<TElement> SetStartingOffsets(KafkaStartingOffsets startingOffsets)
             {
-                _startingOffsets = startingOffsets;
+                this._startingOffsets = startingOffsets;
                 return this;
             }
 
@@ -164,7 +165,7 @@ namespace FlinkDotNet.DataStream
             /// <returns>This builder</returns>
             public KafkaSourceBuilder<TElement> SetStoppingOffsets(KafkaStoppingOffsets stoppingOffsets)
             {
-                _stoppingOffsets = stoppingOffsets;
+                this._stoppingOffsets = stoppingOffsets;
                 return this;
             }
 
@@ -175,22 +176,28 @@ namespace FlinkDotNet.DataStream
             /// <exception cref="InvalidOperationException">If required configuration is missing</exception>
             public KafkaSource<TElement> Build()
             {
-                if (string.IsNullOrWhiteSpace(_bootstrapServers))
+                if (string.IsNullOrWhiteSpace(this._bootstrapServers))
+                {
                     throw new InvalidOperationException("Bootstrap servers must be set");
+                }
 
-                if (_topics.Count == 0)
+                if (this._topics.Count == 0)
+                {
                     throw new InvalidOperationException("At least one topic must be set");
+                }
 
-                if (_deserializer == null)
+                if (this._deserializer == null)
+                {
                     throw new InvalidOperationException("Deserializer must be set");
+                }
 
                 return new KafkaSource<TElement>(
-                    _bootstrapServers,
-                    _topics,
-                    _groupId,
-                    _deserializer,
-                    _startingOffsets,
-                    _stoppingOffsets);
+                    this._bootstrapServers,
+                    this._topics,
+                    this._groupId,
+                    this._deserializer,
+                    this._startingOffsets,
+                    this._stoppingOffsets);
             }
         }
     }
