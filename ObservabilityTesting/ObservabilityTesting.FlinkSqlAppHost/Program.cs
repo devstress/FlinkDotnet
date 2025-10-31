@@ -23,11 +23,8 @@ Console.WriteLine("[INFO] Memory resources validated\n");
 IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 string repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
 
-// ObservabilityTesting ALWAYS runs with full observability stack (Prometheus + Grafana)
-// This is required for observability tests to pass
-bool isLearningCourseMode = true; // Always true for ObservabilityTesting
 Console.WriteLine("🔍 Running in OBSERVABILITY TESTING mode");
-Console.WriteLine("   ✅ Prometheus and Grafana ENABLED (required for observability tests)");
+Console.WriteLine("   ✅ Full stack enabled: Kafka + Flink + Prometheus + Grafana + JobGateway");
 
 // 1. Kafka - Message broker for test data
 Console.WriteLine("[INFO] Configuring Kafka...");
@@ -124,32 +121,25 @@ IResourceBuilder<ContainerResource> sqlGateway = builder.AddContainer("flink-sql
 
 Console.WriteLine("   [INFO] SQL Gateway configured on port 8083");
 
-// 5. Prometheus - Metrics collection (LEARNINGCOURSE mode only)
-if (isLearningCourseMode)
-{
-    Console.WriteLine("[INFO] Configuring Prometheus...");
-    string prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
-    IResourceBuilder<ContainerResource> prometheus = builder.AddContainer("prometheus", "prom/prometheus", LatestTag)
-        .WithHttpEndpoint(targetPort: Ports.PrometheusHostPort, name: "prometheus-http")
-        .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true)
-        .WithLifetime(ContainerLifetime.Persistent);
+// 5. Prometheus - Metrics collection
+Console.WriteLine("[INFO] Configuring Prometheus...");
+string prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
+IResourceBuilder<ContainerResource> prometheus = builder.AddContainer("prometheus", "prom/prometheus", LatestTag)
+    .WithHttpEndpoint(targetPort: Ports.PrometheusHostPort, name: "prometheus-http")
+    .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true)
+    .WithLifetime(ContainerLifetime.Persistent);
 
-    // 6. Grafana - Metrics visualization
-    Console.WriteLine("[INFO] Configuring Grafana...");
+// 6. Grafana - Metrics visualization
+Console.WriteLine("[INFO] Configuring Grafana...");
 
-    builder.AddContainer("grafana", "grafana/grafana", LatestTag)
-        .WithHttpEndpoint(targetPort: Ports.GrafanaHostPort, name: "grafana-http")
-        .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
-        .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
-        .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
-        .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
-        .WaitFor(prometheus)
-        .WithLifetime(ContainerLifetime.Persistent);
-}
-else
-{
-    Console.WriteLine("[INFO] Skipping Prometheus and Grafana (LEARNINGCOURSE mode disabled)");
-}
+builder.AddContainer("grafana", "grafana/grafana", LatestTag)
+    .WithHttpEndpoint(targetPort: Ports.GrafanaHostPort, name: "grafana-http")
+    .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
+    .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
+    .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
+    .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
+    .WaitFor(prometheus)
+    .WithLifetime(ContainerLifetime.Persistent);
 
 // 7. FlinkDotNet JobGateway - FlinkDotNet job submission endpoint (using pre-built Docker image)
 Console.WriteLine("[INFO] Configuring FlinkDotNet JobGateway from pre-built Docker image...");
@@ -176,21 +166,9 @@ Console.WriteLine($"   [INFO] FlinkDotNet JobGateway will use pre-built Docker i
 
 Console.WriteLine("[INFO] All services configured successfully");
 Console.WriteLine($"   - Kafka: Port {Ports.KafkaExternalPort}");
-Console.WriteLine("   - Flink JobManager: Port 8081");
-Console.WriteLine("   - Flink TaskManager: 8 task slots");
-Console.WriteLine("   - Flink SQL Gateway: Port 8083");
-Console.WriteLine("   - FlinkDotNet JobGateway: Port 8086");
-if (isLearningCourseMode)
-{
-    Console.WriteLine($"   - Prometheus: Port {Ports.PrometheusHostPort}");
-    Console.WriteLine($"   - Grafana: Port {Ports.GrafanaHostPort}");
-}
-else
-{
-    Console.WriteLine("   ⚠️  Prometheus and Grafana: DISABLED (set LEARNINGCOURSE=true to enable)");
-}
 Console.WriteLine("   - Flink JobManager: Port 8081, Metrics: 9250");
-Console.WriteLine("   - Flink TaskManager: Metrics: 9251");
+Console.WriteLine("   - Flink TaskManager: 8 task slots, Metrics: 9251");
+Console.WriteLine("   - Flink SQL Gateway: Port 8083");
 Console.WriteLine($"   - Prometheus: Port {Ports.PrometheusHostPort}");
 Console.WriteLine($"   - Grafana: Port {Ports.GrafanaHostPort}");
 Console.WriteLine("   - FlinkDotNet JobGateway: Dynamic port (container port 8086)");
