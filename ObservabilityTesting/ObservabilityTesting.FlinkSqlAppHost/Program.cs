@@ -54,7 +54,8 @@ IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-job
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
     .WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true)  // Mount proper config
     .WithEntrypoint("/bin/bash")
-    .WithArgs("-c", "bin/jobmanager.sh start && tail -f /dev/null");
+    .WithArgs("-c", "bin/jobmanager.sh start && tail -f /dev/null")
+    .WithLifetime(ContainerLifetime.Persistent);
 
 if (File.Exists(metricsJarPath))
 {
@@ -71,7 +72,8 @@ IResourceBuilder<ContainerResource> taskManager = builder.AddContainer("flink-ta
     .WithEnvironment("FLINK_PROPERTIES", "metrics.reporter.prom.port: 9251\n")  // Override metrics port for TaskManager
     .WithEntrypoint("/bin/bash")
     .WithArgs("-c", "bin/taskmanager.sh start && tail -f /dev/null")
-    .WaitFor(jobManager);
+    .WaitFor(jobManager)
+    .WithLifetime(ContainerLifetime.Persistent);
 
 if (File.Exists(metricsJarPath))
 {
@@ -110,7 +112,8 @@ IResourceBuilder<ContainerResource> sqlGateway = builder.AddContainer("flink-sql
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", baseSqlGatewayFlinkProperties)
     .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground")
-    .WaitFor(jobManager);
+    .WaitFor(jobManager)
+    .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("   [INFO] SQL Gateway configured on port 8083");
 
@@ -121,7 +124,8 @@ if (isLearningCourseMode)
     string prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
     IResourceBuilder<ContainerResource> prometheus = builder.AddContainer("prometheus", "prom/prometheus", LatestTag)
         .WithHttpEndpoint(targetPort: Ports.PrometheusHostPort, name: "prometheus-http")
-        .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true);
+        .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true)
+        .WithLifetime(ContainerLifetime.Persistent);
 
     // 6. Grafana - Metrics visualization
     Console.WriteLine("[INFO] Configuring Grafana...");
@@ -132,7 +136,8 @@ if (isLearningCourseMode)
         .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
         .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
         .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
-        .WaitFor(prometheus);
+        .WaitFor(prometheus)
+        .WithLifetime(ContainerLifetime.Persistent);
 }
 else
 {
@@ -156,7 +161,8 @@ builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WithEnvironment("Metrics__Prometheus__Port", "9253")     // Metrics on port 9253
     .WithEnvironment("Metrics__Prometheus__Path", "/metrics") // Metrics path
     .WaitFor(jobManager)
-    .WaitFor(sqlGateway);
+    .WaitFor(sqlGateway)
+    .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine($"   [INFO] FlinkDotNet JobGateway will use pre-built Docker image: {gatewayImageTag}");
 
