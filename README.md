@@ -132,18 +132,18 @@ FlinkDotNet provides **100% feature parity** with Apache Flink 1.0-2.1, implemen
 
 ### Version-by-Version Coverage
 
-| Flink Version | Release Date | Coverage | Key Features Implemented | Integration Tests |
-|---------------|--------------|----------|-------------------------|-------------------|
-| **1.0-1.9** | 2016-2019 | ✅ **100%** | DataStream API, Windows, State Management, CEP, Kafka Integration | [LocalTesting.IntegrationTests](LocalTesting/LocalTesting.IntegrationTests/) |
-| **1.10** | Feb 2020 | ✅ **100%** | Table API, SQL Gateway, **Catalog API (WI14)** | [CatalogTests.cs](LocalTesting/LocalTesting.IntegrationTests/) (54 tests) |
-| **1.11** | Jul 2020 | ✅ **100%** | DDL Support, Change Data Capture | [GatewayAllPatternsTests.cs](LocalTesting/LocalTesting.IntegrationTests/) |
-| **1.12** | Dec 2020 | ✅ **100%** | **Unified Source API/FLIP-27 (WI15)**, SQL Connectors | [UnifiedSource.cs](FlinkDotNet/FlinkDotNet.DataStream/) |
-| **1.13** | May 2021 | ✅ **100%** | SQL Functions, Window TVF | [GatewayAllPatternsTests.cs](LocalTesting/LocalTesting.IntegrationTests/) |
-| **1.14** | Nov 2021 | ✅ **100%** | SQL Client, Batch SQL | [GatewayAllPatternsTests.cs](LocalTesting/LocalTesting.IntegrationTests/) |
-| **1.15-1.18** | 2022-2023 | ✅ **100%** | **Table Store/Apache Paimon (WI13)**, Advanced Table Features | [PaimonIntegrationTests.cs](LocalTesting/LocalTesting.IntegrationTests/) |
-| **1.19** | Mar 2024 | ✅ **100%** | Performance Improvements, Checkpoint Optimizations | [GatewayAllPatternsTests.cs](LocalTesting/LocalTesting.IntegrationTests/) |
-| **1.20** | Oct 2024 | ✅ **100%** | **Unified Sink v2 (WI6), Materialized Tables (WI7)** | [UnifiedSinkV2ConsolidatedTests.cs](LocalTesting/LocalTesting.IntegrationTests/) (5 tests), [MaterializedTableTests.cs](LocalTesting/LocalTesting.IntegrationTests/) (5 tests) |
-| **2.1** | Jul 2025 | ✅ **100%** | **AI/ML Integration (WI8-WI9), VARIANT Type (WI10), PTFs (WI10), Performance & Format (WI12, WI16)** | [ModelTests.cs](LocalTesting/LocalTesting.IntegrationTests/), [PerformanceFormatTests.cs](LocalTesting/LocalTesting.IntegrationTests/), [PerformanceConfiguration.cs](FlinkDotNet/FlinkDotNet.DataStream/) |
+| Flink Version | Release Date | Coverage | Key Features Implemented |
+|---------------|--------------|----------|-------------------------|
+| **1.0-1.9** | 2016-2019 | ✅ **100%** | DataStream API, Windows, State Management, CEP, Kafka Integration |
+| **1.10** | Feb 2020 | ✅ **100%** | Table API, SQL Gateway, Catalog API |
+| **1.11** | Jul 2020 | ✅ **100%** | DDL Support, Change Data Capture |
+| **1.12** | Dec 2020 | ✅ **100%** | Unified Source API/FLIP-27, SQL Connectors |
+| **1.13** | May 2021 | ✅ **100%** | SQL Functions, Window TVF |
+| **1.14** | Nov 2021 | ✅ **100%** | SQL Client, Batch SQL |
+| **1.15-1.18** | 2022-2023 | ✅ **100%** | Table Store/Apache Paimon, Advanced Table Features |
+| **1.19** | Mar 2024 | ✅ **100%** | Performance Improvements, Checkpoint Optimizations |
+| **1.20** | Oct 2024 | ✅ **100%** | Unified Sink v2 (WI6), Materialized Tables |
+| **2.1** | Jul 2025 | ✅ **100%** | AI/ML Integration, VARIANT Type, PTFs, Performance & Format |
 
 ### Feature Categories (21/21 Complete - 100% 🎉)
 
