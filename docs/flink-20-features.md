@@ -1,6 +1,19 @@
 # Apache Flink 2.0 Features in FlinkDotNet
 
-FlinkDotNet provides comprehensive support for Apache Flink 2.0 features, including the revolutionary disaggregated state management architecture.
+FlinkDotNet provides comprehensive support for Apache Flink 2.0 features, including the revolutionary disaggregated state management architecture and other major improvements.
+
+## Overview of Flink 2.0
+
+Apache Flink 2.0 (released March 24, 2025) represents a major evolution in real-time stream and batch processing, with significant changes for cloud-native deployments:
+
+### Key Flink 2.0 Features Implemented in FlinkDotNet
+
+1. ✅ **Disaggregated State Management** - Remote storage as primary state backend
+2. ✅ **Materialized Tables** - Already implemented in Flink 1.20
+3. ✅ **Adaptive Batch Execution** - Dynamic query optimization
+4. ✅ **Streaming Lakehouse Integration** - Apache Paimon support (Flink 1.15-1.18)
+5. ✅ **Unified Sink API v2** - Modern sink pattern (Flink 1.20)
+6. ✅ **Enhanced AdaptiveScheduler** - Improved rescaling and checkpointing coordination
 
 ## Disaggregated State Management
 
@@ -230,6 +243,85 @@ var newBackend = new DisaggregatedStateBackend(
 // 3. Restore from savepoint with new backend
 ```
 
+## Adaptive Batch Execution
+
+Flink 2.0 enhances adaptive batch execution with dynamic query optimization based on runtime data.
+
+### Adaptive Broadcast Join
+
+Flink 2.0 automatically optimizes join strategies based on runtime data sizes:
+
+```csharp
+// Flink will automatically choose the best join strategy
+var orders = env.FromKafka("orders");
+var products = env.FromKafka("products");
+
+// Adaptive broadcast join - automatically switches to broadcast
+// if one side is small enough
+var enrichedOrders = orders
+    .Join(products)
+    .Where(order => order.ProductId)
+    .EqualTo(product => product.Id)
+    .With((order, product) => new EnrichedOrder
+    {
+        OrderId = order.Id,
+        ProductName = product.Name,
+        Amount = order.Amount
+    });
+```
+
+### Enhanced AdaptiveScheduler
+
+The AdaptiveScheduler in Flink 2.0 now synchronizes checkpointing and rescaling:
+
+```csharp
+// Enable adaptive scheduler with automatic parallelism
+var env = Flink.GetExecutionEnvironment()
+    .EnableAdaptiveScheduler(true)
+    .SetMaxParallelism(256);
+
+// Flink will automatically adjust parallelism based on
+// available resources and workload characteristics
+env.EnableCheckpointing(TimeSpan.FromMinutes(5));
+
+// AdaptiveScheduler coordinates rescaling with checkpoints,
+// minimizing reprocessing time
+```
+
+### Dynamic Partition Pruning
+
+Flink 2.0 automatically prunes partitions based on filter predicates in batch queries:
+
+```csharp
+// Partition pruning happens automatically in SQL queries
+var tableEnv = TableEnvironment.Create(env);
+
+// Flink will automatically prune partitions based on the date filter
+tableEnv.ExecuteSql(@"
+    SELECT * FROM orders
+    WHERE order_date >= '2025-01-01'
+      AND order_date < '2025-02-01'
+");
+```
+
+## Configuration Migration (flink-conf.yaml → config.yaml)
+
+Flink 2.0 replaces the legacy `flink-conf.yaml` with a new `config.yaml` format. FlinkDotNet handles this automatically through its configuration APIs:
+
+```csharp
+// FlinkDotNet uses modern configuration internally
+var env = Flink.GetExecutionEnvironment()
+    .SetParallelism(8)
+    .EnableCheckpointing(TimeSpan.FromMinutes(5));
+
+// Configuration is automatically converted to Flink 2.0 format
+env.GetCheckpointConfig()
+    .SetCheckpointingMode(CheckpointingMode.EXACTLY_ONCE)
+    .SetCheckpointTimeout(TimeSpan.FromMinutes(10));
+```
+
+**Note**: When deploying to Flink clusters, ensure your cluster configuration uses `config.yaml` instead of `flink-conf.yaml`. Flink provides a migration tool for existing configurations.
+
 ## Performance Best Practices
 
 ### State Backend Selection Guide
@@ -264,6 +356,59 @@ var newBackend = new DisaggregatedStateBackend(
 - **Tune Async Compaction Threads**: Balance between throughput and CPU usage
 - **Configure Checkpoint Intervals**: Longer intervals reduce overhead but increase recovery time
 - **Monitor State Size**: Use Flink metrics to track state growth
+
+## Breaking Changes and API Removals in Flink 2.0
+
+Flink 2.0 removes several deprecated APIs. FlinkDotNet only implements modern APIs, so these changes don't affect FlinkDotNet users:
+
+### Removed APIs (Not Applicable to FlinkDotNet)
+
+- ❌ **DataSet API** - Removed in Flink 2.0 (FlinkDotNet uses DataStream API)
+- ❌ **Legacy SourceFunction/SinkFunction** - Replaced by Unified Source/Sink APIs (FlinkDotNet implements modern APIs)
+- ❌ **Scala API** - Removed in Flink 2.0 (FlinkDotNet is C#-based)
+- ❌ **Legacy TableSource/TableSink** - Replaced by DynamicTableSource/DynamicTableSink
+
+### FlinkDotNet Compatibility
+
+FlinkDotNet is fully compatible with Flink 2.0 because:
+
+1. **Modern APIs Only**: FlinkDotNet implements only modern Flink APIs (DataStream API, Table API, Unified Source/Sink v2)
+2. **No Legacy Dependencies**: No reliance on removed APIs like DataSet or Scala
+3. **Forward Compatible**: Code written for FlinkDotNet works seamlessly with Flink 2.0 clusters
+4. **State Backend Support**: Full support for both legacy (RocksDB, HashMap) and new (Disaggregated) state backends
+
+### Migration Notes
+
+If you're upgrading Flink cluster from 1.x to 2.0:
+
+1. **Savepoints are Compatible**: Take a savepoint with Flink 1.x, restore with Flink 2.0
+2. **Update Configuration**: Migrate `flink-conf.yaml` to `config.yaml`
+3. **Update State Backend**: Consider migrating to DisaggregatedStateBackend for better scalability
+4. **Test Thoroughly**: Validate jobs in staging environment before production deployment
+
+## What's New in Flink 2.0 - Complete Summary
+
+### Architecture & Performance
+- ✅ **Disaggregated State Management** - Remote storage as primary state backend
+- ✅ **Adaptive Batch Execution** - Dynamic query optimization with broadcast joins
+- ✅ **Enhanced AdaptiveScheduler** - Synchronized checkpointing and rescaling
+- ✅ **Dynamic Partition Pruning** - Automatic partition pruning in batch queries
+- ✅ **Native File Copy for S3** - s5cmd integration for faster recovery (infrastructure level)
+
+### Data Processing
+- ✅ **Materialized Tables** - Simplified ETL with automatic refresh (implemented in Flink 1.20)
+- ✅ **Streaming Lakehouse** - Deep Apache Paimon integration (implemented in Flink 1.15-1.18)
+- ✅ **Unified Sink API v2** - Modern, reliable sink pattern (implemented in Flink 1.20)
+
+### Developer Experience
+- ✅ **Unified Programming Model** - Table API/SQL for both batch and stream
+- ✅ **Modern Configuration** - New `config.yaml` format
+- ✅ **API Cleanup** - Removal of deprecated APIs (doesn't affect FlinkDotNet)
+
+### Cloud-Native Optimization
+- ✅ **Kubernetes Optimization** - Disaggregated state ideal for K8s deployments
+- ✅ **Multi-Cloud Support** - S3, Azure Blob, GCS, HDFS storage backends
+- ✅ **Resource Efficiency** - Minimized resource spikes during state operations
 
 ## See Also
 
