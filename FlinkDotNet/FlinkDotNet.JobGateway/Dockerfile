@@ -18,16 +18,12 @@ ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 WORKDIR /src
 
-# Copy project files
-COPY ["FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj", "FlinkDotNet/FlinkDotNet.JobGateway/"]
-COPY ["FlinkDotNet/Flink.JobBuilder/Flink.JobBuilder.csproj", "FlinkDotNet/Flink.JobBuilder/"]
-
-# Restore dependencies
-RUN dotnet restore "FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj"
-
 # Copy source code (including FlinkIRRunner for Java build)
 COPY FlinkDotNet/ FlinkDotNet/
 COPY FlinkIRRunner/ FlinkIRRunner/
+
+# Restore dependencies
+RUN dotnet restore "FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj"
 
 # Build
 WORKDIR "/src/FlinkDotNet/FlinkDotNet.JobGateway"

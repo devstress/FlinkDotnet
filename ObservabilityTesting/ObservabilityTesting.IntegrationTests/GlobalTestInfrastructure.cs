@@ -67,9 +67,9 @@ public class GlobalTestInfrastructure
         try
         {
             _previousLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE");
-            // CRITICAL: ObservabilityTesting requires LEARNINGCOURSE=true for Prometheus/Grafana stack
-            // Override the default LocalTesting behavior of disabling LEARNINGCOURSE mode
-            Console.WriteLine("✅ Setting LEARNINGCOURSE=true for ObservabilityTesting (requires Prometheus/Grafana)");
+            // ObservabilityTesting ALWAYS runs in LEARNINGCOURSE mode (Prometheus/Grafana stack required)
+            // No environment variable check needed - we force it to true
+            Console.WriteLine("✅ Setting LEARNINGCOURSE=true for ObservabilityTesting (always enabled)");
             Environment.SetEnvironmentVariable("LEARNINGCOURSE", "true");
 
             // Clean up test-logs directory from previous test runs
