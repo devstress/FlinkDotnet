@@ -23,14 +23,11 @@ Console.WriteLine("[INFO] Memory resources validated\n");
 IDistributedApplicationBuilder builder = DistributedApplication.CreateBuilder(args);
 string repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
 
-// Detect LEARNINGCOURSE mode for conditional Prometheus/Grafana setup
-bool isLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
-Console.WriteLine($"🔍 Running in {(isLearningCourseMode ? "LEARNINGCOURSE" : "STANDARD")} mode");
-if (!isLearningCourseMode)
-{
-    Console.WriteLine("   ℹ️  Prometheus and Grafana will be DISABLED to reduce resource usage");
-    Console.WriteLine("   ℹ️  Set LEARNINGCOURSE=true to enable full observability stack");
-}
+// ObservabilityTesting ALWAYS runs with full observability stack (Prometheus + Grafana)
+// This is required for observability tests to pass
+bool isLearningCourseMode = true; // Always true for ObservabilityTesting
+Console.WriteLine("🔍 Running in OBSERVABILITY TESTING mode");
+Console.WriteLine("   ✅ Prometheus and Grafana ENABLED (required for observability tests)");
 
 // 1. Kafka - Message broker for test data
 Console.WriteLine("[INFO] Configuring Kafka...");
