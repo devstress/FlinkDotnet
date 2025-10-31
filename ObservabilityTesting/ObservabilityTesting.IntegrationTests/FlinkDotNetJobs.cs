@@ -55,6 +55,26 @@ public static class FlinkDotNetJobs
     }
 
     /// <summary>
+    /// Creates a JobDefinition for an uppercase job (for Gateway submission)
+    /// </summary>
+    public static JobDefinition CreateUppercaseJobDefinition(
+        string inputTopic,
+        string outputTopic,
+        string kafka,
+        string jobName)
+    {
+        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        environment.FromKafka(inputTopic, kafka, groupId: "uppercase-job", startingOffsets: "earliest")
+            .Map(s => s.ToUpperInvariant())
+            .SinkToKafka(outputTopic, kafka);
+
+        // Get the JobDefinition without executing
+        var jobDefinition = environment.GetJobDefinition(jobName);
+        return jobDefinition;
+    }
+
+    /// <summary>
     /// Creates a DataStream job with filtering
     /// </summary>
     public static async Task<JobSubmissionResult> CreateFilterJob(
@@ -78,6 +98,24 @@ public static class FlinkDotNetJobs
             JobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
+    }
+
+    /// <summary>
+    /// Creates a JobDefinition for a filter job (for Gateway submission)
+    /// </summary>
+    public static JobDefinition CreateFilterJobDefinition(
+        string inputTopic,
+        string outputTopic,
+        string kafka,
+        string jobName)
+    {
+        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
+
+        environment.FromKafka(inputTopic, kafka, groupId: "filter-job", startingOffsets: "earliest")
+            .Filter(s => !string.IsNullOrWhiteSpace(s))
+            .SinkToKafka(outputTopic, kafka);
+
+        return environment.GetJobDefinition(jobName);
     }
 
     /// <summary>

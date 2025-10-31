@@ -70,10 +70,10 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine($"   Output topic: {outputTopic}");
             TestContext.WriteLine($"   Expected messages: {expectedMessageCount}");
             
-            // Create and submit job
-            var job = FlinkDotNetJobs.CreateUppercaseJob(inputTopic, outputTopic, KafkaConnectionString!, "gateway-metrics-test", cts.Token);
+            // Create and submit job via Gateway
+            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaConnectionString!, "gateway-metrics-test");
             var gatewayEndpoint = await GetGatewayEndpointAsync();
-            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, job, cts.Token);
+            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
             TestContext.WriteLine($"✅ Job submitted: {jobId}");
             
@@ -220,9 +220,9 @@ public class ObservabilityTests : LocalTestingTestBase
             var outputTopic = $"observability-test4-output-{Guid.NewGuid():N}";
             
             // Create job with slower processing to potentially trigger backpressure
-            var job = FlinkDotNetJobs.CreateFilterJob(inputTopic, outputTopic, KafkaConnectionString!, "backpressure-test", cts.Token);
+            var jobDefinition = FlinkDotNetJobs.CreateFilterJobDefinition(inputTopic, outputTopic, KafkaConnectionString!, "backpressure-test");
             var gatewayEndpoint = await GetGatewayEndpointAsync();
-            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, job, cts.Token);
+            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
             TestContext.WriteLine($"✅ Job submitted: {jobId}");
             
@@ -297,8 +297,8 @@ public class ObservabilityTests : LocalTestingTestBase
             var inputTopic = $"observability-e2e-input-{Guid.NewGuid():N}";
             var outputTopic = $"observability-e2e-output-{Guid.NewGuid():N}";
             
-            var job = FlinkDotNetJobs.CreateUppercaseJob(inputTopic, outputTopic, KafkaConnectionString!, "e2e-observability", cts.Token);
-            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, job, cts.Token);
+            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaConnectionString!, "e2e-observability");
+            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
             TestContext.WriteLine($"✅ Step 1: Job submitted ({jobId})");
             
@@ -489,7 +489,7 @@ public class ObservabilityTests : LocalTestingTestBase
             throw new InvalidOperationException("HTTP client not initialized");
         }
         
-        var response = await _httpClient.PostAsJsonAsync($"{gatewayEndpoint}/v1/jobs", job, ct);
+        var response = await _httpClient.PostAsJsonAsync($"{gatewayEndpoint}api/v1/jobs/submit", job, ct);
         response.EnsureSuccessStatusCode();
         
         var result = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
