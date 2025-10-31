@@ -236,7 +236,7 @@ public class ObservabilityTests : LocalTestingTestBase
             var outputTopic = $"observability-test4-output-{Guid.NewGuid():N}";
             
             // Create job with slower processing to potentially trigger backpressure
-            var jobDefinition = FlinkDotNetJobs.CreateFilterJobDefinition(inputTopic, outputTopic, KafkaConnectionString!, "backpressure-test");
+            var jobDefinition = FlinkDotNetJobs.CreateFilterJobDefinition(inputTopic, outputTopic, KafkaFlinkBootstrapServers!, "backpressure-test");
             var gatewayEndpoint = await GetGatewayEndpointAsync();
             var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
@@ -313,7 +313,7 @@ public class ObservabilityTests : LocalTestingTestBase
             var inputTopic = $"observability-e2e-input-{Guid.NewGuid():N}";
             var outputTopic = $"observability-e2e-output-{Guid.NewGuid():N}";
             
-            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaConnectionString!, "e2e-observability");
+            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaFlinkBootstrapServers!, "e2e-observability");
             var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
             TestContext.WriteLine($"✅ Step 1: Job submitted ({jobId})");
