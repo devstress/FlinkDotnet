@@ -769,6 +769,11 @@ public class GlobalTestInfrastructure
     private static string ExtractKafkaEndpointFromPorts(string kafkaContainers)
     {
         var lines = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        
+        // Cache container name and port for debugging
+        string? discoveredContainer = null;
+        string? discoveredPort = null;
+        
         foreach (var line in lines)
         {
             // Parse format: "container-name|port-mappings"
@@ -794,13 +799,22 @@ public class GlobalTestInfrastructure
             var match = System.Text.RegularExpressions.Regex.Match(ports, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9093");
             if (match.Success)
             {
-                var port = match.Groups[1].Value;
-                Console.WriteLine($"🔍 Found Kafka port mapping for {containerName}: host {port} -> container 9093");
-                return $"localhost:{port}";
+                discoveredPort = match.Groups[1].Value;
+                discoveredContainer = containerName;
+                
+                Console.WriteLine($"✅ Discovered Kafka endpoint:");
+                Console.WriteLine($"   Container Name: {containerName}");
+                Console.WriteLine($"   Host Port: {discoveredPort}");
+                Console.WriteLine($"   Container Port: 9093");
+                Console.WriteLine($"   Full Endpoint: localhost:{discoveredPort}");
+                Console.WriteLine($"   Full Port Mapping: {ports}");
+                
+                return $"localhost:{discoveredPort}";
             }
         }
 
-        throw new InvalidOperationException($"Could not determine Kafka endpoint from Docker/Podman ports: {kafkaContainers}");
+        throw new InvalidOperationException($"Could not determine Kafka endpoint from Docker/Podman ports: {kafkaContainers}\n" +
+                                          $"Searched containers: {string.Join(", ", lines.Select(l => l.Split('|')[0]))}");
     }
 
     /// <summary>
