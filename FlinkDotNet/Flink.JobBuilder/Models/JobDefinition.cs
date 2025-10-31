@@ -1110,7 +1110,7 @@ namespace Flink.JobBuilder.Models
     public class StateBackendConfig
     {
         /// <summary>
-        /// State backend type: "rocksdb", "hashmap", "filesystem"
+        /// State backend type: "rocksdb", "hashmap", "filesystem", "disaggregated" (Flink 2.0+)
         /// </summary>
         public string Type { get; set; } = "rocksdb";
 
@@ -1123,7 +1123,7 @@ namespace Flink.JobBuilder.Models
         }
 
         /// <summary>
-        /// Enable incremental checkpointing (RocksDB only)
+        /// Enable incremental checkpointing (RocksDB and Disaggregated backends)
         /// </summary>
         public bool? IncrementalCheckpoints
         {
@@ -1152,6 +1152,39 @@ namespace Flink.JobBuilder.Models
         public Dictionary<string, object>? ColumnFamilyOptions
         {
             get; init;
+        }
+
+        /// <summary>
+        /// Storage type for disaggregated state backend (Flink 2.0+): "s3", "hdfs", "azure_blob", "gcs"
+        /// </summary>
+        public string? StorageType
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Storage path for disaggregated state backend (Flink 2.0+)
+        /// Examples: s3://bucket/path, hdfs://namenode/path, wasbs://container@account/path, gs://bucket/path
+        /// </summary>
+        public string? StoragePath
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Enable state compression for disaggregated state backend (Flink 2.0+)
+        /// </summary>
+        public bool? EnableCompression
+        {
+            get; set;
+        }
+
+        /// <summary>
+        /// Number of async compaction threads for disaggregated state backend (Flink 2.0+)
+        /// </summary>
+        public int? AsyncCompactionThreads
+        {
+            get; set;
         }
     }
 

@@ -722,6 +722,426 @@ namespace FlinkDotNet.DataStream.Tests
     }
 
     [TestFixture]
+    public class DisaggregatedStateBackendTests
+    {
+        #region Constructor Tests
+
+        [Test]
+        public void Constructor_Default_CreatesBackendWithDefaultSettings()
+        {
+            // Act
+            var backend = new DisaggregatedStateBackend();
+
+            // Assert
+            Assert.That(backend, Is.Not.Null);
+            Assert.That(backend.GetName(), Is.EqualTo("DisaggregatedStateBackend"));
+            Assert.That(backend.SupportsIncrementalCheckpointing(), Is.True);
+            Assert.That(backend.IsIncrementalCheckpointingEnabled(), Is.True);
+            Assert.That(backend.GetStorageType(), Is.EqualTo(DisaggregatedStorageType.S3));
+            Assert.That(backend.IsStateCompressionEnabled(), Is.True);
+            Assert.That(backend.GetAsyncCompactionThreads(), Is.EqualTo(4));
+            Assert.That(backend.GetStoragePath(), Is.Null);
+        }
+
+        [Test]
+        public void Constructor_WithStorageType_SetsStorageType()
+        {
+            // Act
+            var backend = new DisaggregatedStateBackend(DisaggregatedStorageType.HDFS);
+
+            // Assert
+            Assert.That(backend.GetStorageType(), Is.EqualTo(DisaggregatedStorageType.HDFS));
+        }
+
+        [Test]
+        public void Constructor_WithStorageTypeAndPath_SetsStorageTypeAndPath()
+        {
+            // Arrange
+            string path = "s3://my-bucket/flink-state";
+
+            // Act
+            var backend = new DisaggregatedStateBackend(DisaggregatedStorageType.S3, path);
+
+            // Assert
+            Assert.That(backend.GetStorageType(), Is.EqualTo(DisaggregatedStorageType.S3));
+            Assert.That(backend.GetStoragePath(), Is.EqualTo(path));
+        }
+
+        #endregion
+
+        #region SetStorageType Tests
+
+        [Test]
+        public void SetStorageType_WithS3_SetsStorageType()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act
+            var result = backend.SetStorageType(DisaggregatedStorageType.S3);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetStorageType(), Is.EqualTo(DisaggregatedStorageType.S3));
+        }
+
+        [Test]
+        public void SetStorageType_WithHDFS_SetsStorageType()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act
+            var result = backend.SetStorageType(DisaggregatedStorageType.HDFS);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetStorageType(), Is.EqualTo(DisaggregatedStorageType.HDFS));
+        }
+
+        [Test]
+        public void SetStorageType_WithAzureBlob_SetsStorageType()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act
+            var result = backend.SetStorageType(DisaggregatedStorageType.AZURE_BLOB);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetStorageType(), Is.EqualTo(DisaggregatedStorageType.AZURE_BLOB));
+        }
+
+        [Test]
+        public void SetStorageType_WithGCS_SetsStorageType()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act
+            var result = backend.SetStorageType(DisaggregatedStorageType.GCS);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetStorageType(), Is.EqualTo(DisaggregatedStorageType.GCS));
+        }
+
+        #endregion
+
+        #region SetStoragePath Tests
+
+        [Test]
+        public void SetStoragePath_WithValidS3Path_SetsStoragePath()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+            string path = "s3://my-bucket/flink-state";
+
+            // Act
+            var result = backend.SetStoragePath(path);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetStoragePath(), Is.EqualTo(path));
+        }
+
+        [Test]
+        public void SetStoragePath_WithValidHDFSPath_SetsStoragePath()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+            string path = "hdfs://namenode:9000/flink/state";
+
+            // Act
+            var result = backend.SetStoragePath(path);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetStoragePath(), Is.EqualTo(path));
+        }
+
+        [Test]
+        public void SetStoragePath_WithValidAzurePath_SetsStoragePath()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+            string path = "wasbs://container@account.blob.core.windows.net/flink-state";
+
+            // Act
+            var result = backend.SetStoragePath(path);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetStoragePath(), Is.EqualTo(path));
+        }
+
+        [Test]
+        public void SetStoragePath_WithValidGCSPath_SetsStoragePath()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+            string path = "gs://my-bucket/flink-state";
+
+            // Act
+            var result = backend.SetStoragePath(path);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetStoragePath(), Is.EqualTo(path));
+        }
+
+        [Test]
+        public void SetStoragePath_WithNullPath_ThrowsArgumentException()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => backend.SetStoragePath(null!));
+            Assert.That(ex!.ParamName, Is.EqualTo("path"));
+            Assert.That(ex.Message, Does.Contain("Storage path cannot be null or empty"));
+        }
+
+        [Test]
+        public void SetStoragePath_WithEmptyPath_ThrowsArgumentException()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => backend.SetStoragePath(""));
+            Assert.That(ex!.ParamName, Is.EqualTo("path"));
+            Assert.That(ex.Message, Does.Contain("Storage path cannot be null or empty"));
+        }
+
+        [Test]
+        public void SetStoragePath_WithWhitespacePath_ThrowsArgumentException()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => backend.SetStoragePath("   "));
+            Assert.That(ex!.ParamName, Is.EqualTo("path"));
+            Assert.That(ex.Message, Does.Contain("Storage path cannot be null or empty"));
+        }
+
+        #endregion
+
+        #region EnableIncrementalCheckpointing Tests
+
+        [Test]
+        public void EnableIncrementalCheckpointing_WithTrue_EnablesIncrementalCheckpointing()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+            backend.EnableIncrementalCheckpointing(false);
+
+            // Act
+            var result = backend.EnableIncrementalCheckpointing(true);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.IsIncrementalCheckpointingEnabled(), Is.True);
+        }
+
+        [Test]
+        public void EnableIncrementalCheckpointing_WithFalse_DisablesIncrementalCheckpointing()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act
+            var result = backend.EnableIncrementalCheckpointing(false);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.IsIncrementalCheckpointingEnabled(), Is.False);
+        }
+
+        [Test]
+        public void EnableIncrementalCheckpointing_WithoutParameter_EnablesIncrementalCheckpointing()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+            backend.EnableIncrementalCheckpointing(false);
+
+            // Act
+            var result = backend.EnableIncrementalCheckpointing();
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.IsIncrementalCheckpointingEnabled(), Is.True);
+        }
+
+        #endregion
+
+        #region EnableStateCompression Tests
+
+        [Test]
+        public void EnableStateCompression_WithTrue_EnablesStateCompression()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+            backend.EnableStateCompression(false);
+
+            // Act
+            var result = backend.EnableStateCompression(true);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.IsStateCompressionEnabled(), Is.True);
+        }
+
+        [Test]
+        public void EnableStateCompression_WithFalse_DisablesStateCompression()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act
+            var result = backend.EnableStateCompression(false);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.IsStateCompressionEnabled(), Is.False);
+        }
+
+        [Test]
+        public void EnableStateCompression_WithoutParameter_EnablesStateCompression()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+            backend.EnableStateCompression(false);
+
+            // Act
+            var result = backend.EnableStateCompression();
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.IsStateCompressionEnabled(), Is.True);
+        }
+
+        #endregion
+
+        #region SetAsyncCompactionThreads Tests
+
+        [Test]
+        public void SetAsyncCompactionThreads_WithValidValue_SetsThreadCount()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act
+            var result = backend.SetAsyncCompactionThreads(8);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetAsyncCompactionThreads(), Is.EqualTo(8));
+        }
+
+        [Test]
+        public void SetAsyncCompactionThreads_WithZero_ThrowsArgumentException()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => backend.SetAsyncCompactionThreads(0));
+            Assert.That(ex!.ParamName, Is.EqualTo("threads"));
+            Assert.That(ex.Message, Does.Contain("Async compaction threads must be positive"));
+        }
+
+        [Test]
+        public void SetAsyncCompactionThreads_WithNegativeValue_ThrowsArgumentException()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act & Assert
+            var ex = Assert.Throws<ArgumentException>(() => backend.SetAsyncCompactionThreads(-1));
+            Assert.That(ex!.ParamName, Is.EqualTo("threads"));
+            Assert.That(ex.Message, Does.Contain("Async compaction threads must be positive"));
+        }
+
+        #endregion
+
+        #region Method Chaining Tests
+
+        [Test]
+        public void MethodChaining_AllConfigurationMethods_ReturnsSameInstance()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act
+            var result = backend
+                .SetStorageType(DisaggregatedStorageType.S3)
+                .SetStoragePath("s3://my-bucket/state")
+                .EnableIncrementalCheckpointing(true)
+                .EnableStateCompression(true)
+                .SetAsyncCompactionThreads(8);
+
+            // Assert
+            Assert.That(result, Is.SameAs(backend));
+            Assert.That(backend.GetStorageType(), Is.EqualTo(DisaggregatedStorageType.S3));
+            Assert.That(backend.GetStoragePath(), Is.EqualTo("s3://my-bucket/state"));
+            Assert.That(backend.IsIncrementalCheckpointingEnabled(), Is.True);
+            Assert.That(backend.IsStateCompressionEnabled(), Is.True);
+            Assert.That(backend.GetAsyncCompactionThreads(), Is.EqualTo(8));
+        }
+
+        #endregion
+
+        #region IStateBackend Interface Tests
+
+        [Test]
+        public void GetName_ReturnsCorrectName()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act
+            var name = backend.GetName();
+
+            // Assert
+            Assert.That(name, Is.EqualTo("DisaggregatedStateBackend"));
+        }
+
+        [Test]
+        public void SupportsIncrementalCheckpointing_AlwaysReturnsTrue()
+        {
+            // Arrange
+            var backend = new DisaggregatedStateBackend();
+
+            // Act & Assert
+            Assert.That(backend.SupportsIncrementalCheckpointing(), Is.True);
+        }
+
+        #endregion
+
+        #region DisaggregatedStorageType Enum Tests
+
+        [Test]
+        public void DisaggregatedStorageType_AllEnumValues_AreAccessible()
+        {
+            // Act & Assert
+            var s3 = DisaggregatedStorageType.S3;
+            var hdfs = DisaggregatedStorageType.HDFS;
+            var azureBlob = DisaggregatedStorageType.AZURE_BLOB;
+            var gcs = DisaggregatedStorageType.GCS;
+
+            Assert.That(System.Enum.IsDefined(typeof(DisaggregatedStorageType), s3), Is.True);
+            Assert.That(System.Enum.IsDefined(typeof(DisaggregatedStorageType), hdfs), Is.True);
+            Assert.That(System.Enum.IsDefined(typeof(DisaggregatedStorageType), azureBlob), Is.True);
+            Assert.That(System.Enum.IsDefined(typeof(DisaggregatedStorageType), gcs), Is.True);
+        }
+
+        #endregion
+    }
+
+    [TestFixture]
     public class StateBackendComparisonTests
     {
         [Test]
@@ -742,11 +1162,15 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var rocksdbBackend = new EmbeddedRocksDBStateBackend();
             var hashmapBackend = new HashMapStateBackend();
+            var disaggregatedBackend = new DisaggregatedStateBackend();
 
             // Act & Assert
             Assert.That(rocksdbBackend.GetName(), Is.Not.EqualTo(hashmapBackend.GetName()));
+            Assert.That(rocksdbBackend.GetName(), Is.Not.EqualTo(disaggregatedBackend.GetName()));
+            Assert.That(hashmapBackend.GetName(), Is.Not.EqualTo(disaggregatedBackend.GetName()));
             Assert.That(rocksdbBackend.GetName(), Is.EqualTo("EmbeddedRocksDBStateBackend"));
             Assert.That(hashmapBackend.GetName(), Is.EqualTo("HashMapStateBackend"));
+            Assert.That(disaggregatedBackend.GetName(), Is.EqualTo("DisaggregatedStateBackend"));
         }
 
         [Test]
@@ -755,10 +1179,24 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var rocksdbBackend = new EmbeddedRocksDBStateBackend();
             var hashmapBackend = new HashMapStateBackend();
+            var disaggregatedBackend = new DisaggregatedStateBackend();
 
             // Act & Assert
             Assert.That(rocksdbBackend, Is.InstanceOf<IStateBackend>());
             Assert.That(hashmapBackend, Is.InstanceOf<IStateBackend>());
+            Assert.That(disaggregatedBackend, Is.InstanceOf<IStateBackend>());
+        }
+
+        [Test]
+        public void DisaggregatedStateBackend_And_RocksDBStateBackend_SupportIncrementalCheckpointing()
+        {
+            // Arrange
+            var disaggregatedBackend = new DisaggregatedStateBackend();
+            var rocksdbBackend = new EmbeddedRocksDBStateBackend();
+
+            // Act & Assert
+            Assert.That(disaggregatedBackend.SupportsIncrementalCheckpointing(), Is.True);
+            Assert.That(rocksdbBackend.SupportsIncrementalCheckpointing(), Is.True);
         }
     }
 }
