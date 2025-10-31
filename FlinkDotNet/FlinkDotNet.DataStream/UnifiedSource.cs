@@ -36,7 +36,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the boundedness of this source (bounded/unbounded).
         /// </summary>
-        Boundedness Boundedness { get; }
+        public Boundedness Boundedness { get; }
 
         /// <summary>
         /// Creates a split enumerator for discovering and assigning source splits to readers.
@@ -44,7 +44,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="context">Context providing runtime information</param>
         /// <param name="restoredState">Restored state from previous checkpoint (default if no state to restore)</param>
         /// <returns>A new split enumerator instance</returns>
-        ISplitEnumerator<TSplit, TEnumState> CreateEnumerator(
+        public ISplitEnumerator<TSplit, TEnumState> CreateEnumerator(
             SplitEnumeratorContext context,
             TEnumState restoredState = default!);
 
@@ -53,20 +53,20 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         /// <param name="context">Context providing runtime information</param>
         /// <returns>A new split reader instance</returns>
-        ISplitReader<TOutput, TSplit> CreateReader(SplitReaderContext context);
+        public ISplitReader<TOutput, TSplit> CreateReader(SplitReaderContext context);
 
         /// <summary>
         /// Gets the simple state serializer for enumerator checkpointing.
         /// Can return null if the enumerator is stateless.
         /// </summary>
         /// <returns>State serializer or null</returns>
-        ISimpleVersionedSerializer<TEnumState>? GetEnumeratorCheckpointSerializer();
+        public ISimpleVersionedSerializer<TEnumState>? GetEnumeratorCheckpointSerializer();
 
         /// <summary>
         /// Gets the simple state serializer for split checkpointing.
         /// </summary>
         /// <returns>State serializer for splits</returns>
-        ISimpleVersionedSerializer<TSplit> GetSplitSerializer();
+        public ISimpleVersionedSerializer<TSplit> GetSplitSerializer();
     }
 
     /// <summary>
@@ -80,40 +80,40 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Starts the split enumerator. Called once after creation.
         /// </summary>
-        void Start();
+        public void Start();
 
         /// <summary>
         /// Handles requests for splits from readers.
         /// </summary>
         /// <param name="subtaskId">ID of the subtask requesting splits</param>
         /// <param name="hostname">Hostname where the reader is running</param>
-        void HandleSplitRequest(int subtaskId, string? hostname = null);
+        public void HandleSplitRequest(int subtaskId, string? hostname = null);
 
         /// <summary>
         /// Adds new splits back to the enumerator (e.g., when a reader fails).
         /// </summary>
         /// <param name="splits">Splits to add back</param>
         /// <param name="subtaskId">ID of the subtask that was processing these splits</param>
-        void AddSplitsBack(IList<TSplit> splits, int subtaskId);
+        public void AddSplitsBack(IList<TSplit> splits, int subtaskId);
 
         /// <summary>
         /// Snapshots the current state for checkpointing.
         /// </summary>
         /// <param name="checkpointId">Checkpoint ID</param>
         /// <returns>Current state snapshot</returns>
-        TEnumState SnapshotState(long checkpointId);
+        public TEnumState SnapshotState(long checkpointId);
 
         /// <summary>
         /// Registers a split assignment event handler for sending splits to readers.
         /// </summary>
         /// <param name="splitAssignmentHandler">Handler for split assignments</param>
-        void RegisterSplitAssignmentHandler(Action<int, IList<TSplit>> splitAssignmentHandler);
+        public void RegisterSplitAssignmentHandler(Action<int, IList<TSplit>> splitAssignmentHandler);
 
         /// <summary>
         /// Registers a callback for no-more-splits notifications.
         /// </summary>
         /// <param name="noMoreSplitsHandler">Handler for no-more-splits events</param>
-        void RegisterNoMoreSplitsHandler(Action<int> noMoreSplitsHandler);
+        public void RegisterNoMoreSplitsHandler(Action<int> noMoreSplitsHandler);
     }
 
     /// <summary>
@@ -128,7 +128,7 @@ namespace FlinkDotNet.DataStream
         /// Assigns a new split to this reader.
         /// </summary>
         /// <param name="split">Split to read from</param>
-        void AddSplit(TSplit split);
+        public void AddSplit(TSplit split);
 
         /// <summary>
         /// Fetches elements from assigned splits.
@@ -136,18 +136,18 @@ namespace FlinkDotNet.DataStream
         /// <param name="output">Output collector for emitted elements</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Task representing the fetch operation</returns>
-        Task FetchAsync(ISourceOutput<TOutput> output, CancellationToken cancellationToken = default);
+        public Task FetchAsync(ISourceOutput<TOutput> output, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Notifies the reader that no more splits will be assigned.
         /// </summary>
-        void NotifyNoMoreSplits();
+        public void NotifyNoMoreSplits();
 
         /// <summary>
         /// Gets the current state of splits being processed.
         /// </summary>
         /// <returns>List of splits with their current state</returns>
-        IList<TSplit> SnapshotState();
+        public IList<TSplit> SnapshotState();
     }
 
     /// <summary>
@@ -158,7 +158,7 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the unique identifier for this split.
         /// </summary>
-        string SplitId { get; }
+        public string SplitId { get; }
     }
 
     /// <summary>
@@ -171,20 +171,20 @@ namespace FlinkDotNet.DataStream
         /// Collects an element with automatic timestamp extraction.
         /// </summary>
         /// <param name="element">Element to collect</param>
-        void Collect(T element);
+        public void Collect(T element);
 
         /// <summary>
         /// Collects an element with an explicit timestamp.
         /// </summary>
         /// <param name="element">Element to collect</param>
         /// <param name="timestamp">Timestamp in milliseconds</param>
-        void Collect(T element, long timestamp);
+        public void Collect(T element, long timestamp);
 
         /// <summary>
         /// Emits a watermark for event time processing.
         /// </summary>
         /// <param name="watermark">Watermark timestamp in milliseconds</param>
-        void EmitWatermark(long watermark);
+        public void EmitWatermark(long watermark);
     }
 
     /// <summary>
@@ -196,14 +196,14 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the version of this serializer.
         /// </summary>
-        int Version { get; }
+        public int Version { get; }
 
         /// <summary>
         /// Serializes an object to bytes.
         /// </summary>
         /// <param name="obj">Object to serialize</param>
         /// <returns>Serialized bytes</returns>
-        byte[] Serialize(T obj);
+        public byte[] Serialize(T obj);
 
         /// <summary>
         /// Deserializes an object from bytes.
@@ -211,7 +211,7 @@ namespace FlinkDotNet.DataStream
         /// <param name="version">Serializer version used</param>
         /// <param name="bytes">Serialized bytes</param>
         /// <returns>Deserialized object</returns>
-        T Deserialize(int version, byte[] bytes);
+        public T Deserialize(int version, byte[] bytes);
     }
 
     /// <summary>
