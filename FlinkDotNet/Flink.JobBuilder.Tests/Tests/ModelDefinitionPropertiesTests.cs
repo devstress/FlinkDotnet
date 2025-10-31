@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using NUnit.Framework;
 using Flink.JobBuilder.Models;
+using NUnit.Framework;
 
 namespace Flink.JobBuilder.Tests.Tests
 {

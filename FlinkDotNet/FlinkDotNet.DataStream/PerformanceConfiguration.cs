@@ -23,32 +23,47 @@ namespace FlinkDotNet.DataStream
     /// State backend configuration for Flink (Flink 2.1+).
     /// Provides advanced tuning for state management and checkpointing.
     /// </summary>
-    public class StateBackendConfiguration
+    public sealed class StateBackendConfiguration
     {
         /// <summary>
         /// Gets the state backend type.
         /// </summary>
-        public StateBackendType Backend { get; }
+        public StateBackendType Backend
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the checkpoint storage URI.
         /// </summary>
-        public string? CheckpointStorageUri { get; }
+        public string? CheckpointStorageUri
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets RocksDB-specific configuration options.
         /// </summary>
-        public RocksDBOptions? RocksDBOptions { get; }
+        public RocksDBOptions? RocksDBOptions
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets whether incremental checkpoints are enabled.
         /// </summary>
-        public bool IncrementalCheckpoints { get; }
+        public bool IncrementalCheckpoints
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets additional state backend properties.
         /// </summary>
-        public IReadOnlyDictionary<string, string> Properties { get; }
+        public IReadOnlyDictionary<string, string> Properties
+        {
+            get;
+        }
 
         private StateBackendConfiguration(
             StateBackendType backend,
@@ -79,7 +94,7 @@ namespace FlinkDotNet.DataStream
             private string? _checkpointStorageUri;
             private RocksDBOptions? _rocksDBOptions;
             private bool _incrementalCheckpoints;
-            private readonly Dictionary<string, string> _properties = new();
+            private readonly Dictionary<string, string> _properties = [];
 
             /// <summary>
             /// Sets the state backend type.
@@ -177,32 +192,50 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the maximum background jobs for RocksDB.
         /// </summary>
-        public int? MaxBackgroundJobs { get; init; }
+        public int? MaxBackgroundJobs
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the maximum write buffer number.
         /// </summary>
-        public int? MaxWriteBufferNumber { get; init; }
+        public int? MaxWriteBufferNumber
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the write buffer size in bytes.
         /// </summary>
-        public long? WriteBufferSize { get; init; }
+        public long? WriteBufferSize
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the block cache size in bytes.
         /// </summary>
-        public long? BlockCacheSize { get; init; }
+        public long? BlockCacheSize
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets whether to use bloom filters.
         /// </summary>
-        public bool? UseBloomFilter { get; init; }
+        public bool? UseBloomFilter
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the compaction style.
         /// </summary>
-        public string? CompactionStyle { get; init; }
+        public string? CompactionStyle
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets additional RocksDB properties.
@@ -214,27 +247,39 @@ namespace FlinkDotNet.DataStream
     /// Configuration for Smile format in compiled plans (Flink 2.1+).
     /// Smile is a binary JSON format for efficient plan serialization.
     /// </summary>
-    public class SmileFormatConfiguration
+    public sealed class SmileFormatConfiguration
     {
         /// <summary>
         /// Gets whether Smile format is enabled.
         /// </summary>
-        public bool Enabled { get; }
+        public bool Enabled
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the compression level (0-9).
         /// </summary>
-        public int CompressionLevel { get; }
+        public int CompressionLevel
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets whether to use shared string values.
         /// </summary>
-        public bool UseSharedStringValues { get; }
+        public bool UseSharedStringValues
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets additional Smile format properties.
         /// </summary>
-        public IReadOnlyDictionary<string, string> Properties { get; }
+        public IReadOnlyDictionary<string, string> Properties
+        {
+            get;
+        }
 
         private SmileFormatConfiguration(
             bool enabled,
@@ -262,7 +307,7 @@ namespace FlinkDotNet.DataStream
             private bool _enabled = true;
             private int _compressionLevel = 6;
             private bool _useSharedStringValues = true;
-            private readonly Dictionary<string, string> _properties = new();
+            private readonly Dictionary<string, string> _properties = [];
 
             /// <summary>
             /// Enables or disables Smile format.
@@ -334,32 +379,47 @@ namespace FlinkDotNet.DataStream
     /// Configuration for multi-join optimization (Flink 2.1+).
     /// Provides hints for optimizing complex join operations.
     /// </summary>
-    public class MultiJoinOptimizationConfiguration
+    public sealed class MultiJoinOptimizationConfiguration
     {
         /// <summary>
         /// Gets whether multi-join optimization is enabled.
         /// </summary>
-        public bool Enabled { get; }
+        public bool Enabled
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the join reorder strategy.
         /// </summary>
-        public JoinReorderStrategy ReorderStrategy { get; }
+        public JoinReorderStrategy ReorderStrategy
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets the maximum number of joins to optimize together.
         /// </summary>
-        public int MaxJoinsToOptimize { get; }
+        public int MaxJoinsToOptimize
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets whether to use cost-based optimization.
         /// </summary>
-        public bool UseCostBasedOptimization { get; }
+        public bool UseCostBasedOptimization
+        {
+            get;
+        }
 
         /// <summary>
         /// Gets additional optimization properties.
         /// </summary>
-        public IReadOnlyDictionary<string, string> Properties { get; }
+        public IReadOnlyDictionary<string, string> Properties
+        {
+            get;
+        }
 
         private MultiJoinOptimizationConfiguration(
             bool enabled,
@@ -390,7 +450,7 @@ namespace FlinkDotNet.DataStream
             private JoinReorderStrategy _reorderStrategy = JoinReorderStrategy.LeftDeep;
             private int _maxJoinsToOptimize = 10;
             private bool _useCostBasedOptimization = true;
-            private readonly Dictionary<string, string> _properties = new();
+            private readonly Dictionary<string, string> _properties = [];
 
             /// <summary>
             /// Enables or disables multi-join optimization.
