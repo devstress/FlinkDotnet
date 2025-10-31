@@ -36,7 +36,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the boundedness of this source (bounded/unbounded).
         /// </summary>
-        public Boundedness Boundedness { get; }
+        public Boundedness Boundedness
+        {
+            get;
+        }
 
         /// <summary>
         /// Creates a split enumerator for discovering and assigning source splits to readers.
@@ -158,7 +161,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the unique identifier for this split.
         /// </summary>
-        public string SplitId { get; }
+        public string SplitId
+        {
+            get;
+        }
     }
 
     /// <summary>
@@ -196,7 +202,10 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the version of this serializer.
         /// </summary>
-        public int Version { get; }
+        public int Version
+        {
+            get;
+        }
 
         /// <summary>
         /// Serializes an object to bytes.
@@ -222,12 +231,18 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the current parallelism of the source.
         /// </summary>
-        public int CurrentParallelism { get; init; }
+        public int CurrentParallelism
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the metric group for the enumerator.
         /// </summary>
-        public object? MetricGroup { get; init; }
+        public object? MetricGroup
+        {
+            get; init;
+        }
     }
 
     /// <summary>
@@ -238,17 +253,26 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the index of this subtask.
         /// </summary>
-        public int SubtaskIndex { get; init; }
+        public int SubtaskIndex
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the number of parallel subtasks.
         /// </summary>
-        public int NumberOfParallelSubtasks { get; init; }
+        public int NumberOfParallelSubtasks
+        {
+            get; init;
+        }
 
         /// <summary>
         /// Gets the metric group for the reader.
         /// </summary>
-        public object? MetricGroup { get; init; }
+        public object? MetricGroup
+        {
+            get; init;
+        }
     }
 
     /// <summary>

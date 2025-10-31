@@ -80,7 +80,7 @@ public class Catalog
             sb.AppendLine($"  ,'{prop.Key}' = '{prop.Value}'");
         }
 
-        sb.Append(")");
+        sb.Append(')');
         return sb.ToString();
     }
 

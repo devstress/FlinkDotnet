@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using NUnit.Framework;
 using Flink.JobBuilder.Models;
+using NUnit.Framework;
 
 namespace FlinkDotNet.DataStream.Tests
 {
@@ -33,7 +33,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Table_ConstructorWithDefinition_NullDefinition_ShouldThrow()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => new Table((TableSourceDefinition)null!));
+            Assert.Throws<ArgumentNullException>(() => new Table((TableSourceDefinition) null!));
         }
 
         [Test]
@@ -54,7 +54,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void Table_ConstructorWithTableName_NullName_ShouldThrow()
         {
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => new Table((string)null!));
+            Assert.Throws<ArgumentException>(() => new Table((string) null!));
         }
 
         [Test]

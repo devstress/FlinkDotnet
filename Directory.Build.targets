@@ -10,4 +10,14 @@
     <RunAnalyzers>false</RunAnalyzers>
     <RunAnalyzersDuringBuild>false</RunAnalyzersDuringBuild>
   </PropertyGroup>
+
+  <!-- Run dotnet format before build to ensure code formatting consistency -->
+  <!-- Only runs for non-test projects to avoid overhead -->
+  <Target Name="FormatCode" BeforeTargets="CoreCompile" Condition="'$(IsTestProject)' != 'true' AND '$(DesignTimeBuild)' != 'true' AND '$(BuildingProject)' != 'false'">
+    <Message Text="Running dotnet format on $(MSBuildProjectName)..." Importance="High" />
+    <Exec Command="dotnet format --no-restore --verbosity quiet" 
+          WorkingDirectory="$(MSBuildProjectDirectory)" 
+          ContinueOnError="true" 
+          IgnoreExitCode="false" />
+  </Target>
 </Project>
