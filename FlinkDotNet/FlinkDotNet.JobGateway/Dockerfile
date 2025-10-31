@@ -21,6 +21,7 @@ WORKDIR /src
 # Copy source code (including FlinkIRRunner for Java build)
 COPY FlinkDotNet/ FlinkDotNet/
 COPY FlinkIRRunner/ FlinkIRRunner/
+COPY LocalTesting/connectors/ LocalTesting/connectors/
 
 # Restore dependencies
 RUN dotnet restore "FlinkDotNet/FlinkDotNet.JobGateway/FlinkDotNet.JobGateway.csproj"
@@ -50,6 +51,12 @@ COPY --from=publish /app/publish .
 
 # Copy FlinkIRRunner source for on-demand building
 COPY --from=build /src/FlinkIRRunner /app/FlinkIRRunner
+
+# Copy connector JARs (Kafka connector, JSON format, etc.)
+COPY --from=build /src/LocalTesting/connectors/ /app/connectors/
+
+# Copy connector JARs directly to /app for easy discovery by Gateway
+COPY --from=build /src/LocalTesting/connectors/flink/lib/*.jar /app/
 
 # Run as non-root user for security
 USER app

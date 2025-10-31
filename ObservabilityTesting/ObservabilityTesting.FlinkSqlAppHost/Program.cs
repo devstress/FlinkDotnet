@@ -157,6 +157,7 @@ builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("Flink__JobManager__BaseUrl", "http://flink-jobmanager:8081")
     .WithEnvironment("Flink__SqlGateway__BaseUrl", "http://flink-sql-gateway:8083")
+    .WithEnvironment("Flink__ConnectorJarsPath", "/app/connectors/flink/lib")  // Path to connector JARs
     .WithEnvironment("Metrics__Prometheus__Enabled", "true")  // Enable Prometheus metrics
     .WithEnvironment("Metrics__Prometheus__Port", "9253")     // Metrics on port 9253
     .WithEnvironment("Metrics__Prometheus__Path", "/metrics") // Metrics path
