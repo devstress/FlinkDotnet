@@ -791,7 +791,7 @@ public class ObservabilityTests : LocalTestingTestBase
         // Arrange: Set up environment variables for SampleApp
         var gatewayEndpoint = await GetGatewayEndpointAsync();
         var kafkaBootstrap = GlobalTestInfrastructure.KafkaEndpoint;
-        var kafkaFlinkBootstrap = GlobalTestInfrastructure.KafkaContainerIp;
+        var kafkaFlinkBootstrap = GlobalTestInfrastructure.KafkaFlinkBootstrapServers;
 
         TestContext.WriteLine($"Gateway Endpoint: {gatewayEndpoint}");
         TestContext.WriteLine($"Kafka Bootstrap (Host): {kafkaBootstrap}");
