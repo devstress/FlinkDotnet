@@ -137,7 +137,10 @@ namespace SampleApp
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
-            HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{FlinkJobGatewayUrl}/api/v1/jobs/submit", jobDefinition);
+
+            // Ensure URL doesn't have double slashes when combining
+            string gatewayBaseUrl = FlinkJobGatewayUrl.TrimEnd('/');
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{gatewayBaseUrl}/api/v1/jobs/submit", jobDefinition);
 
             if (!response.IsSuccessStatusCode)
             {
