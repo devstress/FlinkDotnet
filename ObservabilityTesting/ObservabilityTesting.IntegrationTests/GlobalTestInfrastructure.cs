@@ -788,14 +788,14 @@ public class GlobalTestInfrastructure
                 continue;
             }
 
-            // Look for port mapping to 9092 (Kafka's default listener port)
-            // Aspire maps container port 9092 to a dynamic host port for external access
-            // Format: 127.0.0.1:PORT->9092/tcp or 0.0.0.0:PORT->9092/tcp
-            var match = System.Text.RegularExpressions.Regex.Match(ports, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9092");
+            // Look for port mapping to 9093 (Kafka's external listener port for host connections)
+            // Aspire's default Kafka configuration exposes port 9093 for external access
+            // Format: 127.0.0.1:PORT->9093/tcp or 0.0.0.0:PORT->9093/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(ports, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9093");
             if (match.Success)
             {
                 var port = match.Groups[1].Value;
-                Console.WriteLine($"🔍 Found Kafka port mapping for {containerName}: host {port} -> container 9092");
+                Console.WriteLine($"🔍 Found Kafka port mapping for {containerName}: host {port} -> container 9093");
                 return $"localhost:{port}";
             }
         }
