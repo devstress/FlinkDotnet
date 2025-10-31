@@ -20,11 +20,11 @@ public static class MemoryCalculator
         try
         {
             // Use GC.GetGCMemoryInfo for cross-platform memory detection
-            var gcMemoryInfo = GC.GetGCMemoryInfo();
-            var totalMemoryBytes = gcMemoryInfo.TotalAvailableMemoryBytes;
+            GCMemoryInfo gcMemoryInfo = GC.GetGCMemoryInfo();
+            long totalMemoryBytes = gcMemoryInfo.TotalAvailableMemoryBytes;
 
             // Convert bytes to MB
-            var totalMemoryMb = totalMemoryBytes / (1024 * 1024);
+            long totalMemoryMb = totalMemoryBytes / (1024 * 1024);
 
             Console.WriteLine($"📊 Detected system memory: {totalMemoryMb:N0} MB ({totalMemoryMb / 1024.0:F1} GB)");
 
@@ -49,7 +49,7 @@ public static class MemoryCalculator
     /// </remarks>
     public static int CalculateTaskManagerProcessMemoryMb()
     {
-        var totalMemoryMb = GetTotalPhysicalMemoryMb();
+        long totalMemoryMb = GetTotalPhysicalMemoryMb();
 
         // Fallback: Use minimal allocation if detection fails
         if (totalMemoryMb == 0)
@@ -59,26 +59,26 @@ public static class MemoryCalculator
         }
 
         // Calculate based on available RAM
-        var totalMemoryGb = totalMemoryMb / 1024.0;
+        double totalMemoryGb = totalMemoryMb / 1024.0;
 
         if (totalMemoryGb <= 8.0)
         {
             // Resource-constrained: GitHub Actions standard runners (4GB-7GB)
-            var allocated = 1536; // 1.5GB
+            int allocated = 1536; // 1.5GB
             Console.WriteLine($"⚙️ TaskManager memory: {allocated} MB (1.5GB) - Resource-constrained mode (≤8GB RAM)");
             return allocated;
         }
         else if (totalMemoryGb <= 16.0)
         {
             // Standard development: Most developer machines (8-16GB)
-            var allocated = 3072; // 3GB
+            int allocated = 3072; // 3GB
             Console.WriteLine($"⚙️ TaskManager memory: {allocated} MB (3GB) - Standard development mode (8-16GB RAM)");
             return allocated;
         }
         else
         {
             // Optimal: High-end machines (16GB+)
-            var allocated = 4096; // 4GB
+            int allocated = 4096; // 4GB
             Console.WriteLine($"⚙️ TaskManager memory: {allocated} MB (4GB) - Optimal mode (≥16GB RAM)");
             return allocated;
         }
@@ -97,7 +97,7 @@ public static class MemoryCalculator
     public static int CalculateTaskManagerMetaspaceMb(int processMemoryMb)
     {
         // Metaspace = 25% of process memory (safe allocation for class loading)
-        var metaspaceMb = processMemoryMb / 4;
+        int metaspaceMb = processMemoryMb / 4;
 
         // Apply bounds: 384MB minimum, 1024MB maximum
         metaspaceMb = Math.Max(384, Math.Min(1024, metaspaceMb));
@@ -123,7 +123,7 @@ public static class MemoryCalculator
     /// </summary>
     public static bool ValidateMinimumMemory()
     {
-        var totalMemoryMb = GetTotalPhysicalMemoryMb();
+        long totalMemoryMb = GetTotalPhysicalMemoryMb();
 
         // If detection fails, assume valid (fallback values will handle it)
         if (totalMemoryMb == 0)
