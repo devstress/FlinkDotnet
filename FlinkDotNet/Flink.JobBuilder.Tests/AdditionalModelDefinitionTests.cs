@@ -4,7 +4,7 @@ using NUnit.Framework;
 namespace Flink.JobBuilder.Tests
 {
     [TestFixture]
-    public class AdditionalModelDefinitionTests
+    public sealed class AdditionalModelDefinitionTests
     {
         #region CatalogDefinition Tests
 

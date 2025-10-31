@@ -8,7 +8,7 @@ namespace FlinkDotNet.DataStream.Tests
     /// Tests for simple POCO classes with init-only properties and minimal logic
     /// </summary>
     [TestFixture]
-    public class AdditionalCoverageFor95PercentTests
+    public sealed class AdditionalCoverageFor95PercentTests
     {
         #region ModelDescription Tests
 

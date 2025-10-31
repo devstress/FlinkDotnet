@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace FlinkDotNet.DataStream.Tests
 {
     [TestFixture]
-    public class PerformanceConfigurationTests
+    public sealed class PerformanceConfigurationTests
     {
         #region StateBackendConfiguration Tests
 
