@@ -36,6 +36,18 @@ public class GlobalTestInfrastructure
     {
         get; private set;
     } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
+    public static string? KafkaFlinkBootstrapServers
+    {
+        get; private set;
+    } // Kafka bootstrap servers for Flink jobs (e.g., "kafka:9092")
+    public static string? KafkaEndpoint
+    {
+        get; private set;
+    } // Kafka endpoint for host connections (e.g., "localhost:32804")
+    public static string? KafkaContainerIp
+    {
+        get; private set;
+    } // Kafka container IP address (e.g., "172.17.0.2")
     public static string? TemporalEndpoint
     {
         get; private set;
@@ -154,6 +166,7 @@ public class GlobalTestInfrastructure
 
             // Store for use in tests (replaces hostname-based connection)
             KafkaContainerIpForFlink = kafkaContainerIp;
+            KafkaContainerIp = kafkaContainerIp; // Also store without suffix for backward compatibility
 
             // CRITICAL: Use Aspire's configuration system to get Kafka connection string
             // This is the proper Aspire pattern instead of hardcoding or Docker inspection
@@ -188,6 +201,9 @@ public class GlobalTestInfrastructure
             KafkaConnectionString = !string.IsNullOrEmpty(KafkaConnectionStringFromConfig)
                 ? KafkaConnectionStringFromConfig
                 : discoveredKafkaEndpoint;
+            
+            // Store discovered endpoint for tests that need it
+            KafkaEndpoint = discoveredKafkaEndpoint;
 
             // CRITICAL: Flink jobs run in containers and need internal Docker network address
             // Cannot use localhost - must use kafka:9092 for container-to-container communication
