@@ -3,6 +3,9 @@ using ObservabilityTesting.FlinkSqlAppHost;
 
 const string LatestTag = "latest";
 
+// Setup environment for Aspire - required by Aspire SDK
+SetupEnvironment();
+
 Console.WriteLine("=== ObservabilityTesting AppHost Starting ===");
 Console.WriteLine("[INFO] This AppHost deploys Flink + Kafka + Prometheus + Grafana for observability testing");
 
@@ -181,3 +184,15 @@ Console.WriteLine($"   - Grafana: Port {Ports.GrafanaHostPort}");
 Console.WriteLine("   - Gateway: Dynamic port (container port 8086)");
 
 builder.Build().Run();
+
+// Setup environment for Aspire Dashboard
+static void SetupEnvironment()
+{
+    Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
+    // CRITICAL: Set ASPNETCORE_URLS for Aspire Dashboard (required by Aspire SDK)
+    // This will be inherited by child processes, but we override it per-project using WithEnvironment()
+    // Gateway explicitly sets ASPNETCORE_URLS via WithEnvironment()
+    Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
+    Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:18889");
+    Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:18890");
+}
