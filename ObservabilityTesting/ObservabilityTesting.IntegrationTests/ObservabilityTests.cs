@@ -769,4 +769,158 @@ public class ObservabilityTests : LocalTestingTestBase
         public string Type { get; init; } = "";
         public string Url { get; init; } = "";
     }
+
+    /// <summary>
+    /// Test 6: Validate SampleApp can discover FlinkDotNet JobGateway and successfully submit a job.
+    /// This test proves that external applications can integrate with FlinkDotNet JobGateway.
+    /// Tests WI requirement: Create and run SampleApp that uses FlinkDotNet JobGateway.
+    /// </summary>
+    [Test]
+    [Timeout(180000)] // 3 minutes
+    [Category("integration")]
+    [Category("gateway")]
+    public async Task Test6_SampleApp_CanDiscoverGatewayAndSubmitJob()
+    {
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine("Test 6: SampleApp Gateway Discovery and Job Submission");
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine();
+        TestContext.WriteLine("This test validates that:");
+        TestContext.WriteLine("  1. SampleApp can discover FlinkDotNet JobGateway via environment variables");
+        TestContext.WriteLine("  2. SampleApp can submit jobs to FlinkDotNet JobGateway");
+        TestContext.WriteLine("  3. Jobs submitted by SampleApp execute successfully on Flink cluster");
+        TestContext.WriteLine("  4. End-to-end data pipeline works (Kafka -> Flink -> Kafka)");
+        TestContext.WriteLine();
+
+        // Arrange: Set up environment variables for SampleApp
+        var gatewayEndpoint = await GetGatewayEndpointAsync();
+        var kafkaBootstrap = GlobalTestInfrastructure.KafkaEndpoint;
+        var kafkaFlinkBootstrap = GlobalTestInfrastructure.KafkaContainerIp;
+
+        TestContext.WriteLine($"Gateway Endpoint: {gatewayEndpoint}");
+        TestContext.WriteLine($"Kafka Bootstrap (Host): {kafkaBootstrap}");
+        TestContext.WriteLine($"Kafka Bootstrap (Flink): {kafkaFlinkBootstrap}");
+        TestContext.WriteLine();
+
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
+        Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap);
+        Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", kafkaFlinkBootstrap);
+
+        string? jobId = null;
+
+        try
+        {
+            // Act: Run SampleApp.Main() programmatically
+            TestContext.WriteLine("Running SampleApp.Main()...");
+            TestContext.WriteLine();
+
+            var sampleAppTask = SampleApp.Program.Main(Array.Empty<string>());
+            var completedTask = await Task.WhenAny(sampleAppTask, Task.Delay(TimeSpan.FromMinutes(2)));
+
+            // Verify SampleApp completed successfully
+            if (completedTask != sampleAppTask)
+            {
+                Assert.Fail("SampleApp timed out after 2 minutes");
+            }
+
+            jobId = await sampleAppTask; // Will throw if SampleApp failed
+
+            TestContext.WriteLine();
+            TestContext.WriteLine($"✅ SampleApp completed successfully. Job ID: {jobId}");
+            TestContext.WriteLine();
+
+            // Assert: Verify messages were processed by consuming from output topic
+            TestContext.WriteLine("Verifying output messages...");
+            await Task.Delay(3000); // Wait for messages to be processed
+
+            var consumedMessages = 0;
+            var uppercaseCount = 0;
+
+            var consumerConfig = new Confluent.Kafka.ConsumerConfig
+            {
+                BootstrapServers = kafkaBootstrap,
+                GroupId = $"test-consumer-{Guid.NewGuid()}",
+                AutoOffsetReset = Confluent.Kafka.AutoOffsetReset.Earliest,
+                EnableAutoCommit = false
+            };
+
+            using (var consumer = new Confluent.Kafka.ConsumerBuilder<string, string>(consumerConfig).Build())
+            {
+                consumer.Subscribe("sample_output");
+
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                var timeout = TimeSpan.FromSeconds(30);
+
+                while (stopwatch.Elapsed < timeout && consumedMessages < 20)
+                {
+                    var result = consumer.Consume(TimeSpan.FromMilliseconds(1000));
+
+                    if (result != null)
+                    {
+                        consumedMessages++;
+                        bool isUppercase = result.Message.Value == result.Message.Value.ToUpperInvariant();
+                        if (isUppercase)
+                        {
+                            uppercaseCount++;
+                        }
+
+                        if (consumedMessages <= 3)
+                        {
+                            TestContext.WriteLine($"  [{consumedMessages:D2}] {result.Message.Value}");
+                        }
+
+                        consumer.Commit(result);
+                    }
+                    else if (consumedMessages > 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            TestContext.WriteLine($"  ... (consumed {consumedMessages} total messages)");
+            TestContext.WriteLine();
+
+            // Verify results
+            Assert.That(consumedMessages, Is.GreaterThan(0), "No messages consumed from output topic");
+            Assert.That(uppercaseCount, Is.EqualTo(consumedMessages), $"Not all messages were uppercased: {uppercaseCount}/{consumedMessages}");
+
+            TestContext.WriteLine("================================================================================");
+            TestContext.WriteLine("✅ Test 6 PASSED");
+            TestContext.WriteLine("================================================================================");
+            TestContext.WriteLine();
+            TestContext.WriteLine("Verified:");
+            TestContext.WriteLine("  ✓ SampleApp discovered FlinkDotNet JobGateway");
+            TestContext.WriteLine("  ✓ SampleApp submitted job successfully");
+            TestContext.WriteLine("  ✓ Job executed on Flink cluster");
+            TestContext.WriteLine($"  ✓ Data pipeline processed {consumedMessages} messages correctly");
+            TestContext.WriteLine("  ✓ Uppercase transformation applied to all messages");
+            TestContext.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine();
+            TestContext.WriteLine("❌ Test 6 FAILED");
+            TestContext.WriteLine($"Error: {ex.Message}");
+            TestContext.WriteLine();
+            throw;
+        }
+        finally
+        {
+            // Clean up: Cancel the job if it was submitted
+            if (jobId != null)
+            {
+                try
+                {
+                    using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                    await httpClient.PostAsync($"{gatewayEndpoint}/api/v1/jobs/{jobId}/cancel", null);
+                    TestContext.WriteLine($"Cancelled job {jobId}");
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
+        }
+    }
 }

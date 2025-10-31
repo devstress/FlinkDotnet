@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ObservabilityTesting.FlinkSqlAppHost\ObservabilityTesting.FlinkSqlAppHost.csproj" />
+    <ProjectReference Include="..\SampleApp\SampleApp.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" SetConfiguration="Configuration=Release" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" SetConfiguration="Configuration=Release" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" SetConfiguration="Configuration=Release" />
