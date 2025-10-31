@@ -71,7 +71,7 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine($"   Expected messages: {expectedMessageCount}");
             
             // Create and submit job via Gateway
-            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaConnectionString!, "gateway-metrics-test");
+            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaFlinkBootstrapServers!, "gateway-metrics-test");
             var gatewayEndpoint = await GetGatewayEndpointAsync();
             var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             

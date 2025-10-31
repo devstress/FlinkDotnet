@@ -22,11 +22,16 @@ public abstract class LocalTestingTestBase
 
     /// <summary>
     /// Access to shared Kafka connection string from GlobalTestInfrastructure.
-    /// CRITICAL: This address is used by BOTH test producers/consumers AND Flink jobs.
-    /// The simplified architecture uses a single Kafka address (localhost:port) accessible
-    /// from both host and containers via Docker port mapping.
+    /// This address is used by test producers/consumers running on the host (e.g., localhost:32804).
     /// </summary>
     protected static string? KafkaConnectionString => GlobalTestInfrastructure.KafkaConnectionString;
+
+    /// <summary>
+    /// Access to Kafka bootstrap servers for Flink jobs running in containers.
+    /// This address uses Docker internal network (kafka:9092) for container-to-container communication.
+    /// CRITICAL: Flink jobs cannot use localhost - they run in containers and need kafka:9092.
+    /// </summary>
+    protected static string? KafkaFlinkBootstrapServers => GlobalTestInfrastructure.KafkaFlinkBootstrapServers;
 
     /// <summary>
     /// Access to discovered Temporal endpoint from GlobalTestInfrastructure.

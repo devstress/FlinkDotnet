@@ -189,11 +189,16 @@ public class GlobalTestInfrastructure
                 ? KafkaConnectionStringFromConfig
                 : discoveredKafkaEndpoint;
 
+            // CRITICAL: Flink jobs run in containers and need internal Docker network address
+            // Cannot use localhost - must use kafka:9092 for container-to-container communication
+            KafkaFlinkBootstrapServers = "kafka:9092";
+
             Console.WriteLine($"✅ Kafka connection strings:");
             Console.WriteLine($"   📡 From Aspire config: {KafkaConnectionStringFromConfig ?? "(not set)"}");
             Console.WriteLine($"   📡 From Docker discovery: {discoveredKafkaEndpoint}");
-            Console.WriteLine($"   📡 Using for tests: {KafkaConnectionString}");
-            Console.WriteLine($"   ℹ️  This address will be used by both test producers/consumers AND Flink jobs");
+            Console.WriteLine($"   📡 For test producers/consumers (host): {KafkaConnectionString}");
+            Console.WriteLine($"   📡 For Flink jobs (containers): {KafkaFlinkBootstrapServers}");
+            Console.WriteLine($"   ℹ️  Tests use localhost:port, Flink jobs use kafka:9092");
 
             // Get Flink endpoint and wait for readiness (don't require free slots initially - TaskManager registration takes time)
             var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
