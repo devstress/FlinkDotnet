@@ -42,19 +42,17 @@ var kafka = builder.AddKafka("kafka")
     .WithLifetime(ContainerLifetime.Persistent);
 #pragma warning restore S1481
 
+// Flink configuration file with correct jobmanager.rpc.address
+var flinkConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-config.yaml");
+
 // 2. Flink JobManager with Prometheus metrics enabled
 Console.WriteLine("[INFO] Configuring Flink JobManager with Prometheus metrics...");
-var jobManagerFlinkProperties = $"jobmanager.memory.process.size: {jobManagerMemoryMb}m\n" +
-    "metrics.reporters: prom\n" +
-    "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
-    "metrics.reporter.prom.port: 9250\n" +
-    "metrics.reporter.prom.filterLabelValueCharacters: false\n";
 
 var metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
 var jobManager = builder.AddContainer("flink-jobmanager", "flink", "2.1.0-java17")
     .WithHttpEndpoint(targetPort: 8081, name: "jobmanager-http")
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
-    .WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties)
+    .WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true)  // Mount proper config
     .WithEntrypoint("/bin/bash")
     .WithArgs("-c", "bin/jobmanager.sh start && tail -f /dev/null");
 
@@ -66,18 +64,14 @@ if (File.Exists(metricsJarPath))
 
 // 3. Flink TaskManager with Prometheus metrics enabled  
 Console.WriteLine("[INFO] Configuring Flink TaskManager with Prometheus metrics...");
-var taskManagerFlinkProperties = $"jobmanager.rpc.address: flink-jobmanager\n" + // CRITICAL: TaskManager must know JobManager address
-    $"taskmanager.memory.process.size: {taskManagerMemoryMb}m\n" +
-    "metrics.reporters: prom\n" +
-    "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
-    "metrics.reporter.prom.port: 9251\n" +
-    "metrics.reporter.prom.filterLabelValueCharacters: false\n" +
-    "taskmanager.numberOfTaskSlots: 8\n";
+
+// Create TaskManager-specific config with higher metrics port
+var taskManagerConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-taskmanager-config.yaml");
 
 var taskManager = builder.AddContainer("flink-taskmanager", "flink", "2.1.0-java17")
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
-    .WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties)
-    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true)  // Mount proper config
+    .WithEnvironment("FLINK_PROPERTIES", "metrics.reporter.prom.port: 9251\n")  // Override metrics port for TaskManager
     .WithEntrypoint("/bin/bash")
     .WithArgs("-c", "bin/taskmanager.sh start && tail -f /dev/null")
     .WaitFor(jobManager);
@@ -88,7 +82,7 @@ if (File.Exists(metricsJarPath))
     Console.WriteLine("   [INFO] Prometheus metrics JAR mounted for TaskManager");
 }
 
-// 4. Flink SQL Gateway - Required for Gateway to communicate with Flink
+// 4. Flink SQL Gateway - Required for FlinkDotNet JobGateway to communicate with Flink
 Console.WriteLine("[INFO] Configuring Flink SQL Gateway...");
 var baseSqlGatewayFlinkProperties =
     "jobmanager.rpc.address: flink-jobmanager\n" +
