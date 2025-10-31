@@ -201,9 +201,10 @@ public class GlobalTestInfrastructure
             await RetryWaitForReadyAsync("Flink", () => LocalTestingTestBase.WaitForFlinkReadyAsync($"{flinkEndpoint}v1/overview", DefaultTimeout, default, requireFreeSlots: false), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Flink JobManager is ready (TaskManagers will register asynchronously)");
 
-            // Skip Gateway health check - the resource uses PublishAsDockerFile which can have issues in test environments
-            // The tests don't actually need the Gateway to run (they submit jobs via Flink JobManager directly)
-            Console.WriteLine("⏳ Gateway resource starting (skipping health check as tests don't require it)...");
+            // Wait for Gateway with retry mechanism (using pre-built Docker image)
+            Console.WriteLine("⏳ Waiting for Gateway container to start (pre-built Docker image)...");
+            await RetryHealthCheckAsync("gateway", app, 5, TimeSpan.FromSeconds(10));
+            Console.WriteLine("✅ Gateway container reported healthy");
 
             var gatewayEndpoint = await GetGatewayEndpointAsync();
             Console.WriteLine($"🔍 Gateway endpoint: {gatewayEndpoint}");
@@ -213,8 +214,9 @@ public class GlobalTestInfrastructure
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
             Console.WriteLine($"✅ FLINK_JOB_GATEWAY_URL set to: {gatewayEndpoint}");
 
-            // Skip Gateway HTTP readiness check - observability tests submit jobs directly to Flink, not via Gateway
-            Console.WriteLine("ℹ️ Skipping Gateway HTTP readiness check (not required for observability tests)");
+            // Wait for Gateway HTTP endpoint to be ready
+            await RetryWaitForReadyAsync("Gateway", () => LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
+            Console.WriteLine("✅ Gateway is ready");
 
 //             // Wait for Temporal server resource with retry mechanism
 //             Console.WriteLine("⏳ Waiting for Temporal server resource to start...");

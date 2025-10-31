@@ -136,30 +136,24 @@ else
     Console.WriteLine("[INFO] Skipping Prometheus and Grafana (LEARNINGCOURSE mode disabled)");
 }
 
-// 7. Gateway - FlinkDotNet job submission endpoint (built from Dockerfile)
-Console.WriteLine("[INFO] Configuring Gateway to build from Dockerfile...");
+// 7. Gateway - FlinkDotNet job submission endpoint (using pre-built Docker image)
+Console.WriteLine("[INFO] Configuring Gateway from pre-built Docker image...");
 
-var gatewayDockerfilePath = Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "Dockerfile");
-if (!File.Exists(gatewayDockerfilePath))
-{
-    throw new FileNotFoundException($"Gateway Dockerfile not found at: {gatewayDockerfilePath}");
-}
+const string gatewayImageTag = "flinkdotnet-gateway:local";
 
 #pragma warning disable S1481 // gateway resource is created and used by Aspire infrastructure
-// Use PublishAsDockerFile to build the Gateway image from Dockerfile as part of the Aspire build
-// NOTE: When using AddProject with PublishAsDockerFile, we must NOT specify port parameter to avoid proxy errors
-// The container's targetPort 8086 is exposed, and Aspire will allocate a dynamic port on the host
-var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("gateway")
+// Use AddContainer with pre-built image instead of PublishAsDockerFile
+// The Docker image is built as part of the AppHost build process (see .csproj BuildGatewayDockerImage target)
+var gateway = builder.AddContainer("gateway", gatewayImageTag)
     .WithHttpEndpoint(targetPort: 8086, name: "gateway-http")
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("Flink__JobManager__BaseUrl", jobManager.GetEndpoint("jm-http"))
     .WithEnvironment("Flink__SqlGateway__BaseUrl", sqlGateway.GetEndpoint("sg-http"))
-    .PublishAsDockerFile()
     .WaitFor(jobManager)
     .WaitFor(sqlGateway);
 #pragma warning restore S1481
 
-Console.WriteLine($"   [INFO] Gateway will be built from Dockerfile: {gatewayDockerfilePath}");
+Console.WriteLine($"   [INFO] Gateway will use pre-built Docker image: {gatewayImageTag}");
 
 Console.WriteLine("[INFO] All services configured successfully");
 Console.WriteLine($"   - Kafka: Port {Ports.KafkaExternalPort}");

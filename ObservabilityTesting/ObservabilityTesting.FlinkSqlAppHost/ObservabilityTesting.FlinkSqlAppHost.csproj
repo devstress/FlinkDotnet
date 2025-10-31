@@ -29,4 +29,27 @@
     </ProjectReference>
   </ItemGroup>
 
+  <!-- Build Gateway Docker image before AppHost runs -->
+  <Target Name="BuildGatewayDockerImage" BeforeTargets="Build">
+    <PropertyGroup>
+      <!-- Use forward slashes for cross-platform compatibility -->
+      <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../'))</RepoRoot>
+      <GatewayDockerfile>$(RepoRoot)/FlinkDotNet/FlinkDotNet.JobGateway/Dockerfile</GatewayDockerfile>
+      <GatewayImageTag>flinkdotnet-gateway:local</GatewayImageTag>
+    </PropertyGroup>
+
+    <Message Text="[INFO] Building Gateway Docker image: $(GatewayImageTag)" Importance="High" />
+    <Message Text="[INFO] Dockerfile location: $(GatewayDockerfile)" Importance="High" />
+    <Message Text="[INFO] Build context: $(RepoRoot)" Importance="High" />
+
+    <!-- Build the Docker image using the Gateway Dockerfile -->
+    <Exec Command="docker build -t $(GatewayImageTag) -f &quot;$(GatewayDockerfile)&quot; &quot;$(RepoRoot)&quot;"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High"
+          ContinueOnError="false" />
+
+    <Message Text="[INFO] Gateway Docker image built successfully: $(GatewayImageTag)" Importance="High" />
+  </Target>
+
 </Project>
