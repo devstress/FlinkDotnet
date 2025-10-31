@@ -133,8 +133,24 @@ public class ObservabilityTests : LocalTestingTestBase
             // Wait for Prometheus targets to be healthy
             await WaitForPrometheusTargetsHealthyAsync(prometheusEndpoint, cts.Token);
             
-            // Query Prometheus for Flink metrics
-            var flinkMetrics = await QueryPrometheusMetricAsync(prometheusEndpoint, "flink_taskmanager_Status_JVM_Memory_Heap_Used", cts.Token);
+            // Wait for Flink to start producing metrics (retry with delay)
+            TestContext.WriteLine("⏳ Waiting for Flink metrics to become available...");
+            var flinkMetrics = new List<PrometheusMetric>();
+            var maxRetries = 6;
+            for (int i = 0; i < maxRetries; i++)
+            {
+                flinkMetrics = await QueryPrometheusMetricAsync(prometheusEndpoint, "flink_taskmanager_Status_JVM_Memory_Heap_Used", cts.Token);
+                if (flinkMetrics.Count > 0)
+                {
+                    TestContext.WriteLine($"✅ Flink metrics available after {i + 1} attempts");
+                    break;
+                }
+                if (i < maxRetries - 1)
+                {
+                    TestContext.WriteLine($"   Attempt {i + 1}/{maxRetries}: No metrics yet, waiting 5s...");
+                    await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
+                }
+            }
             
             TestContext.WriteLine($"📊 Prometheus Flink Metrics:");
             TestContext.WriteLine($"   Metric: flink_taskmanager_Status_JVM_Memory_Heap_Used");
@@ -547,12 +563,12 @@ public class ObservabilityTests : LocalTestingTestBase
         
         return new GatewayMetrics
         {
-            RecordsIn = root.TryGetProperty("recordsIn", out var recordsIn) ? recordsIn.GetInt64() : 0,
-            RecordsOut = root.TryGetProperty("recordsOut", out var recordsOut) ? recordsOut.GetInt64() : 0,
-            Parallelism = root.TryGetProperty("parallelism", out var parallelism) ? parallelism.GetInt32() : 0,
-            Checkpoints = root.TryGetProperty("checkpoints", out var checkpoints) ? checkpoints.GetInt64() : 0,
-            LastCheckpoint = root.TryGetProperty("lastCheckpoint", out var lastCheckpoint) ? lastCheckpoint.GetInt64() : 0,
-            BackpressureLevel = root.TryGetProperty("backpressureLevel", out var backpressure) ? backpressure.GetString() ?? "unknown" : "unknown"
+            RecordsIn = root.TryGetProperty("recordsIn", out var recordsIn) && recordsIn.ValueKind != JsonValueKind.Null ? recordsIn.GetInt64() : 0,
+            RecordsOut = root.TryGetProperty("recordsOut", out var recordsOut) && recordsOut.ValueKind != JsonValueKind.Null ? recordsOut.GetInt64() : 0,
+            Parallelism = root.TryGetProperty("parallelism", out var parallelism) && parallelism.ValueKind != JsonValueKind.Null ? parallelism.GetInt32() : 0,
+            Checkpoints = root.TryGetProperty("checkpoints", out var checkpoints) && checkpoints.ValueKind != JsonValueKind.Null ? checkpoints.GetInt64() : 0,
+            LastCheckpoint = root.TryGetProperty("lastCheckpoint", out var lastCheckpoint) && lastCheckpoint.ValueKind != JsonValueKind.Null ? lastCheckpoint.GetInt64() : 0,
+            BackpressureLevel = root.TryGetProperty("backpressureLevel", out var backpressure) && backpressure.ValueKind != JsonValueKind.Null ? backpressure.GetString() ?? "unknown" : "unknown"
         };
     }
     
