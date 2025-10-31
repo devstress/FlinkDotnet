@@ -810,12 +810,12 @@ public class ObservabilityTests : LocalTestingTestBase
 
         try
         {
-            // Act: Run SampleApp.Main() programmatically
-            TestContext.WriteLine("Running SampleApp.Main()...");
+            // Act: Run SampleApp.RunAsync() programmatically
+            TestContext.WriteLine("Running SampleApp.RunAsync()...");
             TestContext.WriteLine();
 
-            var sampleAppTask = SampleApp.Program.Main(Array.Empty<string>());
-            var completedTask = await Task.WhenAny(sampleAppTask, Task.Delay(TimeSpan.FromMinutes(2)));
+            Task<string> sampleAppTask = SampleApp.Program.RunAsync();
+            Task completedTask = await Task.WhenAny(sampleAppTask, Task.Delay(TimeSpan.FromMinutes(2)));
 
             // Verify SampleApp completed successfully
             if (completedTask != sampleAppTask)
