@@ -313,7 +313,7 @@ public class Table
         newTable.Operations.Add(new MLPredictDefinition
         {
             ModelName = modelName,
-            InputColumns = [..inputColumns]
+            InputColumns = [.. inputColumns],
         });
         return newTable;
     }
@@ -346,7 +346,7 @@ public class Table
         newTable.Operations.Add(new MLPredictDefinition
         {
             ModelName = modelName,
-            InputColumns = [..inputColumns],
+            InputColumns = [.. inputColumns],
             OutputPrefix = outputPrefix
         });
         return newTable;

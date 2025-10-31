@@ -1559,7 +1559,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Bootstrap servers for Kafka sources
         /// </summary>
-        public string? BootstrapServers { get; set; }
+        public string? BootstrapServers
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Topics to consume from (Kafka sources)
@@ -1569,7 +1572,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Consumer group ID (Kafka sources)
         /// </summary>
-        public string? GroupId { get; set; }
+        public string? GroupId
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Starting offsets strategy (earliest, latest, group, timestamp, specific)
@@ -1589,7 +1595,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// File format (csv, json, parquet, etc.) for file sources
         /// </summary>
-        public string? FileFormat { get; set; }
+        public string? FileFormat
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Additional source properties
@@ -1814,7 +1823,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Whether to ignore if database already exists
         /// </summary>
-        public bool IfNotExists { get; set; }
+        public bool IfNotExists
+        {
+            get; set;
+        }
 
         /// <summary>
         /// Optional comment for the database

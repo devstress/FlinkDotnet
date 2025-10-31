@@ -78,7 +78,7 @@ public class Database
                 sb.Append($"'{prop.Key}' = '{prop.Value}'");
                 first = false;
             }
-            sb.Append(")");
+            sb.Append(')');
         }
 
         return sb.ToString();

@@ -24,7 +24,7 @@ namespace FlinkDotNet.DataStream
     /// Provides modern connector framework with split discovery and exactly-once semantics.
     /// </summary>
     /// <typeparam name="T">Type of elements to consume</typeparam>
-    public class KafkaSource<T>
+    public sealed class KafkaSource<T>
     {
         private readonly string _bootstrapServers;
         private readonly List<string> _topics;
@@ -94,7 +94,7 @@ namespace FlinkDotNet.DataStream
         public class KafkaSourceBuilder<TElement>
         {
             private string? _bootstrapServers;
-            private readonly List<string> _topics = new();
+            private readonly List<string> _topics = [];
             private string? _groupId;
             private DeserializationSchema<TElement>? _deserializer;
             private KafkaStartingOffsets _startingOffsets = KafkaStartingOffsets.Latest;

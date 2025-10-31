@@ -10,10 +10,10 @@ namespace FlinkDotNet.DataStream;
 /// </summary>
 public class TableEnvironment
 {
-    private readonly Dictionary<string, Model> _registeredModels = new();
-    private readonly Dictionary<string, Table> _registeredTables = new();
-    private readonly Dictionary<string, Catalog> _registeredCatalogs = new();
-    private readonly Dictionary<string, Database> _registeredDatabases = new();
+    private readonly Dictionary<string, Model> _registeredModels = [];
+    private readonly Dictionary<string, Table> _registeredTables = [];
+    private readonly Dictionary<string, Catalog> _registeredCatalogs = [];
+    private readonly Dictionary<string, Database> _registeredDatabases = [];
     private string? _currentCatalog;
     private string? _currentDatabase;
 
