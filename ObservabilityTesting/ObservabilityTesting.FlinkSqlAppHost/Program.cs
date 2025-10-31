@@ -139,8 +139,8 @@ else
     Console.WriteLine("[INFO] Skipping Prometheus and Grafana (LEARNINGCOURSE mode disabled)");
 }
 
-// 7. Gateway - FlinkDotNet job submission endpoint (using pre-built Docker image)
-Console.WriteLine("[INFO] Configuring Gateway from pre-built Docker image...");
+// 7. FlinkDotNet JobGateway - FlinkDotNet job submission endpoint (using pre-built Docker image)
+Console.WriteLine("[INFO] Configuring FlinkDotNet JobGateway from pre-built Docker image...");
 
 const string gatewayImageTag = "flinkdotnet-gateway:local";
 
@@ -160,14 +160,14 @@ var gateway = builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WaitFor(sqlGateway);
 #pragma warning restore S1481
 
-Console.WriteLine($"   [INFO] Gateway will use pre-built Docker image: {gatewayImageTag}");
+Console.WriteLine($"   [INFO] FlinkDotNet JobGateway will use pre-built Docker image: {gatewayImageTag}");
 
 Console.WriteLine("[INFO] All services configured successfully");
 Console.WriteLine($"   - Kafka: Port {Ports.KafkaExternalPort}");
 Console.WriteLine("   - Flink JobManager: Port 8081");
 Console.WriteLine("   - Flink TaskManager: 8 task slots");
 Console.WriteLine("   - Flink SQL Gateway: Port 8083");
-Console.WriteLine("   - Gateway: Port 8086");
+Console.WriteLine("   - FlinkDotNet JobGateway: Port 8086");
 if (isLearningCourseMode)
 {
     Console.WriteLine($"   - Prometheus: Port {Ports.PrometheusHostPort}");
@@ -181,7 +181,7 @@ Console.WriteLine("   - Flink JobManager: Port 8081, Metrics: 9250");
 Console.WriteLine("   - Flink TaskManager: Metrics: 9251");
 Console.WriteLine($"   - Prometheus: Port {Ports.PrometheusHostPort}");
 Console.WriteLine($"   - Grafana: Port {Ports.GrafanaHostPort}");
-Console.WriteLine("   - Gateway: Dynamic port (container port 8086)");
+Console.WriteLine("   - FlinkDotNet JobGateway: Dynamic port (container port 8086)");
 
 builder.Build().Run();
 
@@ -191,7 +191,7 @@ static void SetupEnvironment()
     Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true");
     // CRITICAL: Set ASPNETCORE_URLS for Aspire Dashboard (required by Aspire SDK)
     // This will be inherited by child processes, but we override it per-project using WithEnvironment()
-    // Gateway explicitly sets ASPNETCORE_URLS via WithEnvironment()
+    // FlinkDotNet JobGateway explicitly sets ASPNETCORE_URLS via WithEnvironment()
     Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:18888");
     Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_ENDPOINT_URL", "http://localhost:18889");
     Environment.SetEnvironmentVariable("ASPIRE_DASHBOARD_OTLP_HTTP_ENDPOINT_URL", "http://localhost:18890");
