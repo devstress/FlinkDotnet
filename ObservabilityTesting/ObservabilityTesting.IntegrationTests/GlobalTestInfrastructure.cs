@@ -17,7 +17,7 @@ namespace ObservabilityTesting.IntegrationTests;
 public class GlobalTestInfrastructure
 {
 
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60); // Balanced timeout: enough for TaskManager registration, faster failure detection
     private static string? _previousLearningCourseMode;
 
     public static DistributedApplication? AppHost
@@ -55,11 +55,10 @@ public class GlobalTestInfrastructure
         try
         {
             _previousLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE");
-            if (string.Equals(_previousLearningCourseMode, "true", StringComparison.OrdinalIgnoreCase))
-            {
-                Console.WriteLine("⚠️ LEARNINGCOURSE=true detected - forcing Aspire integration-test profile.");
-            }
-            Environment.SetEnvironmentVariable("LEARNINGCOURSE", "false");
+            // CRITICAL: ObservabilityTesting requires LEARNINGCOURSE=true for Prometheus/Grafana stack
+            // Override the default LocalTesting behavior of disabling LEARNINGCOURSE mode
+            Console.WriteLine("✅ Setting LEARNINGCOURSE=true for ObservabilityTesting (requires Prometheus/Grafana)");
+            Environment.SetEnvironmentVariable("LEARNINGCOURSE", "true");
 
             // Clean up test-logs directory from previous test runs
             CleanupTestLogsDirectory();
@@ -190,22 +189,27 @@ public class GlobalTestInfrastructure
                 ? KafkaConnectionStringFromConfig
                 : discoveredKafkaEndpoint;
 
+            // CRITICAL: Flink jobs run in containers and need internal Docker network address
+            // Cannot use localhost - must use kafka:9092 for container-to-container communication
+            KafkaFlinkBootstrapServers = "kafka:9092";
+
             Console.WriteLine($"✅ Kafka connection strings:");
             Console.WriteLine($"   📡 From Aspire config: {KafkaConnectionStringFromConfig ?? "(not set)"}");
             Console.WriteLine($"   📡 From Docker discovery: {discoveredKafkaEndpoint}");
-            Console.WriteLine($"   📡 Using for tests: {KafkaConnectionString}");
-            Console.WriteLine($"   ℹ️  This address will be used by both test producers/consumers AND Flink jobs");
+            Console.WriteLine($"   📡 For test producers/consumers (host): {KafkaConnectionString}");
+            Console.WriteLine($"   📡 For Flink jobs (containers): {KafkaFlinkBootstrapServers}");
+            Console.WriteLine($"   ℹ️  Tests use localhost:port, Flink jobs use kafka:9092");
 
-            // Get Flink endpoint and wait for readiness with retry mechanism
+            // Get Flink endpoint and wait for readiness (don't require free slots initially - TaskManager registration takes time)
             var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
             Console.WriteLine($"🔍 Flink JobManager endpoint: {flinkEndpoint}");
-            await RetryWaitForReadyAsync("Flink", () => LocalTestingTestBase.WaitForFlinkReadyAsync($"{flinkEndpoint}v1/overview", DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
-            Console.WriteLine("✅ Flink JobManager and TaskManager are ready");
+            await RetryWaitForReadyAsync("Flink", () => LocalTestingTestBase.WaitForFlinkReadyAsync($"{flinkEndpoint}v1/overview", DefaultTimeout, default, requireFreeSlots: false), 3, TimeSpan.FromSeconds(5));
+            Console.WriteLine("✅ Flink JobManager is ready (TaskManagers will register asynchronously)");
 
-            // Wait for Gateway with retry mechanism
-            Console.WriteLine("⏳ Waiting for Gateway resource to start...");
-            await RetryHealthCheckAsync("flink-job-gateway", app, 3, TimeSpan.FromSeconds(5));
-            Console.WriteLine("✅ Gateway resource reported healthy");
+            // Wait for Gateway with retry mechanism (using pre-built Docker image)
+            Console.WriteLine("⏳ Waiting for Gateway container to start (pre-built Docker image)...");
+            await RetryHealthCheckAsync("flinkdotnet-jobgateway", app, 5, TimeSpan.FromSeconds(10));
+            Console.WriteLine("✅ Gateway container reported healthy");
 
             var gatewayEndpoint = await GetGatewayEndpointAsync();
             Console.WriteLine($"🔍 Gateway endpoint: {gatewayEndpoint}");
@@ -215,6 +219,7 @@ public class GlobalTestInfrastructure
             Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
             Console.WriteLine($"✅ FLINK_JOB_GATEWAY_URL set to: {gatewayEndpoint}");
 
+            // Wait for Gateway HTTP endpoint to be ready
             await RetryWaitForReadyAsync("Gateway", () => LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Gateway is ready");
 
@@ -669,13 +674,32 @@ public class GlobalTestInfrastructure
         }
     }
 
-    private static Task<string> GetGatewayEndpointAsync()
+    private static async Task<string> GetGatewayEndpointAsync()
     {
-        // FlinkDotNet.JobGateway is a .NET Aspire project (Projects.FlinkDotNet_JobGateway),
-        // NOT a Docker container. It runs directly on the host at a fixed port.
-        // Do NOT attempt Docker discovery - always use the configured fixed port.
-        var gatewayEndpoint = $"http://localhost:{Ports.GatewayHostPort}/";
-        return Task.FromResult(gatewayEndpoint);
+        // Gateway is now a Docker container (using pre-built image), so we need to discover its dynamically allocated port
+        try
+        {
+            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flinkdotnet-jobgateway\" --format \"{{.Ports}}\"");
+            var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var line in lines)
+            {
+                if (line.Contains("->8086/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8086");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}/";
+                    }
+                }
+            }
+
+            throw new InvalidOperationException($"Could not determine Gateway endpoint from Docker ports: {gatewayContainers}");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to get Gateway endpoint: {ex.Message}", ex);
+        }
     }
 
 //     private static async Task<string> GetTemporalEndpointAsync()

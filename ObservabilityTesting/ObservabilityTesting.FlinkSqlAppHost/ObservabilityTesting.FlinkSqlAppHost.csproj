@@ -29,4 +29,27 @@
     </ProjectReference>
   </ItemGroup>
 
+  <!-- Build FlinkDotNet JobGateway Docker image during 'dotnet build' only, not during 'dotnet run' -->
+  <Target Name="BuildGatewayDockerImage" BeforeTargets="Build" Condition="'$(DOTNET_RUNNING_IN_CONTAINER)' == '' AND '$(MSBuildRuntimeType)' == 'Core'">
+    <PropertyGroup>
+      <!-- Use forward slashes for cross-platform compatibility -->
+      <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../'))</RepoRoot>
+      <GatewayDockerfile>$(RepoRoot)/FlinkDotNet/FlinkDotNet.JobGateway/Dockerfile</GatewayDockerfile>
+      <GatewayImageTag>flinkdotnet-gateway:local</GatewayImageTag>
+    </PropertyGroup>
+
+    <Message Text="[INFO] Building FlinkDotNet JobGateway Docker image: $(GatewayImageTag)" Importance="High" />
+    <Message Text="[INFO] Dockerfile location: $(GatewayDockerfile)" Importance="High" />
+    <Message Text="[INFO] Build context: $(RepoRoot)" Importance="High" />
+
+    <!-- Build the Docker image using the JobGateway Dockerfile -->
+    <Exec Command="docker build -t $(GatewayImageTag) -f &quot;$(GatewayDockerfile)&quot; &quot;$(RepoRoot)&quot;"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High"
+          ContinueOnError="false" />
+
+    <Message Text="[INFO] FlinkDotNet JobGateway Docker image built successfully: $(GatewayImageTag)" Importance="High" />
+  </Target>
+
 </Project>

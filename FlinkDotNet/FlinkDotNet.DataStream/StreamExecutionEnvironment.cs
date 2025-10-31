@@ -355,6 +355,35 @@ namespace FlinkDotNet.DataStream
         /// <returns>The execution environment of the context in which the program is executed</returns>
         public static StreamExecutionEnvironment GetExecutionEnvironment(FlinkConfiguration? configuration = null) => new(configuration);
 
+        /// <summary>
+        /// Gets the JobDefinition for the configured job without executing it.
+        /// This is useful for submitting jobs to a Gateway instead of executing directly.
+        /// </summary>
+        /// <param name="jobName">Name of the job</param>
+        /// <returns>The JobDefinition that can be sent to a Gateway for execution</returns>
+        public JobDefinition GetJobDefinition(string? jobName = null)
+        {
+            string name = jobName ?? this._activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
+
+            // Check if we have captured operations from native API usage
+            if (this._operationCapture?.HasOperations() == true)
+            {
+                // Translate captured operations to JobDefinition
+                string jobId = System.Guid.NewGuid().ToString();
+                return this._operationCapture.ToJobDefinition(jobId, name);
+            }
+            else if (this._activeJob != null)
+            {
+                // Use existing JobDefinition (IR-backed stream)
+                this._activeJob.Metadata.JobName = name;
+                return this._activeJob;
+            }
+            else
+            {
+                throw new InvalidOperationException("No Flink-compatible job is defined. Use AddKafkaSource(...) or FromKafka(...) before getting JobDefinition.");
+            }
+        }
+
         public async Task<IJobClient> ExecuteAsync(string? jobName = null, CancellationToken cancellationToken = default)
         {
             string name = jobName ?? this._activeJob?.Metadata?.JobName ?? "Flink Streaming Job";

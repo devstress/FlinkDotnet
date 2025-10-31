@@ -70,10 +70,10 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine($"   Output topic: {outputTopic}");
             TestContext.WriteLine($"   Expected messages: {expectedMessageCount}");
             
-            // Create and submit job
-            var job = FlinkDotNetJobs.CreateUppercaseJob(inputTopic, outputTopic, KafkaConnectionString!, "gateway-metrics-test", cts.Token);
+            // Create and submit job via Gateway
+            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaFlinkBootstrapServers!, "gateway-metrics-test");
             var gatewayEndpoint = await GetGatewayEndpointAsync();
-            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, job, cts.Token);
+            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
             TestContext.WriteLine($"✅ Job submitted: {jobId}");
             
@@ -133,8 +133,24 @@ public class ObservabilityTests : LocalTestingTestBase
             // Wait for Prometheus targets to be healthy
             await WaitForPrometheusTargetsHealthyAsync(prometheusEndpoint, cts.Token);
             
-            // Query Prometheus for Flink metrics
-            var flinkMetrics = await QueryPrometheusMetricAsync(prometheusEndpoint, "flink_taskmanager_Status_JVM_Memory_Heap_Used", cts.Token);
+            // Wait for Flink to start producing metrics (retry with delay)
+            TestContext.WriteLine("⏳ Waiting for Flink metrics to become available...");
+            var flinkMetrics = new List<PrometheusMetric>();
+            var maxRetries = 6;
+            for (int i = 0; i < maxRetries; i++)
+            {
+                flinkMetrics = await QueryPrometheusMetricAsync(prometheusEndpoint, "flink_taskmanager_Status_JVM_Memory_Heap_Used", cts.Token);
+                if (flinkMetrics.Count > 0)
+                {
+                    TestContext.WriteLine($"✅ Flink metrics available after {i + 1} attempts");
+                    break;
+                }
+                if (i < maxRetries - 1)
+                {
+                    TestContext.WriteLine($"   Attempt {i + 1}/{maxRetries}: No metrics yet, waiting 5s...");
+                    await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
+                }
+            }
             
             TestContext.WriteLine($"📊 Prometheus Flink Metrics:");
             TestContext.WriteLine($"   Metric: flink_taskmanager_Status_JVM_Memory_Heap_Used");
@@ -220,9 +236,9 @@ public class ObservabilityTests : LocalTestingTestBase
             var outputTopic = $"observability-test4-output-{Guid.NewGuid():N}";
             
             // Create job with slower processing to potentially trigger backpressure
-            var job = FlinkDotNetJobs.CreateFilterJob(inputTopic, outputTopic, KafkaConnectionString!, "backpressure-test", cts.Token);
+            var jobDefinition = FlinkDotNetJobs.CreateFilterJobDefinition(inputTopic, outputTopic, KafkaFlinkBootstrapServers!, "backpressure-test");
             var gatewayEndpoint = await GetGatewayEndpointAsync();
-            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, job, cts.Token);
+            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
             TestContext.WriteLine($"✅ Job submitted: {jobId}");
             
@@ -297,8 +313,8 @@ public class ObservabilityTests : LocalTestingTestBase
             var inputTopic = $"observability-e2e-input-{Guid.NewGuid():N}";
             var outputTopic = $"observability-e2e-output-{Guid.NewGuid():N}";
             
-            var job = FlinkDotNetJobs.CreateUppercaseJob(inputTopic, outputTopic, KafkaConnectionString!, "e2e-observability", cts.Token);
-            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, job, cts.Token);
+            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaFlinkBootstrapServers!, "e2e-observability");
+            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
             TestContext.WriteLine($"✅ Step 1: Job submitted ({jobId})");
             
@@ -352,8 +368,30 @@ public class ObservabilityTests : LocalTestingTestBase
     
     private static async Task<string> GetGatewayEndpointAsync()
     {
-        var gatewayPort = Ports.GatewayHostPort;
-        return await Task.FromResult($"http://localhost:{gatewayPort}");
+        // Gateway is now a Docker container (using pre-built image), so we need to discover its dynamically allocated port
+        try
+        {
+            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flinkdotnet-jobgateway\" --format \"{{.Ports}}\"");
+            var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var line in lines)
+            {
+                if (line.Contains("->8086/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8086");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}/";
+                    }
+                }
+            }
+
+            throw new InvalidOperationException($"Could not determine Gateway endpoint from Docker ports: {gatewayContainers}");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to get Gateway endpoint: {ex.Message}", ex);
+        }
     }
     
     private static async Task<string> GetPrometheusEndpointAsync()
@@ -467,7 +505,7 @@ public class ObservabilityTests : LocalTestingTestBase
             throw new InvalidOperationException("HTTP client not initialized");
         }
         
-        var response = await _httpClient.PostAsJsonAsync($"{gatewayEndpoint}/v1/jobs", job, ct);
+        var response = await _httpClient.PostAsJsonAsync($"{gatewayEndpoint}api/v1/jobs/submit", job, ct);
         response.EnsureSuccessStatusCode();
         
         var result = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
@@ -512,7 +550,7 @@ public class ObservabilityTests : LocalTestingTestBase
             throw new InvalidOperationException("HTTP client not initialized");
         }
         
-        var response = await _httpClient.GetAsync($"{gatewayEndpoint}/v1/jobs/{jobId}/metrics", ct);
+        var response = await _httpClient.GetAsync($"{gatewayEndpoint}api/v1/jobs/{jobId}/metrics", ct);
         response.EnsureSuccessStatusCode();
         
         var metricsJson = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
@@ -525,12 +563,12 @@ public class ObservabilityTests : LocalTestingTestBase
         
         return new GatewayMetrics
         {
-            RecordsIn = root.TryGetProperty("recordsIn", out var recordsIn) ? recordsIn.GetInt64() : 0,
-            RecordsOut = root.TryGetProperty("recordsOut", out var recordsOut) ? recordsOut.GetInt64() : 0,
-            Parallelism = root.TryGetProperty("parallelism", out var parallelism) ? parallelism.GetInt32() : 0,
-            Checkpoints = root.TryGetProperty("checkpoints", out var checkpoints) ? checkpoints.GetInt64() : 0,
-            LastCheckpoint = root.TryGetProperty("lastCheckpoint", out var lastCheckpoint) ? lastCheckpoint.GetInt64() : 0,
-            BackpressureLevel = root.TryGetProperty("backpressureLevel", out var backpressure) ? backpressure.GetString() ?? "unknown" : "unknown"
+            RecordsIn = root.TryGetProperty("recordsIn", out var recordsIn) && recordsIn.ValueKind != JsonValueKind.Null ? recordsIn.GetInt64() : 0,
+            RecordsOut = root.TryGetProperty("recordsOut", out var recordsOut) && recordsOut.ValueKind != JsonValueKind.Null ? recordsOut.GetInt64() : 0,
+            Parallelism = root.TryGetProperty("parallelism", out var parallelism) && parallelism.ValueKind != JsonValueKind.Null ? parallelism.GetInt32() : 0,
+            Checkpoints = root.TryGetProperty("checkpoints", out var checkpoints) && checkpoints.ValueKind != JsonValueKind.Null ? checkpoints.GetInt64() : 0,
+            LastCheckpoint = root.TryGetProperty("lastCheckpoint", out var lastCheckpoint) && lastCheckpoint.ValueKind != JsonValueKind.Null ? lastCheckpoint.GetInt64() : 0,
+            BackpressureLevel = root.TryGetProperty("backpressureLevel", out var backpressure) && backpressure.ValueKind != JsonValueKind.Null ? backpressure.GetString() ?? "unknown" : "unknown"
         };
     }
     
@@ -730,5 +768,159 @@ public class ObservabilityTests : LocalTestingTestBase
         public string Name { get; init; } = "";
         public string Type { get; init; } = "";
         public string Url { get; init; } = "";
+    }
+
+    /// <summary>
+    /// Test 6: Validate SampleApp can discover FlinkDotNet JobGateway and successfully submit a job.
+    /// This test proves that external applications can integrate with FlinkDotNet JobGateway.
+    /// Tests WI requirement: Create and run SampleApp that uses FlinkDotNet JobGateway.
+    /// </summary>
+    [Test]
+    [Timeout(180000)] // 3 minutes
+    [Category("integration")]
+    [Category("gateway")]
+    public async Task Test6_SampleApp_CanDiscoverGatewayAndSubmitJob()
+    {
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine("Test 6: SampleApp Gateway Discovery and Job Submission");
+        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine();
+        TestContext.WriteLine("This test validates that:");
+        TestContext.WriteLine("  1. SampleApp can discover FlinkDotNet JobGateway via environment variables");
+        TestContext.WriteLine("  2. SampleApp can submit jobs to FlinkDotNet JobGateway");
+        TestContext.WriteLine("  3. Jobs submitted by SampleApp execute successfully on Flink cluster");
+        TestContext.WriteLine("  4. End-to-end data pipeline works (Kafka -> Flink -> Kafka)");
+        TestContext.WriteLine();
+
+        // Arrange: Set up environment variables for SampleApp
+        var gatewayEndpoint = await GetGatewayEndpointAsync();
+        var kafkaBootstrap = GlobalTestInfrastructure.KafkaEndpoint;
+        var kafkaFlinkBootstrap = GlobalTestInfrastructure.KafkaContainerIp;
+
+        TestContext.WriteLine($"Gateway Endpoint: {gatewayEndpoint}");
+        TestContext.WriteLine($"Kafka Bootstrap (Host): {kafkaBootstrap}");
+        TestContext.WriteLine($"Kafka Bootstrap (Flink): {kafkaFlinkBootstrap}");
+        TestContext.WriteLine();
+
+        Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
+        Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap);
+        Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", kafkaFlinkBootstrap);
+
+        string? jobId = null;
+
+        try
+        {
+            // Act: Run SampleApp.RunAsync() programmatically
+            TestContext.WriteLine("Running SampleApp.RunAsync()...");
+            TestContext.WriteLine();
+
+            Task<string> sampleAppTask = SampleApp.Program.RunAsync();
+            Task completedTask = await Task.WhenAny(sampleAppTask, Task.Delay(TimeSpan.FromMinutes(2)));
+
+            // Verify SampleApp completed successfully
+            if (completedTask != sampleAppTask)
+            {
+                Assert.Fail("SampleApp timed out after 2 minutes");
+            }
+
+            jobId = await sampleAppTask; // Will throw if SampleApp failed
+
+            TestContext.WriteLine();
+            TestContext.WriteLine($"✅ SampleApp completed successfully. Job ID: {jobId}");
+            TestContext.WriteLine();
+
+            // Assert: Verify messages were processed by consuming from output topic
+            TestContext.WriteLine("Verifying output messages...");
+            await Task.Delay(3000); // Wait for messages to be processed
+
+            var consumedMessages = 0;
+            var uppercaseCount = 0;
+
+            var consumerConfig = new Confluent.Kafka.ConsumerConfig
+            {
+                BootstrapServers = kafkaBootstrap,
+                GroupId = $"test-consumer-{Guid.NewGuid()}",
+                AutoOffsetReset = Confluent.Kafka.AutoOffsetReset.Earliest,
+                EnableAutoCommit = false
+            };
+
+            using (var consumer = new Confluent.Kafka.ConsumerBuilder<string, string>(consumerConfig).Build())
+            {
+                consumer.Subscribe("sample_output");
+
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                var timeout = TimeSpan.FromSeconds(30);
+
+                while (stopwatch.Elapsed < timeout && consumedMessages < 20)
+                {
+                    var result = consumer.Consume(TimeSpan.FromMilliseconds(1000));
+
+                    if (result != null)
+                    {
+                        consumedMessages++;
+                        bool isUppercase = result.Message.Value == result.Message.Value.ToUpperInvariant();
+                        if (isUppercase)
+                        {
+                            uppercaseCount++;
+                        }
+
+                        if (consumedMessages <= 3)
+                        {
+                            TestContext.WriteLine($"  [{consumedMessages:D2}] {result.Message.Value}");
+                        }
+
+                        consumer.Commit(result);
+                    }
+                    else if (consumedMessages > 0)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            TestContext.WriteLine($"  ... (consumed {consumedMessages} total messages)");
+            TestContext.WriteLine();
+
+            // Verify results
+            Assert.That(consumedMessages, Is.GreaterThan(0), "No messages consumed from output topic");
+            Assert.That(uppercaseCount, Is.EqualTo(consumedMessages), $"Not all messages were uppercased: {uppercaseCount}/{consumedMessages}");
+
+            TestContext.WriteLine("================================================================================");
+            TestContext.WriteLine("✅ Test 6 PASSED");
+            TestContext.WriteLine("================================================================================");
+            TestContext.WriteLine();
+            TestContext.WriteLine("Verified:");
+            TestContext.WriteLine("  ✓ SampleApp discovered FlinkDotNet JobGateway");
+            TestContext.WriteLine("  ✓ SampleApp submitted job successfully");
+            TestContext.WriteLine("  ✓ Job executed on Flink cluster");
+            TestContext.WriteLine($"  ✓ Data pipeline processed {consumedMessages} messages correctly");
+            TestContext.WriteLine("  ✓ Uppercase transformation applied to all messages");
+            TestContext.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine();
+            TestContext.WriteLine("❌ Test 6 FAILED");
+            TestContext.WriteLine($"Error: {ex.Message}");
+            TestContext.WriteLine();
+            throw;
+        }
+        finally
+        {
+            // Clean up: Cancel the job if it was submitted
+            if (jobId != null)
+            {
+                try
+                {
+                    using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+                    await httpClient.PostAsync($"{gatewayEndpoint}/api/v1/jobs/{jobId}/cancel", null);
+                    TestContext.WriteLine($"Cancelled job {jobId}");
+                }
+                catch
+                {
+                    // Ignore cleanup errors
+                }
+            }
+        }
     }
 }
