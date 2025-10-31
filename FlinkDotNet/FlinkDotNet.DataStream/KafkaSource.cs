@@ -58,7 +58,9 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the bootstrap servers configuration.
         /// </summary>
+#pragma warning disable RCS1085 // Use auto-implemented property - False positive: property returns readonly field
         public string BootstrapServers => this._bootstrapServers;
+#pragma warning restore RCS1085
 
         /// <summary>
         /// Gets the list of topics to consume from.
@@ -68,17 +70,23 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Gets the consumer group ID (null for no group).
         /// </summary>
+#pragma warning disable RCS1085 // Use auto-implemented property - False positive: property returns readonly field
         public string? GroupId => this._groupId;
+#pragma warning restore RCS1085
 
         /// <summary>
         /// Gets the starting offsets strategy.
         /// </summary>
+#pragma warning disable RCS1085 // Use auto-implemented property - False positive: property returns readonly field
         public KafkaStartingOffsets StartingOffsets => this._startingOffsets;
+#pragma warning restore RCS1085
 
         /// <summary>
         /// Gets the stopping offsets strategy (Bounded sources only).
         /// </summary>
+#pragma warning disable RCS1085 // Use auto-implemented property - False positive: property returns readonly field
         public KafkaStoppingOffsets StoppingOffsets => this._stoppingOffsets;
+#pragma warning restore RCS1085
 
         /// <summary>
         /// Builder for Kafka sources.
