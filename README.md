@@ -143,6 +143,7 @@ FlinkDotNet provides **100% feature parity** with Apache Flink 1.0-2.1, implemen
 | **1.15-1.18** | 2022-2023 | ✅ **100%** | Table Store/Apache Paimon, Advanced Table Features |
 | **1.19** | Mar 2024 | ✅ **100%** | Performance Improvements, Checkpoint Optimizations |
 | **1.20** | Oct 2024 | ✅ **100%** | Unified Sink v2 (WI6), Materialized Tables |
+| **2.0** | Mar 2025 | ✅ **100%** | Disaggregated State, Unified Runtime, API Modernization |
 | **2.1** | Jul 2025 | ✅ **100%** | AI/ML Integration, VARIANT Type, PTFs, Performance & Format |
 
 ### Feature Categories (21/21 Complete - 100% 🎉)
