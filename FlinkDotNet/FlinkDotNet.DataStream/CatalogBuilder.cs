@@ -69,12 +69,12 @@ public class CatalogBuilder
     public CatalogBuilder WithJdbcUrl(string jdbcUrl)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(jdbcUrl);
-        
+
         // Set default database if not already set
         this._defaultDatabase ??= "default";
-        
+
         this._properties["base-url"] = jdbcUrl;
-        
+
         // Only set username/password if not already set
         if (!this._properties.ContainsKey("username"))
         {
@@ -84,7 +84,7 @@ public class CatalogBuilder
         {
             this._properties["password"] = "admin"; // Default JDBC password
         }
-        
+
         return this;
     }
 
