@@ -144,11 +144,15 @@ const string gatewayImageTag = "flinkdotnet-gateway:local";
 #pragma warning disable S1481 // gateway resource is created and used by Aspire infrastructure
 // Use AddContainer with pre-built image instead of PublishAsDockerFile
 // The Docker image is built as part of the AppHost build process (see .csproj BuildGatewayDockerImage target)
-var gateway = builder.AddContainer("gateway", gatewayImageTag)
+var gateway = builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WithHttpEndpoint(targetPort: 8086, name: "gateway-http")
+    .WithHttpEndpoint(targetPort: 9253, name: "gateway-metrics")  // Prometheus metrics endpoint
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
-    .WithEnvironment("Flink__JobManager__BaseUrl", jobManager.GetEndpoint("jm-http"))
-    .WithEnvironment("Flink__SqlGateway__BaseUrl", sqlGateway.GetEndpoint("sg-http"))
+    .WithEnvironment("Flink__JobManager__BaseUrl", "http://flink-jobmanager:8081")
+    .WithEnvironment("Flink__SqlGateway__BaseUrl", "http://flink-sql-gateway:8083")
+    .WithEnvironment("Metrics__Prometheus__Enabled", "true")  // Enable Prometheus metrics
+    .WithEnvironment("Metrics__Prometheus__Port", "9253")     // Metrics on port 9253
+    .WithEnvironment("Metrics__Prometheus__Path", "/metrics") // Metrics path
     .WaitFor(jobManager)
     .WaitFor(sqlGateway);
 #pragma warning restore S1481

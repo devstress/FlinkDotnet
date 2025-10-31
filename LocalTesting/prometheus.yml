@@ -61,11 +61,16 @@ scrape_configs:
   #         component: 'flink'
   #         role: 'sql-gateway'
 
-  # FlinkDotNet JobGateway metrics - REMOVED
-  # DECISION: Do not scrape JobGateway metrics in current configuration
-  # JobGateway runs as host process (.AddProject) not containerized
-  # Container-to-host networking is complex (requires gateway IP detection)
-  # Future: When JobGateway is containerized, add Prometheus metrics scraping
+  # FlinkDotNet JobGateway metrics
+  # Gateway is now containerized and exposes Prometheus metrics on port 9253
+  # Collects job submission metrics, gateway performance, and FlinkDotNet-specific telemetry
+  - job_name: 'flinkdotnet-jobgateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flinkdotnet-jobgateway:9253']
+        labels:
+          component: 'flinkdotnet'
+          role: 'jobgateway'
 
   # Prometheus self-monitoring
   - job_name: 'prometheus'

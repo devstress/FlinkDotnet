@@ -203,7 +203,7 @@ public class GlobalTestInfrastructure
 
             // Wait for Gateway with retry mechanism (using pre-built Docker image)
             Console.WriteLine("⏳ Waiting for Gateway container to start (pre-built Docker image)...");
-            await RetryHealthCheckAsync("gateway", app, 5, TimeSpan.FromSeconds(10));
+            await RetryHealthCheckAsync("flinkdotnet-jobgateway", app, 5, TimeSpan.FromSeconds(10));
             Console.WriteLine("✅ Gateway container reported healthy");
 
             var gatewayEndpoint = await GetGatewayEndpointAsync();
@@ -669,13 +669,32 @@ public class GlobalTestInfrastructure
         }
     }
 
-    private static Task<string> GetGatewayEndpointAsync()
+    private static async Task<string> GetGatewayEndpointAsync()
     {
-        // FlinkDotNet.JobGateway is a .NET Aspire project (Projects.FlinkDotNet_JobGateway),
-        // NOT a Docker container. It runs directly on the host at a fixed port.
-        // Do NOT attempt Docker discovery - always use the configured fixed port.
-        var gatewayEndpoint = $"http://localhost:{Ports.GatewayHostPort}/";
-        return Task.FromResult(gatewayEndpoint);
+        // Gateway is now a Docker container (using pre-built image), so we need to discover its dynamically allocated port
+        try
+        {
+            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flinkdotnet-jobgateway\" --format \"{{.Ports}}\"");
+            var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var line in lines)
+            {
+                if (line.Contains("->8086/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8086");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}/";
+                    }
+                }
+            }
+
+            throw new InvalidOperationException($"Could not determine Gateway endpoint from Docker ports: {gatewayContainers}");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to get Gateway endpoint: {ex.Message}", ex);
+        }
     }
 
 //     private static async Task<string> GetTemporalEndpointAsync()

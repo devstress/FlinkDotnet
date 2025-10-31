@@ -80,9 +80,14 @@ jobs:
       - name: Build ObservabilityTesting solution
         run: |
           echo "🔨 Building ObservabilityTesting solution..."
-          echo "   Gateway will be built from Dockerfile as part of Aspire build"
+          echo "   Building AppHost first to create Gateway Docker image..."
           dotnet restore ObservabilityTesting/ObservabilityTesting.sln
+          # Build AppHost first to trigger Gateway Docker image build via MSBuild target
+          dotnet build ObservabilityTesting/ObservabilityTesting.FlinkSqlAppHost/ObservabilityTesting.FlinkSqlAppHost.csproj --configuration ${{ env.configuration }} --no-restore
+          # Build the rest of the solution
           dotnet build ObservabilityTesting/ObservabilityTesting.sln --configuration ${{ env.configuration }} --no-restore
+          # Verify Gateway Docker image was created
+          docker images | grep flinkdotnet-gateway || echo "⚠️ Warning: Gateway Docker image not found"
 
       - name: Run Observability Integration Tests
         timeout-minutes: 20

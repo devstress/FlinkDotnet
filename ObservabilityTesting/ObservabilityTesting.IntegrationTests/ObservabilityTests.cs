@@ -352,8 +352,30 @@ public class ObservabilityTests : LocalTestingTestBase
     
     private static async Task<string> GetGatewayEndpointAsync()
     {
-        var gatewayPort = Ports.GatewayHostPort;
-        return await Task.FromResult($"http://localhost:{gatewayPort}");
+        // Gateway is now a Docker container (using pre-built image), so we need to discover its dynamically allocated port
+        try
+        {
+            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flinkdotnet-jobgateway\" --format \"{{.Ports}}\"");
+            var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var line in lines)
+            {
+                if (line.Contains("->8086/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8086");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}/";
+                    }
+                }
+            }
+
+            throw new InvalidOperationException($"Could not determine Gateway endpoint from Docker ports: {gatewayContainers}");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to get Gateway endpoint: {ex.Message}", ex);
+        }
     }
     
     private static async Task<string> GetPrometheusEndpointAsync()
