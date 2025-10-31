@@ -534,7 +534,7 @@ public class ObservabilityTests : LocalTestingTestBase
             throw new InvalidOperationException("HTTP client not initialized");
         }
         
-        var response = await _httpClient.GetAsync($"{gatewayEndpoint}/v1/jobs/{jobId}/metrics", ct);
+        var response = await _httpClient.GetAsync($"{gatewayEndpoint}api/v1/jobs/{jobId}/metrics", ct);
         response.EnsureSuccessStatusCode();
         
         var metricsJson = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
