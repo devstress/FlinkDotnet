@@ -364,7 +364,7 @@ namespace FlinkDotNet.DataStream
         public JobDefinition GetJobDefinition(string? jobName = null)
         {
             string name = jobName ?? this._activeJob?.Metadata?.JobName ?? "Flink Streaming Job";
-            
+
             // Check if we have captured operations from native API usage
             if (this._operationCapture?.HasOperations() == true)
             {

@@ -34,20 +34,22 @@ if (!isLearningCourseMode)
 
 // 1. Kafka - Message broker for test data
 Console.WriteLine("[INFO] Configuring Kafka...");
-#pragma warning disable S1481 // kafka resource is created and used by Aspire infrastructure
-IResourceBuilder<KafkaServerResource> _ = builder.AddKafka("kafka")
+builder.AddKafka("kafka")
     .WithKafkaUI()
     .WithLifetime(ContainerLifetime.Persistent);
-#pragma warning restore S1481
 
 // Flink configuration file with correct jobmanager.rpc.address
 string flinkConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-config.yaml");
+
+// Constants for Flink container configuration
+const string FlinkImage = "flink";
+const string FlinkVersion = "2.1.0-java17";
 
 // 2. Flink JobManager with Prometheus metrics enabled
 Console.WriteLine("[INFO] Configuring Flink JobManager with Prometheus metrics...");
 
 string metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
-IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-jobmanager", "flink", "2.1.0-java17")
+IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-jobmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8081, name: "jobmanager-http")
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
     .WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true)  // Mount proper config
@@ -63,7 +65,7 @@ if (File.Exists(metricsJarPath))
 // 3. Flink TaskManager with Prometheus metrics enabled  
 Console.WriteLine("[INFO] Configuring Flink TaskManager with Prometheus metrics...");
 
-IResourceBuilder<ContainerResource> taskManager = builder.AddContainer("flink-taskmanager", "flink", "2.1.0-java17")
+IResourceBuilder<ContainerResource> taskManager = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
     .WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true)  // Mount proper config
     .WithEnvironment("FLINK_PROPERTIES", "metrics.reporter.prom.port: 9251\n")  // Override metrics port for TaskManager
@@ -73,12 +75,22 @@ IResourceBuilder<ContainerResource> taskManager = builder.AddContainer("flink-ta
 
 if (File.Exists(metricsJarPath))
 {
-    _ = (IResourceBuilder<KafkaServerResource>) taskManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
+    _ = taskManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
     Console.WriteLine("   [INFO] Prometheus metrics JAR mounted for TaskManager");
 }
 
 // 4. Flink SQL Gateway - Required for FlinkDotNet JobGateway to communicate with Flink
 Console.WriteLine("[INFO] Configuring Flink SQL Gateway...");
+
+// Java options for SQL Gateway (split for readability)
+const string JavaOptsBase = "--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED " +
+    "--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED " +
+    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED " +
+    "--add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED " +
+    "--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED " +
+    "--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED " +
+    "--add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED";
+
 string baseSqlGatewayFlinkProperties =
     "jobmanager.rpc.address: flink-jobmanager\n" +
     "rest.address: flink-jobmanager\n" +
@@ -91,9 +103,9 @@ string baseSqlGatewayFlinkProperties =
     "sql-gateway.session.check-interval: 60000\n" +
     "sql-gateway.session.idle-timeout: 600000\n" +
     "sql-gateway.worker.threads.max: 10\n" +
-    "env.java.opts.all: --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED\n";
+    $"env.java.opts.all: {JavaOptsBase}\n";
 
-IResourceBuilder<ContainerResource> sqlGateway = builder.AddContainer("flink-sql-gateway", "flink", "2.1.0-java17")
+IResourceBuilder<ContainerResource> sqlGateway = builder.AddContainer("flink-sql-gateway", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8083, name: "sg-http")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", baseSqlGatewayFlinkProperties)
@@ -114,17 +126,13 @@ if (isLearningCourseMode)
     // 6. Grafana - Metrics visualization
     Console.WriteLine("[INFO] Configuring Grafana...");
 
-    IResourceBuilder<ContainerResource> grafana;
-
-#pragma warning disable S1481 // grafana resource is created and used by Aspire infrastructure
-    IResourceBuilder<ContainerResource> _ = builder.AddContainer("grafana", "grafana/grafana", LatestTag)
+    builder.AddContainer("grafana", "grafana/grafana", LatestTag)
         .WithHttpEndpoint(targetPort: Ports.GrafanaHostPort, name: "grafana-http")
         .WithEnvironment("GF_AUTH_ANONYMOUS_ENABLED", "true")
         .WithEnvironment("GF_AUTH_ANONYMOUS_ORG_ROLE", "Admin")
         .WithEnvironment("GF_AUTH_DISABLE_LOGIN_FORM", "true")
         .WithEnvironment("GF_SECURITY_ADMIN_PASSWORD", "admin")
         .WaitFor(prometheus);
-#pragma warning restore S1481
 }
 else
 {
@@ -136,10 +144,9 @@ Console.WriteLine("[INFO] Configuring FlinkDotNet JobGateway from pre-built Dock
 
 const string gatewayImageTag = "flinkdotnet-gateway:local";
 
-#pragma warning disable S1481 // gateway resource is created and used by Aspire infrastructure
 // Use AddContainer with pre-built image instead of PublishAsDockerFile
 // The Docker image is built as part of the AppHost build process (see .csproj BuildGatewayDockerImage target)
-IResourceBuilder<ContainerResource> _ = builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
+builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WithHttpEndpoint(targetPort: 8086, name: "gateway-http")
     .WithHttpEndpoint(targetPort: 9253, name: "gateway-metrics")  // Prometheus metrics endpoint
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
@@ -150,7 +157,6 @@ IResourceBuilder<ContainerResource> _ = builder.AddContainer("flinkdotnet-jobgat
     .WithEnvironment("Metrics__Prometheus__Path", "/metrics") // Metrics path
     .WaitFor(jobManager)
     .WaitFor(sqlGateway);
-#pragma warning restore S1481
 
 Console.WriteLine($"   [INFO] FlinkDotNet JobGateway will use pre-built Docker image: {gatewayImageTag}");
 
