@@ -67,7 +67,9 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine($"   Expected messages: {expectedMessageCount}");
             
             // Create and submit job via Gateway
-            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaFlinkBootstrapServers!, "gateway-metrics-test");
+            // CRITICAL FIX: Use discovered port (KafkaConnectionString) for Flink jobs, matching LocalTesting pattern
+            // Docker port-forwards localhost:MAPPED_PORT to Kafka container, making it accessible from both host AND containers
+            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaConnectionString!, "gateway-metrics-test");
             var gatewayEndpoint = await GetGatewayEndpointAsync();
             var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
@@ -240,7 +242,8 @@ public class ObservabilityTests : LocalTestingTestBase
             var outputTopic = $"observability-test4-output-{Guid.NewGuid():N}";
             
             // Create job with slower processing to potentially trigger backpressure
-            var jobDefinition = FlinkDotNetJobs.CreateFilterJobDefinition(inputTopic, outputTopic, KafkaFlinkBootstrapServers!, "backpressure-test");
+            // Use discovered port for Flink jobs (matching LocalTesting pattern)
+            var jobDefinition = FlinkDotNetJobs.CreateFilterJobDefinition(inputTopic, outputTopic, KafkaConnectionString!, "backpressure-test");
             var gatewayEndpoint = await GetGatewayEndpointAsync();
             var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
@@ -317,7 +320,8 @@ public class ObservabilityTests : LocalTestingTestBase
             var inputTopic = $"observability-e2e-input-{Guid.NewGuid():N}";
             var outputTopic = $"observability-e2e-output-{Guid.NewGuid():N}";
             
-            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaFlinkBootstrapServers!, "e2e-observability");
+            // Use discovered port for Flink jobs (matching LocalTesting pattern)
+            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, KafkaConnectionString!, "e2e-observability");
             var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
             TestContext.WriteLine($"✅ Step 1: Job submitted ({jobId})");
@@ -857,16 +861,15 @@ public class ObservabilityTests : LocalTestingTestBase
         // Arrange: Set up environment variables for SampleApp
         var gatewayEndpoint = await GetGatewayEndpointAsync();
         var kafkaBootstrap = GlobalTestInfrastructure.KafkaEndpoint;
-        var kafkaFlinkBootstrap = GlobalTestInfrastructure.KafkaFlinkBootstrapServers;
+        // Use same discovered port for both test and Flink (matching LocalTesting pattern)
 
         TestContext.WriteLine($"Gateway Endpoint: {gatewayEndpoint}");
-        TestContext.WriteLine($"Kafka Bootstrap (Host): {kafkaBootstrap}");
-        TestContext.WriteLine($"Kafka Bootstrap (Flink): {kafkaFlinkBootstrap}");
+        TestContext.WriteLine($"Kafka Bootstrap: {kafkaBootstrap} (used by both tests and Flink jobs)");
         TestContext.WriteLine();
 
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
         Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap);
-        Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", kafkaFlinkBootstrap);
+        Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", kafkaBootstrap); // Same as host bootstrap (LocalTesting pattern)
 
         string? jobId = null;
 
