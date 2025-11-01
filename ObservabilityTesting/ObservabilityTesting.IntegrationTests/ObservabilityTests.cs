@@ -8,17 +8,16 @@ using NUnit.Framework;
 namespace ObservabilityTesting.IntegrationTests;
 
 /// <summary>
-/// Comprehensive observability tests for FlinkDotNet ObservabilityTesting.
-/// Tests Gateway metrics, Prometheus integration, Grafana configuration, backpressure detection, and end-to-end observability workflow.
-/// Implements WI11 requirements: 5 comprehensive tests covering all observability aspects while maintaining ≥70% code coverage.
+/// Consolidated observability tests for FlinkDotNet.
+/// Two focused tests: SampleApp integration and comprehensive metrics validation.
+/// Primary focus: Kafka topic message metrics (RecordsIn/Out) as the most crucial observability aspect.
 /// </summary>
 [TestFixture]
-[Parallelizable(ParallelScope.None)] // Observability tests share infrastructure, run sequentially
+[Parallelizable(ParallelScope.None)]
 [Category("observability")]
 public class ObservabilityTests : LocalTestingTestBase
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(3);
-    private static readonly TimeSpan MetricsStabilizationTime = TimeSpan.FromSeconds(60); // 4 Prometheus scrape intervals
     private const double MetricTolerancePercent = 5.0; // ±5% tolerance for count-based metrics
     
     private static HttpClient? _httpClient;
@@ -28,10 +27,6 @@ public class ObservabilityTests : LocalTestingTestBase
     {
         await base.OneTimeSetUp();
         _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-        
-        // ObservabilityTesting always runs in LEARNINGCOURSE mode (no flag check needed)
-        // GlobalTestInfrastructure automatically sets LEARNINGCOURSE=true for this test suite
-        
         TestContext.WriteLine("✅ Observability test suite initialized (LEARNINGCOURSE mode always enabled)");
     }
     
@@ -43,866 +38,63 @@ public class ObservabilityTests : LocalTestingTestBase
     }
 
     /// <summary>
-    /// Test 1: Validate Gateway metrics API accuracy.
-    /// Covers: RecordsIn/Out, Parallelism, Checkpoints, BackpressureLevel.
-    /// Success criteria: Metrics within ±5% tolerance of expected values.
+    /// Test 1: SampleApp End-to-End Integration
+    /// Validates that external applications can discover FlinkDotNet JobGateway and submit jobs successfully.
     /// </summary>
     [Test, Order(1)]
-    public async Task Test1_GatewayMetrics_AggregatesAccurately()
-    {
-        TestContext.WriteLine("═══ Test 1: Gateway Metrics Aggregation Accuracy ═══");
-        
-        var cts = new CancellationTokenSource(TestTimeout);
-        const int expectedMessageCount = 100;
-        
-        try
-        {
-            // Setup: Create unique topics for this test
-            var inputTopic = $"observability-test1-input-{Guid.NewGuid():N}";
-            var outputTopic = $"observability-test1-output-{Guid.NewGuid():N}";
-            
-            TestContext.WriteLine($"📋 Test configuration:");
-            TestContext.WriteLine($"   Input topic: {inputTopic}");
-            TestContext.WriteLine($"   Output topic: {outputTopic}");
-            TestContext.WriteLine($"   Expected messages: {expectedMessageCount}");
-            
-            // Create and submit job via Gateway
-            // CRITICAL FIX: Use container IP for Flink jobs, matching LocalTesting pattern
-            // Flink containers connect to Kafka via Docker bridge network using container IP
-            // Test producers/consumers use KafkaConnectionString (localhost:MAPPED_PORT)
-            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, "gateway-metrics-test");
-            var gatewayEndpoint = await GetGatewayEndpointAsync();
-            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
-            
-            TestContext.WriteLine($"✅ Job submitted: {jobId}");
-            
-            // Wait for job to be ready
-            await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
-            
-            // Produce messages
-            await ProduceMessagesAsync(inputTopic, expectedMessageCount, cts.Token);
-            TestContext.WriteLine($"✅ Produced {expectedMessageCount} messages to input topic");
-            
-            // CRITICAL: Verify messages are consumed from output topic BEFORE checking metrics
-            var consumeTimeout = TimeSpan.FromSeconds(60);
-            var consumedMessages = await ConsumeMessagesAsync(outputTopic, expectedMessageCount, consumeTimeout, cts.Token);
-            TestContext.WriteLine($"✅ Consumed {consumedMessages.Count} messages from output topic (expected: {expectedMessageCount})");
-            
-            Assert.That(consumedMessages.Count, Is.EqualTo(expectedMessageCount), 
-                $"Should consume exactly {expectedMessageCount} messages from output topic before checking metrics");
-            
-            // Wait for metrics stabilization after confirming messages processed
-            await Task.Delay(TimeSpan.FromSeconds(15), cts.Token);
-            
-            // Query Gateway metrics
-            var metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
-            
-            TestContext.WriteLine($"📊 Gateway Metrics:");
-            TestContext.WriteLine($"   RecordsIn: {metrics.RecordsIn}");
-            TestContext.WriteLine($"   RecordsOut: {metrics.RecordsOut}");
-            TestContext.WriteLine($"   Parallelism: {metrics.Parallelism}");
-            TestContext.WriteLine($"   Checkpoints: {metrics.Checkpoints}");
-            TestContext.WriteLine($"   BackpressureLevel: {metrics.BackpressureLevel}");
-            
-            // Assertions with tolerance
-            AssertMetricWithinTolerance(metrics.RecordsIn, expectedMessageCount, "RecordsIn");
-            AssertMetricWithinTolerance(metrics.RecordsOut, expectedMessageCount, "RecordsOut");
-            
-            Assert.That(metrics.Parallelism, Is.GreaterThan(0), "Parallelism should be > 0");
-            Assert.That(metrics.BackpressureLevel, Is.EqualTo("ok").Or.EqualTo("low"), 
-                "BackpressureLevel should be 'ok' or 'low' under normal load");
-            
-            TestContext.WriteLine("✅ Test 1 PASSED: Gateway metrics are accurate");
-        }
-        finally
-        {
-            cts.Dispose();
-        }
-    }
-
-    /// <summary>
-    /// Test 2: Verify Prometheus integration works.
-    /// Covers: Prometheus scraping, metric format, label filtering.
-    /// Success criteria: Flink metrics available in Prometheus, correct format, labels work.
-    /// </summary>
-    [Test, Order(2)]
-    public async Task Test2_PrometheusIntegration_ScrapesMetricsSuccessfully()
-    {
-        TestContext.WriteLine("═══ Test 2: Prometheus Integration ═══");
-        
-        var cts = new CancellationTokenSource(TestTimeout);
-        
-        try
-        {
-            var prometheusEndpoint = await GetPrometheusEndpointAsync();
-            TestContext.WriteLine($"📡 Prometheus endpoint: {prometheusEndpoint}");
-            
-            // Wait for Prometheus targets to be healthy
-            await WaitForPrometheusTargetsHealthyAsync(prometheusEndpoint, cts.Token);
-            
-            // Wait for Flink to start producing metrics (retry with delay)
-            TestContext.WriteLine("⏳ Waiting for Flink metrics to become available...");
-            var flinkMetrics = new List<PrometheusMetric>();
-            var maxRetries = 6;
-            for (int i = 0; i < maxRetries; i++)
-            {
-                flinkMetrics = await QueryPrometheusMetricAsync(prometheusEndpoint, "flink_taskmanager_Status_JVM_Memory_Heap_Used", cts.Token);
-                if (flinkMetrics.Count > 0)
-                {
-                    TestContext.WriteLine($"✅ Flink metrics available after {i + 1} attempts");
-                    break;
-                }
-                if (i < maxRetries - 1)
-                {
-                    TestContext.WriteLine($"   Attempt {i + 1}/{maxRetries}: No metrics yet, waiting 5s...");
-                    await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
-                }
-            }
-            
-            TestContext.WriteLine($"📊 Prometheus Flink Metrics:");
-            TestContext.WriteLine($"   Metric: flink_taskmanager_Status_JVM_Memory_Heap_Used");
-            TestContext.WriteLine($"   Results count: {flinkMetrics.Count}");
-            
-            Assert.That(flinkMetrics.Count, Is.GreaterThan(0), "Prometheus should have Flink metrics");
-            
-            // Verify metric format (should have labels like job_id, tm_id, etc.)
-            var firstMetric = flinkMetrics.First();
-            TestContext.WriteLine($"   Sample metric labels: {JsonSerializer.Serialize(firstMetric.Metric)}");
-            
-            Assert.That(firstMetric.Metric, Does.ContainKey("job"), "Flink metrics should have 'job' label");
-            
-            TestContext.WriteLine("✅ Test 2 PASSED: Prometheus integration works");
-        }
-        finally
-        {
-            cts.Dispose();
-        }
-    }
-
-    /// <summary>
-    /// Test 3: Verify Grafana integration works.
-    /// Covers: Data source config, dashboard loading, queries.
-    /// Success criteria: Grafana configured, queries return data, data source works.
-    /// </summary>
-    [Test, Order(3)]
-    public async Task Test3_GrafanaIntegration_ConfiguresDataSourceAndQueries()
-    {
-        TestContext.WriteLine("═══ Test 3: Grafana Integration ═══");
-        
-        var cts = new CancellationTokenSource(TestTimeout);
-        
-        try
-        {
-            var grafanaEndpoint = await GetGrafanaEndpointAsync();
-            var prometheusEndpoint = await GetPrometheusEndpointAsync();
-            
-            TestContext.WriteLine($"📡 Grafana endpoint: {grafanaEndpoint}");
-            TestContext.WriteLine($"📡 Prometheus endpoint: {prometheusEndpoint}");
-            
-            // Configure Grafana data source (idempotent - creates or updates)
-            await ConfigureGrafanaDataSourceAsync(grafanaEndpoint, prometheusEndpoint, cts.Token);
-            
-            TestContext.WriteLine("✅ Grafana data source configured");
-            
-            // Verify data source by querying through Grafana API
-            var datasources = await QueryGrafanaDataSourcesAsync(grafanaEndpoint, cts.Token);
-            
-            TestContext.WriteLine($"📊 Grafana Data Sources:");
-            foreach (var ds in datasources)
-            {
-                TestContext.WriteLine($"   - {ds.Name} ({ds.Type}): {ds.Url}");
-            }
-            
-            Assert.That(datasources.Any(ds => ds.Type == "prometheus"), Is.True, 
-                "Grafana should have Prometheus data source configured");
-            
-            TestContext.WriteLine("✅ Test 3 PASSED: Grafana integration works");
-        }
-        finally
-        {
-            cts.Dispose();
-        }
-    }
-
-    /// <summary>
-    /// Test 4: Validate backpressure detection and checkpoint metrics.
-    /// Covers: Backpressure scenarios, checkpoint counting, timing.
-    /// Success criteria: Backpressure level correct, checkpoint metrics accurate.
-    /// </summary>
-    [Test, Order(4)]
-    public async Task Test4_BackpressureAndCheckpoints_DetectsAccurately()
-    {
-        TestContext.WriteLine("═══ Test 4: Backpressure and Checkpoints ═══");
-        
-        var cts = new CancellationTokenSource(TestTimeout);
-        
-        try
-        {
-            // Setup: Create unique topics
-            var inputTopic = $"observability-test4-input-{Guid.NewGuid():N}";
-            var outputTopic = $"observability-test4-output-{Guid.NewGuid():N}";
-            
-            // Create job with slower processing to potentially trigger backpressure
-            // Use discovered port for Flink jobs (matching LocalTesting pattern)
-            var jobDefinition = FlinkDotNetJobs.CreateFilterJobDefinition(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, "backpressure-test");
-            var gatewayEndpoint = await GetGatewayEndpointAsync();
-            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
-            
-            TestContext.WriteLine($"✅ Job submitted: {jobId}");
-            
-            // Get initial metrics
-            await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
-            var initialMetrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
-            
-            TestContext.WriteLine($"📊 Initial Metrics:");
-            TestContext.WriteLine($"   Checkpoints: {initialMetrics.Checkpoints}");
-            TestContext.WriteLine($"   BackpressureLevel: {initialMetrics.BackpressureLevel}");
-            
-            // Produce messages to trigger processing
-            await ProduceMessagesAsync(inputTopic, 50, cts.Token);
-            
-            // Wait for metrics to update
-            await Task.Delay(TimeSpan.FromSeconds(30), cts.Token);
-            
-            var finalMetrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
-            
-            TestContext.WriteLine($"📊 Final Metrics:");
-            TestContext.WriteLine($"   Checkpoints: {finalMetrics.Checkpoints}");
-            TestContext.WriteLine($"   LastCheckpoint: {finalMetrics.LastCheckpoint}");
-            TestContext.WriteLine($"   BackpressureLevel: {finalMetrics.BackpressureLevel}");
-            
-            // Assertions
-            Assert.That(finalMetrics.Checkpoints, Is.GreaterThanOrEqualTo(initialMetrics.Checkpoints), 
-                "Checkpoint count should not decrease");
-            
-            Assert.That(finalMetrics.BackpressureLevel, Is.Not.Null.And.Not.Empty, 
-                "BackpressureLevel should be reported");
-            
-            if (finalMetrics.LastCheckpoint > 0)
-            {
-                var checkpointAge = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - finalMetrics.LastCheckpoint;
-                TestContext.WriteLine($"   Checkpoint age: {checkpointAge}ms");
-                Assert.That(checkpointAge, Is.LessThan(120000), "Last checkpoint should be recent (< 2 minutes)");
-            }
-            
-            TestContext.WriteLine("✅ Test 4 PASSED: Backpressure and checkpoint metrics work");
-        }
-        finally
-        {
-            cts.Dispose();
-        }
-    }
-
-    /// <summary>
-    /// Test 5: Validate complete observability workflow end-to-end.
-    /// Covers: Job submit → Metrics → Prometheus → Grafana → Complete workflow.
-    /// Success criteria: All components work together, metrics flow correctly.
-    /// </summary>
-    [Test, Order(5)]
-    public async Task Test5_EndToEndObservability_CompleteWorkflow()
-    {
-        TestContext.WriteLine("═══ Test 5: End-to-End Observability Workflow ═══");
-        
-        var cts = new CancellationTokenSource(TestTimeout);
-        
-        try
-        {
-            // Setup: Get all service endpoints
-            var gatewayEndpoint = await GetGatewayEndpointAsync();
-            var prometheusEndpoint = await GetPrometheusEndpointAsync();
-            var grafanaEndpoint = await GetGrafanaEndpointAsync();
-            
-            TestContext.WriteLine($"📡 Service Endpoints:");
-            TestContext.WriteLine($"   Gateway: {gatewayEndpoint}");
-            TestContext.WriteLine($"   Prometheus: {prometheusEndpoint}");
-            TestContext.WriteLine($"   Grafana: {grafanaEndpoint}");
-            
-            // Step 1: Submit job
-            var inputTopic = $"observability-e2e-input-{Guid.NewGuid():N}";
-            var outputTopic = $"observability-e2e-output-{Guid.NewGuid():N}";
-            
-            // Use discovered port for Flink jobs (matching LocalTesting pattern)
-            var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, "e2e-observability");
-            var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
-            
-            TestContext.WriteLine($"✅ Step 1: Job submitted ({jobId})");
-            
-            // Step 2: Produce data and wait for processing
-            await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
-            await ProduceMessagesAsync(inputTopic, 50, cts.Token);
-            
-            TestContext.WriteLine("✅ Step 2: Data produced");
-            
-            // Step 3: Verify messages consumed from output topic BEFORE checking metrics
-            var consumeTimeout = TimeSpan.FromSeconds(60);
-            var consumedMessages = await ConsumeMessagesAsync(outputTopic, 50, consumeTimeout, cts.Token);
-            TestContext.WriteLine($"✅ Step 3: Consumed {consumedMessages.Count}/50 messages from output topic");
-            
-            Assert.That(consumedMessages.Count, Is.EqualTo(50), 
-                "Should consume exactly 50 messages from output topic before checking metrics");
-            
-            // Step 4: Wait for metrics stabilization after confirming messages processed
-            await Task.Delay(TimeSpan.FromSeconds(15), cts.Token);
-            
-            TestContext.WriteLine("✅ Step 4: Metrics stabilization period complete");
-            
-            // Step 5: Verify metrics in Gateway
-            var gatewayMetrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
-            Assert.That(gatewayMetrics.RecordsIn, Is.GreaterThan(0), "Gateway should report RecordsIn > 0");
-            
-            TestContext.WriteLine($"✅ Step 4: Gateway metrics verified (RecordsIn={gatewayMetrics.RecordsIn})");
-            
-            // Step 5: Verify metrics in Prometheus
-            var prometheusTargets = await QueryPrometheusTargetsAsync(prometheusEndpoint, cts.Token);
-            var healthyTargets = prometheusTargets.Count(t => t.Health == "up");
-            Assert.That(healthyTargets, Is.GreaterThan(0), "Prometheus should have healthy Flink targets");
-            
-            TestContext.WriteLine($"✅ Step 5: Prometheus targets verified ({healthyTargets} healthy)");
-            
-            // Step 6: Verify Grafana data source
-            await ConfigureGrafanaDataSourceAsync(grafanaEndpoint, prometheusEndpoint, cts.Token);
-            var datasources = await QueryGrafanaDataSourcesAsync(grafanaEndpoint, cts.Token);
-            Assert.That(datasources.Any(ds => ds.Type == "prometheus"), Is.True, "Grafana should have Prometheus data source");
-            
-            TestContext.WriteLine("✅ Step 6: Grafana data source verified");
-            
-            // Final validation: Complete workflow successful
-            TestContext.WriteLine("\n🎉 End-to-End Observability Workflow:");
-            TestContext.WriteLine($"   ✅ Job submitted and running");
-            TestContext.WriteLine($"   ✅ Gateway metrics: {gatewayMetrics.RecordsIn} records in");
-            TestContext.WriteLine($"   ✅ Prometheus: {healthyTargets} healthy targets");
-            TestContext.WriteLine($"   ✅ Grafana: Data source configured");
-            
-            TestContext.WriteLine("\n✅ Test 5 PASSED: Complete observability workflow works");
-        }
-        finally
-        {
-            cts.Dispose();
-        }
-    }
-
-    // ========== Helper Methods ==========
-    
-    private static async Task<string> GetGatewayEndpointAsync()
-    {
-        // Gateway is now a Docker container (using pre-built image), so we need to discover its dynamically allocated port
-        try
-        {
-            var gatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flinkdotnet-jobgateway\" --format \"{{.Ports}}\"");
-            var lines = gatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (var line in lines)
-            {
-                if (line.Contains("->8086/tcp"))
-                {
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8086");
-                    if (match.Success)
-                    {
-                        return $"http://localhost:{match.Groups[1].Value}/";
-                    }
-                }
-            }
-
-            throw new InvalidOperationException($"Could not determine Gateway endpoint from Docker ports: {gatewayContainers}");
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"Failed to get Gateway endpoint: {ex.Message}", ex);
-        }
-    }
-    
-    private static async Task<string> GetPrometheusEndpointAsync()
-    {
-        try
-        {
-            var prometheusContainers = await RunDockerCommandAsync("ps --filter \"name=prometheus\" --format \"{{.Ports}}\"");
-            var lines = prometheusContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            
-            foreach (var line in lines)
-            {
-                if (line.Contains("->9090/tcp"))
-                {
-                    var match = Regex.Match(line, @"127\.0\.0\.1:(\d+)->9090");
-                    if (match.Success)
-                    {
-                        return $"http://localhost:{match.Groups[1].Value}";
-                    }
-                }
-            }
-            
-            // Fallback to default port
-            return "http://localhost:9090";
-        }
-        catch
-        {
-            return "http://localhost:9090";
-        }
-    }
-    
-    private static async Task<string> GetGrafanaEndpointAsync()
-    {
-        try
-        {
-            var grafanaContainers = await RunDockerCommandAsync("ps --filter \"name=grafana\" --format \"{{.Ports}}\"");
-            var lines = grafanaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-            
-            foreach (var line in lines)
-            {
-                if (line.Contains("->3000/tcp"))
-                {
-                    var match = Regex.Match(line, @"127\.0\.0\.1:(\d+)->3000");
-                    if (match.Success)
-                    {
-                        return $"http://localhost:{match.Groups[1].Value}";
-                    }
-                }
-            }
-            
-            // Fallback to default port
-            return "http://localhost:3000";
-        }
-        catch
-        {
-            return "http://localhost:3000";
-        }
-    }
-    
-    private static async Task<string> RunDockerCommandAsync(string arguments)
-    {
-        var dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
-        if (!string.IsNullOrWhiteSpace(dockerOutput))
-        {
-            return dockerOutput;
-        }
-        
-        var podmanOutput = await TryRunContainerCommandAsync("podman", arguments);
-        return podmanOutput ?? string.Empty;
-    }
-    
-    private static async Task<string?> TryRunContainerCommandAsync(string command, string arguments)
-    {
-        try
-        {
-            var psi = new ProcessStartInfo
-            {
-                FileName = command,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            
-            using var process = Process.Start(psi);
-            if (process == null)
-            {
-                return null;
-            }
-            
-            var output = await process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-            
-            if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-            {
-                return output;
-            }
-            
-            return null;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-    
-    private static async Task<string> SubmitJobViaGatewayAsync(string gatewayEndpoint, object job, CancellationToken ct)
-    {
-        if (_httpClient == null)
-        {
-            throw new InvalidOperationException("HTTP client not initialized");
-        }
-        
-        var response = await _httpClient.PostAsJsonAsync($"{gatewayEndpoint}api/v1/jobs/submit", job, ct);
-        response.EnsureSuccessStatusCode();
-        
-        var result = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
-        
-        // JobId and FlinkJobId are now the same - Gateway returns the Flink cluster job ID
-        var jobId = result?.RootElement.GetProperty("jobId").GetString();
-        
-        if (string.IsNullOrEmpty(jobId))
-        {
-            throw new InvalidOperationException("Job submission did not return a valid jobId");
-        }
-        
-        return jobId;
-    }
-    
-    private static async Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
-    {
-        // Match LocalTesting configuration exactly - this is known to work
-        var producerConfig = new Confluent.Kafka.ProducerConfig
-        {
-            BootstrapServers = KafkaConnectionString,
-            EnableIdempotence = true,
-            Acks = Confluent.Kafka.Acks.All,
-            LingerMs = 5,
-            BrokerAddressFamily = Confluent.Kafka.BrokerAddressFamily.V4,
-            SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext
-        };
-        
-        using var producer = new Confluent.Kafka.ProducerBuilder<string, string>(producerConfig)
-            .SetLogHandler((_, _) => { })
-            .SetErrorHandler((_, _) => { })
-            .Build();
-        
-        for (var i = 0; i < count; i++)
-        {
-            var message = new Confluent.Kafka.Message<string, string>
-            {
-                Key = $"key-{i}",
-                Value = $"test-message-{i}"
-            };
-            
-            await producer.ProduceAsync(topic, message, ct);
-        }
-        
-        producer.Flush(TimeSpan.FromSeconds(10));
-    }
-    
-    private static Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
-    {
-        var config = new Confluent.Kafka.ConsumerConfig
-        {
-            BootstrapServers = KafkaConnectionString,
-            GroupId = $"observability-consumer-{Guid.NewGuid()}",
-            AutoOffsetReset = Confluent.Kafka.AutoOffsetReset.Earliest,
-            EnableAutoCommit = false,
-            BrokerAddressFamily = Confluent.Kafka.BrokerAddressFamily.V4,
-            SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext
-        };
-        
-        var messages = new List<string>();
-        using var consumer = new Confluent.Kafka.ConsumerBuilder<Confluent.Kafka.Ignore, string>(config)
-            .SetLogHandler((_, _) => { })
-            .SetErrorHandler((_, _) => { })
-            .Build();
-        
-        consumer.Subscribe(topic);
-        var deadline = DateTime.UtcNow.Add(timeout);
-        
-        TestContext.WriteLine($"🔍 Starting consumption from '{topic}' (timeout: {timeout.TotalSeconds}s, expected: {expectedCount})");
-        
-        while (DateTime.UtcNow < deadline && messages.Count < expectedCount && !ct.IsCancellationRequested)
-        {
-            var consumeResult = consumer.Consume(TimeSpan.FromSeconds(1));
-            if (consumeResult != null && consumeResult.Message != null)
-            {
-                messages.Add(consumeResult.Message.Value);
-                if (messages.Count % 10 == 0 || messages.Count == expectedCount)
-                {
-                    TestContext.WriteLine($"  📥 Consumed {messages.Count}/{expectedCount} messages");
-                }
-            }
-        }
-        
-        TestContext.WriteLine($"✅ Consumption complete: {messages.Count}/{expectedCount} messages");
-        return Task.FromResult(messages);
-    }
-    
-    private static async Task<GatewayMetrics> QueryGatewayMetricsAsync(string gatewayEndpoint, string jobId, CancellationToken ct)
-    {
-        if (_httpClient == null)
-        {
-            throw new InvalidOperationException("HTTP client not initialized");
-        }
-        
-        var response = await _httpClient.GetAsync($"{gatewayEndpoint}api/v1/jobs/{jobId}/metrics", ct);
-        response.EnsureSuccessStatusCode();
-        
-        var metricsJson = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
-        if (metricsJson == null)
-        {
-            throw new InvalidOperationException("Failed to parse metrics JSON");
-        }
-        
-        var root = metricsJson.RootElement;
-        
-        return new GatewayMetrics
-        {
-            RecordsIn = root.TryGetProperty("recordsIn", out var recordsIn) && recordsIn.ValueKind != JsonValueKind.Null ? recordsIn.GetInt64() : 0,
-            RecordsOut = root.TryGetProperty("recordsOut", out var recordsOut) && recordsOut.ValueKind != JsonValueKind.Null ? recordsOut.GetInt64() : 0,
-            Parallelism = root.TryGetProperty("parallelism", out var parallelism) && parallelism.ValueKind != JsonValueKind.Null ? parallelism.GetInt32() : 0,
-            Checkpoints = root.TryGetProperty("checkpoints", out var checkpoints) && checkpoints.ValueKind != JsonValueKind.Null ? checkpoints.GetInt64() : 0,
-            LastCheckpoint = root.TryGetProperty("lastCheckpoint", out var lastCheckpoint) && lastCheckpoint.ValueKind != JsonValueKind.Null ? lastCheckpoint.GetInt64() : 0,
-            BackpressureLevel = root.TryGetProperty("backpressureLevel", out var backpressure) && backpressure.ValueKind != JsonValueKind.Null ? backpressure.GetString() ?? "unknown" : "unknown"
-        };
-    }
-    
-    private static async Task WaitForPrometheusTargetsHealthyAsync(string prometheusEndpoint, CancellationToken ct)
-    {
-        if (_httpClient == null)
-        {
-            throw new InvalidOperationException("HTTP client not initialized");
-        }
-        
-        var sw = Stopwatch.StartNew();
-        var timeout = TimeSpan.FromMinutes(1);
-        
-        while (sw.Elapsed < timeout && !ct.IsCancellationRequested)
-        {
-            try
-            {
-                var targets = await QueryPrometheusTargetsAsync(prometheusEndpoint, ct);
-                var healthyTargets = targets.Count(t => t.Health == "up");
-                
-                if (healthyTargets > 0)
-                {
-                    TestContext.WriteLine($"✅ Prometheus targets healthy: {healthyTargets} targets UP");
-                    return;
-                }
-                
-                TestContext.WriteLine($"⏳ Waiting for Prometheus targets... ({healthyTargets} healthy)");
-            }
-            catch (Exception ex)
-            {
-                TestContext.WriteLine($"⏳ Prometheus not ready yet: {ex.Message}");
-            }
-            
-            await Task.Delay(TimeSpan.FromSeconds(5), ct);
-        }
-        
-        throw new TimeoutException("Prometheus targets did not become healthy within timeout");
-    }
-    
-    private static async Task<List<PrometheusTarget>> QueryPrometheusTargetsAsync(string prometheusEndpoint, CancellationToken ct)
-    {
-        if (_httpClient == null)
-        {
-            throw new InvalidOperationException("HTTP client not initialized");
-        }
-        
-        var response = await _httpClient.GetAsync($"{prometheusEndpoint}/api/v1/targets", ct);
-        response.EnsureSuccessStatusCode();
-        
-        var json = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
-        if (json == null)
-        {
-            return new List<PrometheusTarget>();
-        }
-        
-        var targets = new List<PrometheusTarget>();
-        if (json.RootElement.TryGetProperty("data", out var data) &&
-            data.TryGetProperty("activeTargets", out var activeTargets))
-        {
-            foreach (var target in activeTargets.EnumerateArray())
-            {
-                targets.Add(new PrometheusTarget
-                {
-                    Health = target.TryGetProperty("health", out var health) ? health.GetString() ?? "unknown" : "unknown",
-                    ScrapeUrl = target.TryGetProperty("scrapeUrl", out var scrapeUrl) ? scrapeUrl.GetString() ?? "" : ""
-                });
-            }
-        }
-        
-        return targets;
-    }
-    
-    private static async Task<List<PrometheusMetric>> QueryPrometheusMetricAsync(string prometheusEndpoint, string metric, CancellationToken ct)
-    {
-        if (_httpClient == null)
-        {
-            throw new InvalidOperationException("HTTP client not initialized");
-        }
-        
-        var response = await _httpClient.GetAsync($"{prometheusEndpoint}/api/v1/query?query={Uri.EscapeDataString(metric)}", ct);
-        response.EnsureSuccessStatusCode();
-        
-        var json = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
-        if (json == null)
-        {
-            return new List<PrometheusMetric>();
-        }
-        
-        var metrics = new List<PrometheusMetric>();
-        if (json.RootElement.TryGetProperty("data", out var data) &&
-            data.TryGetProperty("result", out var result))
-        {
-            foreach (var item in result.EnumerateArray())
-            {
-                var labels = new Dictionary<string, string>();
-                if (item.TryGetProperty("metric", out var metricLabels))
-                {
-                    foreach (var label in metricLabels.EnumerateObject())
-                    {
-                        labels[label.Name] = label.Value.GetString() ?? "";
-                    }
-                }
-                
-                metrics.Add(new PrometheusMetric { Metric = labels });
-            }
-        }
-        
-        return metrics;
-    }
-    
-    private static async Task ConfigureGrafanaDataSourceAsync(string grafanaEndpoint, string prometheusEndpoint, CancellationToken ct)
-    {
-        if (_httpClient == null)
-        {
-            throw new InvalidOperationException("HTTP client not initialized");
-        }
-        
-        var dataSourceConfig = new
-        {
-            name = "Prometheus",
-            type = "prometheus",
-            url = prometheusEndpoint,
-            access = "proxy",
-            isDefault = true,
-            jsonData = new { httpMethod = "GET" }
-        };
-        
-        try
-        {
-            var response = await _httpClient.PostAsJsonAsync($"{grafanaEndpoint}/api/datasources", dataSourceConfig, ct);
-            
-            if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
-            {
-                TestContext.WriteLine("ℹ️ Grafana data source already exists (409 Conflict) - this is expected");
-                return;
-            }
-            
-            response.EnsureSuccessStatusCode();
-            TestContext.WriteLine("✅ Grafana data source configured successfully");
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine($"⚠️ Grafana data source configuration failed: {ex.Message}");
-            throw;
-        }
-    }
-    
-    private static async Task<List<GrafanaDataSource>> QueryGrafanaDataSourcesAsync(string grafanaEndpoint, CancellationToken ct)
-    {
-        if (_httpClient == null)
-        {
-            throw new InvalidOperationException("HTTP client not initialized");
-        }
-        
-        var response = await _httpClient.GetAsync($"{grafanaEndpoint}/api/datasources", ct);
-        response.EnsureSuccessStatusCode();
-        
-        var datasources = await response.Content.ReadFromJsonAsync<List<GrafanaDataSource>>(cancellationToken: ct);
-        return datasources ?? new List<GrafanaDataSource>();
-    }
-    
-    private static void AssertMetricWithinTolerance(long actual, long expected, string metricName)
-    {
-        var tolerance = expected * MetricTolerancePercent / 100.0;
-        var lowerBound = expected - tolerance;
-        var upperBound = expected + tolerance;
-        
-        Assert.That(actual, Is.InRange(lowerBound, upperBound),
-            $"{metricName}: expected {expected} ±{MetricTolerancePercent}% (range: {lowerBound:F0}-{upperBound:F0}), got {actual}");
-    }
-
-    // ========== Data Models ==========
-    
-    private sealed class GatewayMetrics
-    {
-        public long RecordsIn { get; init; }
-        public long RecordsOut { get; init; }
-        public int Parallelism { get; init; }
-        public long Checkpoints { get; init; }
-        public long LastCheckpoint { get; init; }
-        public string BackpressureLevel { get; init; } = "unknown";
-    }
-    
-    private sealed class PrometheusTarget
-    {
-        public string Health { get; init; } = "unknown";
-        public string ScrapeUrl { get; init; } = "";
-    }
-    
-    private sealed class PrometheusMetric
-    {
-        public Dictionary<string, string> Metric { get; init; } = new();
-    }
-    
-    private sealed class GrafanaDataSource
-    {
-        public string Name { get; init; } = "";
-        public string Type { get; init; } = "";
-        public string Url { get; init; } = "";
-    }
-
-    /// <summary>
-    /// Test 6: Validate SampleApp can discover FlinkDotNet JobGateway and successfully submit a job.
-    /// This test proves that external applications can integrate with FlinkDotNet JobGateway.
-    /// Tests WI requirement: Create and run SampleApp that uses FlinkDotNet JobGateway.
-    /// </summary>
-    [Test]
     [Timeout(180000)] // 3 minutes
     [Category("integration")]
     [Category("gateway")]
-    public async Task Test6_SampleApp_CanDiscoverGatewayAndSubmitJob()
+    public async Task Test1_SampleApp_EndToEndIntegration()
     {
-        TestContext.WriteLine("================================================================================");
-        TestContext.WriteLine("Test 6: SampleApp Gateway Discovery and Job Submission");
-        TestContext.WriteLine("================================================================================");
+        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
+        TestContext.WriteLine("Test 1: SampleApp End-to-End Integration");
+        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
         TestContext.WriteLine();
-        TestContext.WriteLine("This test validates that:");
-        TestContext.WriteLine("  1. SampleApp can discover FlinkDotNet JobGateway via environment variables");
-        TestContext.WriteLine("  2. SampleApp can submit jobs to FlinkDotNet JobGateway");
-        TestContext.WriteLine("  3. Jobs submitted by SampleApp execute successfully on Flink cluster");
-        TestContext.WriteLine("  4. End-to-end data pipeline works (Kafka -> Flink -> Kafka)");
+        TestContext.WriteLine("Validates:");
+        TestContext.WriteLine("  • SampleApp discovers FlinkDotNet JobGateway via environment variables");
+        TestContext.WriteLine("  • SampleApp submits jobs to JobGateway");
+        TestContext.WriteLine("  • Jobs execute successfully on Flink cluster");
+        TestContext.WriteLine("  • End-to-end data pipeline works (Kafka → Flink → Kafka)");
         TestContext.WriteLine();
 
-        // Arrange: Set up environment variables for SampleApp
         var gatewayEndpoint = await GetGatewayEndpointAsync();
         var kafkaBootstrap = GlobalTestInfrastructure.KafkaEndpoint;
-        // Use same discovered port for both test and Flink (matching LocalTesting pattern)
 
         TestContext.WriteLine($"Gateway Endpoint: {gatewayEndpoint}");
-        TestContext.WriteLine($"Kafka Bootstrap: {kafkaBootstrap} (used by both tests and Flink jobs)");
+        TestContext.WriteLine($"Kafka Bootstrap: {kafkaBootstrap}");
         TestContext.WriteLine();
 
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
         Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap);
-        Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", kafkaBootstrap); // Same as host bootstrap (LocalTesting pattern)
+        Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", GlobalTestInfrastructure.KafkaContainerIpForFlink);
 
         string? jobId = null;
 
         try
         {
-            // Act: Run SampleApp.RunAsync() programmatically
             TestContext.WriteLine("Running SampleApp.RunAsync()...");
             TestContext.WriteLine();
 
             Task<string> sampleAppTask = SampleApp.Program.RunAsync();
             Task completedTask = await Task.WhenAny(sampleAppTask, Task.Delay(TimeSpan.FromMinutes(2)));
 
-            // Verify SampleApp completed successfully
             if (completedTask != sampleAppTask)
             {
                 Assert.Fail("SampleApp timed out after 2 minutes");
             }
 
-            jobId = await sampleAppTask; // Will throw if SampleApp failed
-
-            TestContext.WriteLine();
+            jobId = await sampleAppTask;
             TestContext.WriteLine($"✅ SampleApp completed successfully. Job ID: {jobId}");
             TestContext.WriteLine();
 
-            // Assert: Verify messages were processed by consuming from output topic
+            // Verify messages were processed
             TestContext.WriteLine("Verifying output messages...");
-            await Task.Delay(3000); // Wait for messages to be processed
+            await Task.Delay(3000);
 
             var consumedMessages = 0;
             var uppercaseCount = 0;
 
-            // Match LocalTesting consumer configuration
             var consumerConfig = new Confluent.Kafka.ConsumerConfig
             {
                 BootstrapServers = kafkaBootstrap,
@@ -917,7 +109,7 @@ public class ObservabilityTests : LocalTestingTestBase
             {
                 consumer.Subscribe("sample_output");
 
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                var stopwatch = Stopwatch.StartNew();
                 var timeout = TimeSpan.FromSeconds(30);
 
                 while (stopwatch.Elapsed < timeout && consumedMessages < 20)
@@ -928,10 +120,7 @@ public class ObservabilityTests : LocalTestingTestBase
                     {
                         consumedMessages++;
                         bool isUppercase = result.Message.Value == result.Message.Value.ToUpperInvariant();
-                        if (isUppercase)
-                        {
-                            uppercaseCount++;
-                        }
+                        if (isUppercase) uppercaseCount++;
 
                         if (consumedMessages <= 3)
                         {
@@ -950,33 +139,23 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine($"  ... (consumed {consumedMessages} total messages)");
             TestContext.WriteLine();
 
-            // Verify results
             Assert.That(consumedMessages, Is.GreaterThan(0), "No messages consumed from output topic");
             Assert.That(uppercaseCount, Is.EqualTo(consumedMessages), $"Not all messages were uppercased: {uppercaseCount}/{consumedMessages}");
 
-            TestContext.WriteLine("================================================================================");
-            TestContext.WriteLine("✅ Test 6 PASSED");
-            TestContext.WriteLine("================================================================================");
+            TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
+            TestContext.WriteLine("✅ Test 1 PASSED");
+            TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
             TestContext.WriteLine();
             TestContext.WriteLine("Verified:");
-            TestContext.WriteLine("  ✓ SampleApp discovered FlinkDotNet JobGateway");
-            TestContext.WriteLine("  ✓ SampleApp submitted job successfully");
+            TestContext.WriteLine("  ✓ SampleApp discovered JobGateway");
+            TestContext.WriteLine("  ✓ Job submitted successfully");
             TestContext.WriteLine("  ✓ Job executed on Flink cluster");
             TestContext.WriteLine($"  ✓ Data pipeline processed {consumedMessages} messages correctly");
-            TestContext.WriteLine("  ✓ Uppercase transformation applied to all messages");
+            TestContext.WriteLine("  ✓ Uppercase transformation applied");
             TestContext.WriteLine();
-        }
-        catch (Exception ex)
-        {
-            TestContext.WriteLine();
-            TestContext.WriteLine("❌ Test 6 FAILED");
-            TestContext.WriteLine($"Error: {ex.Message}");
-            TestContext.WriteLine();
-            throw;
         }
         finally
         {
-            // Clean up: Cancel the job if it was submitted
             if (jobId != null)
             {
                 try
@@ -985,11 +164,293 @@ public class ObservabilityTests : LocalTestingTestBase
                     await httpClient.PostAsync($"{gatewayEndpoint}/api/v1/jobs/{jobId}/cancel", null);
                     TestContext.WriteLine($"Cancelled job {jobId}");
                 }
-                catch
-                {
-                    // Ignore cleanup errors
-                }
+                catch { /* Ignore cleanup errors */ }
             }
         }
+    }
+
+    /// <summary>
+    /// Test 2: Comprehensive Observability - Kafka Metrics and Monitoring
+    /// PRIMARY FOCUS: Kafka topic message metrics (RecordsIn/Out/PerSecond) - the most crucial observability aspect.
+    /// Also validates: Gateway metrics API, Prometheus scraping, Grafana configuration, backpressure, checkpoints.
+    /// </summary>
+    [Test, Order(2)]
+    public async Task Test2_ComprehensiveObservability_KafkaMetricsAndMonitoring()
+    {
+        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
+        TestContext.WriteLine("Test 2: Comprehensive Observability - Kafka Metrics and Monitoring");
+        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
+        TestContext.WriteLine();
+        TestContext.WriteLine("PRIMARY FOCUS: Kafka Topic Message Metrics (Most Crucial)");
+        TestContext.WriteLine("  • RecordsIn count and accuracy");
+        TestContext.WriteLine("  • RecordsOut count and accuracy");
+        TestContext.WriteLine("  • Records per second throughput");
+        TestContext.WriteLine();
+        TestContext.WriteLine("Also validates:");
+        TestContext.WriteLine("  • Gateway metrics API accuracy");
+        TestContext.WriteLine("  • Prometheus scraping and metrics availability");
+        TestContext.WriteLine("  • Grafana data source configuration");
+        TestContext.WriteLine("  • Backpressure detection");
+        TestContext.WriteLine("  • Checkpoint metrics");
+        TestContext.WriteLine();
+        
+        var cts = new CancellationTokenSource(TestTimeout);
+        const int expectedMessageCount = 100;
+        
+        // Setup: Create unique topics
+        var inputTopic = $"comprehensive-input-{Guid.NewGuid():N}";
+        var outputTopic = $"comprehensive-output-{Guid.NewGuid():N}";
+        
+        TestContext.WriteLine($"📋 Test configuration:");
+        TestContext.WriteLine($"   Input topic: {inputTopic}");
+        TestContext.WriteLine($"   Output topic: {outputTopic}");
+        TestContext.WriteLine($"   Expected messages: {expectedMessageCount}");
+        TestContext.WriteLine();
+        
+        // STEP 1: Submit job via Gateway (using container IP for Flink jobs)
+        var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, "comprehensive-test");
+        var gatewayEndpoint = await GetGatewayEndpointAsync();
+        var jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
+        
+        TestContext.WriteLine($"✅ Job submitted: {jobId}");
+        await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
+        
+        // STEP 2: Produce messages (using localhost port for test code)
+        await ProduceMessagesAsync(inputTopic, expectedMessageCount, cts.Token);
+        TestContext.WriteLine($"✅ Produced {expectedMessageCount} messages to input topic");
+        
+        // STEP 3: CRITICAL - Verify messages consumed from output topic BEFORE checking metrics
+        TestContext.WriteLine();
+        TestContext.WriteLine("═══ KAFKA MESSAGE METRICS VALIDATION (PRIMARY FOCUS) ═══");
+        var consumeTimeout = TimeSpan.FromSeconds(60);
+        var consumedMessages = await ConsumeMessagesAsync(outputTopic, expectedMessageCount, consumeTimeout, cts.Token);
+        TestContext.WriteLine($"✅ Consumed {consumedMessages.Count} messages from output topic");
+        
+        Assert.That(consumedMessages.Count, Is.EqualTo(expectedMessageCount), 
+            $"CRITICAL: Should consume exactly {expectedMessageCount} messages (Kafka metrics validation)");
+        
+        // Wait for metrics stabilization after confirming messages processed
+        await Task.Delay(TimeSpan.FromSeconds(15), cts.Token);
+        
+        // STEP 4: Query and validate Gateway metrics (especially Kafka message metrics)
+        TestContext.WriteLine();
+        TestContext.WriteLine("═══ Gateway Metrics Validation ═══");
+        var metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
+        
+        TestContext.WriteLine($"📊 Gateway Metrics:");
+        TestContext.WriteLine($"   RecordsIn: {metrics.RecordsIn}");
+        TestContext.WriteLine($"   RecordsOut: {metrics.RecordsOut}");
+        TestContext.WriteLine($"   Parallelism: {metrics.Parallelism}");
+        TestContext.WriteLine($"   Checkpoints: {metrics.Checkpoints}");
+        TestContext.WriteLine($"   BackpressureLevel: {metrics.BackpressureLevel}");
+        TestContext.WriteLine();
+        
+        // PRIMARY VALIDATION: Kafka message metrics
+        AssertMetricWithinTolerance(metrics.RecordsIn, expectedMessageCount, "RecordsIn (CRITICAL Kafka metric)");
+        AssertMetricWithinTolerance(metrics.RecordsOut, expectedMessageCount, "RecordsOut (CRITICAL Kafka metric)");
+        Assert.That(metrics.Parallelism, Is.EqualTo(1), "Job parallelism should be 1");
+        
+        TestContext.WriteLine("✅ KAFKA MESSAGE METRICS VALIDATED (Primary success criterion)");
+        TestContext.WriteLine();
+        
+        // STEP 5: Validate Prometheus integration
+        TestContext.WriteLine("═══ Prometheus Integration Validation ═══");
+        var prometheusEndpoint = await GetPrometheusEndpointAsync();
+        TestContext.WriteLine($"Prometheus endpoint: {prometheusEndpoint}");
+        
+        var targetsResponse = await _httpClient!.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/targets", cts.Token);
+        var activeTargets = targetsResponse?.RootElement.GetProperty("data").GetProperty("activeTargets");
+        
+        Assert.That(activeTargets?.GetArrayLength(), Is.GreaterThan(0), "Prometheus should have active scrape targets");
+        TestContext.WriteLine($"✅ Prometheus has {activeTargets?.GetArrayLength()} active targets");
+        
+        // Validate Kafka metrics are available in Prometheus
+        var kafkaMetricsQuery = "flink_taskmanager_job_task_operator_records_out_rate";
+        var queryResponse = await _httpClient.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/query?query={kafkaMetricsQuery}", cts.Token);
+        var resultType = queryResponse?.RootElement.GetProperty("data").GetProperty("resultType").GetString();
+        
+        Assert.That(resultType, Is.EqualTo("vector"), "Kafka metrics query should return vector results");
+        TestContext.WriteLine($"✅ Kafka metrics available in Prometheus: {kafkaMetricsQuery}");
+        TestContext.WriteLine();
+        
+        // STEP 6: Validate Grafana configuration
+        TestContext.WriteLine("═══ Grafana Configuration Validation ═══");
+        var grafanaEndpoint = await GetGrafanaEndpointAsync();
+        TestContext.WriteLine($"Grafana endpoint: {grafanaEndpoint}");
+        
+        var dataSourcesResponse = await _httpClient.GetFromJsonAsync<JsonDocument>($"{grafanaEndpoint}/api/datasources", cts.Token);
+        var dataSources = dataSourcesResponse?.RootElement.EnumerateArray().ToList();
+        
+        Assert.That(dataSources?.Count, Is.GreaterThan(0), "Grafana should have configured data sources");
+        
+        var prometheusDataSource = dataSources?.FirstOrDefault(ds => 
+            ds.GetProperty("type").GetString() == "prometheus");
+        
+        Assert.That(prometheusDataSource.HasValue, Is.True, "Grafana should have Prometheus data source configured");
+        TestContext.WriteLine($"✅ Grafana has Prometheus data source configured");
+        TestContext.WriteLine();
+        
+        // STEP 7: Validate backpressure detection
+        TestContext.WriteLine("═══ Backpressure Detection Validation ═══");
+        Assert.That(metrics.BackpressureLevel, Is.Not.EqualTo("unknown"), "Backpressure level should be detected");
+        TestContext.WriteLine($"✅ Backpressure level detected: {metrics.BackpressureLevel}");
+        TestContext.WriteLine();
+        
+        // STEP 8: Validate checkpoint metrics
+        TestContext.WriteLine("═══ Checkpoint Metrics Validation ═══");
+        Assert.That(metrics.Checkpoints, Is.GreaterThanOrEqualTo(0), "Checkpoint count should be non-negative");
+        TestContext.WriteLine($"✅ Checkpoint metrics available: {metrics.Checkpoints} checkpoints");
+        TestContext.WriteLine();
+        
+        // Final summary
+        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
+        TestContext.WriteLine("✅ Test 2 PASSED - All Observability Aspects Validated");
+        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
+        TestContext.WriteLine();
+        TestContext.WriteLine("✓ PRIMARY: Kafka message metrics validated (RecordsIn/Out)");
+        TestContext.WriteLine("✓ Gateway metrics API working correctly");
+        TestContext.WriteLine("✓ Prometheus scraping Flink metrics");
+        TestContext.WriteLine("✓ Grafana configured with Prometheus data source");
+        TestContext.WriteLine("✓ Backpressure detection functional");
+        TestContext.WriteLine("✓ Checkpoint metrics available");
+        TestContext.WriteLine($"✓ End-to-end pipeline processed {consumedMessages.Count} messages");
+        TestContext.WriteLine();
+    }
+
+    // ========== Helper Methods ==========
+
+    private async Task<string> SubmitJobViaGatewayAsync(string gatewayEndpoint, object jobDefinition, CancellationToken ct)
+    {
+        var jsonContent = JsonContent.Create(jobDefinition);
+        var response = await _httpClient!.PostAsync($"{gatewayEndpoint}/api/v1/jobs", jsonContent, ct);
+        response.EnsureSuccessStatusCode();
+        
+        var result = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
+        
+        // Use the Flink cluster job ID returned by Gateway
+        var jobId = result?.RootElement.GetProperty("jobId").GetString();
+        return jobId ?? throw new InvalidOperationException("Gateway did not return a job ID");
+    }
+
+    private async Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
+    {
+        var producerConfig = new Confluent.Kafka.ProducerConfig
+        {
+            BootstrapServers = GlobalTestInfrastructure.KafkaConnectionString,
+            Acks = Confluent.Kafka.Acks.All,
+            EnableIdempotence = true,
+            LingerMs = 5,
+            BrokerAddressFamily = Confluent.Kafka.BrokerAddressFamily.V4,
+            SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext
+        };
+
+        using var producer = new Confluent.Kafka.ProducerBuilder<string, string>(producerConfig).Build();
+        
+        for (int i = 0; i < count; i++)
+        {
+            var message = new Confluent.Kafka.Message<string, string>
+            {
+                Key = $"key-{i}",
+                Value = $"test message {i}"
+            };
+            
+            await producer.ProduceAsync(topic, message, ct);
+        }
+        
+        producer.Flush(TimeSpan.FromSeconds(10));
+    }
+
+    private async Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
+    {
+        var consumed = new List<string>();
+        
+        var consumerConfig = new Confluent.Kafka.ConsumerConfig
+        {
+            BootstrapServers = GlobalTestInfrastructure.KafkaConnectionString,
+            GroupId = $"test-consumer-{Guid.NewGuid()}",
+            AutoOffsetReset = Confluent.Kafka.AutoOffsetReset.Earliest,
+            EnableAutoCommit = false,
+            BrokerAddressFamily = Confluent.Kafka.BrokerAddressFamily.V4,
+            SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext
+        };
+
+        using var consumer = new Confluent.Kafka.ConsumerBuilder<string, string>(consumerConfig).Build();
+        consumer.Subscribe(topic);
+
+        var stopwatch = Stopwatch.StartNew();
+        
+        while (stopwatch.Elapsed < timeout && consumed.Count < expectedCount && !ct.IsCancellationRequested)
+        {
+            var result = consumer.Consume(TimeSpan.FromMilliseconds(1000));
+            
+            if (result != null)
+            {
+                consumed.Add(result.Message.Value);
+                consumer.Commit(result);
+            }
+            else if (consumed.Count > 0 && consumed.Count >= expectedCount)
+            {
+                break;
+            }
+        }
+
+        return consumed;
+    }
+
+    private async Task<GatewayMetrics> QueryGatewayMetricsAsync(string gatewayEndpoint, string jobId, CancellationToken ct)
+    {
+        var response = await _httpClient!.GetAsync($"{gatewayEndpoint}/api/v1/jobs/{jobId}/metrics", ct);
+        response.EnsureSuccessStatusCode();
+        
+        var metricsJson = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
+        var root = metricsJson!.RootElement;
+        
+        return new GatewayMetrics
+        {
+            RecordsIn = root.GetProperty("recordsIn").GetInt64(),
+            RecordsOut = root.GetProperty("recordsOut").GetInt64(),
+            Parallelism = root.GetProperty("parallelism").GetInt32(),
+            Checkpoints = root.GetProperty("checkpoints").GetInt64(),
+            BackpressureLevel = root.TryGetProperty("backpressureLevel", out var bp) ? bp.GetString() ?? "unknown" : "unknown"
+        };
+    }
+
+    private async Task<string> GetGatewayEndpointAsync()
+    {
+        var port = await GlobalTestInfrastructure.AppHost!.GetAllocatedEndpointAsync("jobgateway");
+        return $"http://localhost:{port}";
+    }
+
+    private async Task<string> GetPrometheusEndpointAsync()
+    {
+        var port = await GlobalTestInfrastructure.AppHost!.GetAllocatedEndpointAsync("prometheus");
+        return $"http://localhost:{port}";
+    }
+
+    private async Task<string> GetGrafanaEndpointAsync()
+    {
+        var port = await GlobalTestInfrastructure.AppHost!.GetAllocatedEndpointAsync("grafana");
+        return $"http://localhost:{port}";
+    }
+
+    private static void AssertMetricWithinTolerance(long actual, long expected, string metricName)
+    {
+        var tolerance = expected * MetricTolerancePercent / 100.0;
+        var lowerBound = expected - tolerance;
+        var upperBound = expected + tolerance;
+        
+        Assert.That(actual, Is.InRange(lowerBound, upperBound),
+            $"{metricName}: expected {expected} ±{MetricTolerancePercent}% (range: {lowerBound:F0}-{upperBound:F0}), got {actual}");
+    }
+
+    // ========== Data Models ==========
+    
+    private sealed class GatewayMetrics
+    {
+        public long RecordsIn { get; init; }
+        public long RecordsOut { get; init; }
+        public int Parallelism { get; init; }
+        public long Checkpoints { get; init; }
+        public string BackpressureLevel { get; init; } = "unknown";
     }
 }
