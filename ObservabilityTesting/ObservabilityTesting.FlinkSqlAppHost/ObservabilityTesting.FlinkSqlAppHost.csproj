@@ -29,8 +29,31 @@
     </ProjectReference>
   </ItemGroup>
 
-  <!-- Build FlinkDotNet JobGateway Docker image during 'dotnet build' only, not during 'dotnet run' -->
-  <Target Name="BuildGatewayDockerImage" BeforeTargets="Build" Condition="'$(DOTNET_RUNNING_IN_CONTAINER)' == '' AND '$(MSBuildRuntimeType)' == 'Core'">
+  <!-- Build FlinkDotNet JobGateway Docker image during 'dotnet build' only, not during 'dotnet run' or 'dotnet test' -->
+  <!-- Skip if SKIP_DOCKER_BUILD is set (for faster test execution) or if running in test mode -->
+  <Target Name="CheckGatewayDockerImage" BeforeTargets="BuildGatewayDockerImage">
+    <PropertyGroup>
+      <GatewayImageTag>flinkdotnet-gateway:local</GatewayImageTag>
+    </PropertyGroup>
+    
+    <!-- Check if Docker image already exists -->
+    <Exec Command="docker images -q $(GatewayImageTag) 2&gt;nul || docker images -q $(GatewayImageTag) 2&gt;/dev/null"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          ConsoleToMSBuild="true"
+          IgnoreExitCode="true"
+          ContinueOnError="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GatewayImageExists" />
+    </Exec>
+    
+    <PropertyGroup>
+      <SkipGatewayDockerBuild Condition="'$(GatewayImageExists)' != '' OR '$(SKIP_DOCKER_BUILD)' == 'true' OR '$(IsTestProject)' == 'true'">true</SkipGatewayDockerBuild>
+    </PropertyGroup>
+    
+    <Message Text="[INFO] Gateway Docker image check: $(GatewayImageTag) $(GatewayImageExists)" Importance="High" Condition="'$(SkipGatewayDockerBuild)' != 'true'" />
+    <Message Text="[INFO] Skipping Gateway Docker image build (image exists or SKIP_DOCKER_BUILD=true)" Importance="High" Condition="'$(SkipGatewayDockerBuild)' == 'true'" />
+  </Target>
+
+  <Target Name="BuildGatewayDockerImage" BeforeTargets="Build" Condition="'$(DOTNET_RUNNING_IN_CONTAINER)' == '' AND '$(MSBuildRuntimeType)' == 'Core' AND '$(SkipGatewayDockerBuild)' != 'true'">
     <PropertyGroup>
       <!-- Use forward slashes for cross-platform compatibility -->
       <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../'))</RepoRoot>
