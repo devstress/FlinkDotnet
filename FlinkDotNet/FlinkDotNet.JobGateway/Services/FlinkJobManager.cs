@@ -788,6 +788,12 @@ public partial class FlinkJobManager : IFlinkJobManager
             return null;
         }
 
+        // Handle null values in JSON (e.g., when checkpoints haven't been created yet)
+        if (timeEl.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
         if (timeEl.ValueKind != JsonValueKind.Number)
         {
             return null;
