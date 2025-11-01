@@ -32,14 +32,6 @@ IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithKafkaUI();
 
-// CRITICAL FIX: Override Kafka advertised listeners to fix DNS resolution issues
-// Problem: Aspire advertises wrong ports (e.g., PLAINTEXT_HOST://localhost:44653) 
-// causing "Connection refused" when test producers try to connect
-// Solution: Simplify to single PLAINTEXT listener that advertises kafka:9092
-// Docker port-forwarding makes this accessible from host via localhost:MAPPED_PORT
-kafka.WithEnvironment("KAFKA_LISTENERS", "PLAINTEXT://:9092");
-kafka.WithEnvironment("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092");
-
 // Flink configuration file with correct jobmanager.rpc.address
 string flinkConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-config.yaml");
 
