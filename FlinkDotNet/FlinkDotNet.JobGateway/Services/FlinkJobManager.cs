@@ -310,7 +310,8 @@ public partial class FlinkJobManager : IFlinkJobManager
                 string rawFlinkJobId = await this.SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
                 string normalizedJobId = NormalizeFlinkJobId(rawFlinkJobId);
                 this.TrackJob(jobDefinition, normalizedJobId);
-                return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, normalizedJobId);
+                // Use the Flink cluster job ID as the ONLY job ID
+                return JobSubmissionResult.CreateSuccess(normalizedJobId, normalizedJobId);
             }
 
             // Standard JAR submission flow (including TableEnvironment SQL)
@@ -332,7 +333,8 @@ public partial class FlinkJobManager : IFlinkJobManager
             this.TrackJob(jobDefinition, normalizedClusterJobId);
 
             this._logger.LogInformation("✅ Job submitted successfully to Flink cluster");
-            return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, normalizedClusterJobId);
+            // Use the Flink cluster job ID as the ONLY job ID
+            return JobSubmissionResult.CreateSuccess(normalizedClusterJobId, normalizedClusterJobId);
         }
         catch (Exception ex)
         {

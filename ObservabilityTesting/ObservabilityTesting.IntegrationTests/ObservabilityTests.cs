@@ -506,16 +506,15 @@ public class ObservabilityTests : LocalTestingTestBase
         
         var result = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
         
-        // Use FlinkJobId (actual Flink cluster job ID) instead of JobId (job definition ID)
-        // The Gateway returns both, but metrics queries need the actual Flink job ID
-        var flinkJobId = result?.RootElement.GetProperty("flinkJobId").GetString();
+        // JobId and FlinkJobId are now the same - Gateway returns the Flink cluster job ID
+        var jobId = result?.RootElement.GetProperty("jobId").GetString();
         
-        if (string.IsNullOrEmpty(flinkJobId))
+        if (string.IsNullOrEmpty(jobId))
         {
-            throw new InvalidOperationException("Job submission did not return a valid flinkJobId");
+            throw new InvalidOperationException("Job submission did not return a valid jobId");
         }
         
-        return flinkJobId;
+        return jobId;
     }
     
     private static async Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
