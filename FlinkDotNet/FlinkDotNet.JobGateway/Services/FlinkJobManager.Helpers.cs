@@ -1038,10 +1038,8 @@ public partial class FlinkJobManager
         {
             errors.Add("Job metadata is required");
         }
-        else if (string.IsNullOrEmpty(jobDefinition.Metadata.JobId))
-        {
-            errors.Add("Job ID is required");
-        }
+        // Note: JobId is now assigned by Apache Flink, not provided in job definition
+        // Removed validation: else if (string.IsNullOrEmpty(jobDefinition.Metadata.JobId))
 
         if (jobDefinition.Source == null)
         {
