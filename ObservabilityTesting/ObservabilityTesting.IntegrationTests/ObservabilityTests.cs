@@ -53,7 +53,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine("═══ Test 1: Gateway Metrics Aggregation Accuracy ═══");
         
         var cts = new CancellationTokenSource(TestTimeout);
-        const int expectedMessageCount = 10; // Reduced from 100 to match LocalTesting's approach
+        const int expectedMessageCount = 100;
         
         try
         {
