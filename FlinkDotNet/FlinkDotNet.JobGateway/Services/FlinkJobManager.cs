@@ -785,6 +785,12 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private static DateTime? ExtractTimestamp(JsonElement element, string propertyName)
     {
+        // Handle null elements - can't get properties from a null JSON element
+        if (element.ValueKind == JsonValueKind.Null || element.ValueKind == JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
         if (!element.TryGetProperty(propertyName, out JsonElement timeEl))
         {
             return null;
