@@ -80,8 +80,16 @@ public class ObservabilityTests : LocalTestingTestBase
             await ProduceMessagesAsync(inputTopic, expectedMessageCount, cts.Token);
             TestContext.WriteLine($"✅ Produced {expectedMessageCount} messages to input topic");
             
-            // Wait for processing and metrics stabilization
-            await Task.Delay(MetricsStabilizationTime, cts.Token);
+            // CRITICAL: Verify messages are consumed from output topic BEFORE checking metrics
+            var consumeTimeout = TimeSpan.FromSeconds(60);
+            var consumedMessages = await ConsumeMessagesAsync(outputTopic, expectedMessageCount, consumeTimeout, cts.Token);
+            TestContext.WriteLine($"✅ Consumed {consumedMessages.Count} messages from output topic (expected: {expectedMessageCount})");
+            
+            Assert.That(consumedMessages.Count, Is.EqualTo(expectedMessageCount), 
+                $"Should consume exactly {expectedMessageCount} messages from output topic before checking metrics");
+            
+            // Wait for metrics stabilization after confirming messages processed
+            await Task.Delay(TimeSpan.FromSeconds(15), cts.Token);
             
             // Query Gateway metrics
             var metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
@@ -320,12 +328,20 @@ public class ObservabilityTests : LocalTestingTestBase
             
             TestContext.WriteLine("✅ Step 2: Data produced");
             
-            // Step 3: Wait for metrics to flow through the pipeline
-            await Task.Delay(MetricsStabilizationTime, cts.Token);
+            // Step 3: Verify messages consumed from output topic BEFORE checking metrics
+            var consumeTimeout = TimeSpan.FromSeconds(60);
+            var consumedMessages = await ConsumeMessagesAsync(outputTopic, 50, consumeTimeout, cts.Token);
+            TestContext.WriteLine($"✅ Step 3: Consumed {consumedMessages.Count}/50 messages from output topic");
             
-            TestContext.WriteLine("✅ Step 3: Metrics stabilization period complete");
+            Assert.That(consumedMessages.Count, Is.EqualTo(50), 
+                "Should consume exactly 50 messages from output topic before checking metrics");
             
-            // Step 4: Verify metrics in Gateway
+            // Step 4: Wait for metrics stabilization after confirming messages processed
+            await Task.Delay(TimeSpan.FromSeconds(15), cts.Token);
+            
+            TestContext.WriteLine("✅ Step 4: Metrics stabilization period complete");
+            
+            // Step 5: Verify metrics in Gateway
             var gatewayMetrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
             Assert.That(gatewayMetrics.RecordsIn, Is.GreaterThan(0), "Gateway should report RecordsIn > 0");
             
@@ -547,6 +563,46 @@ public class ObservabilityTests : LocalTestingTestBase
         }
         
         producer.Flush(TimeSpan.FromSeconds(10));
+    }
+    
+    private static Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
+    {
+        var config = new Confluent.Kafka.ConsumerConfig
+        {
+            BootstrapServers = KafkaConnectionString,
+            GroupId = $"observability-consumer-{Guid.NewGuid()}",
+            AutoOffsetReset = Confluent.Kafka.AutoOffsetReset.Earliest,
+            EnableAutoCommit = false,
+            BrokerAddressFamily = Confluent.Kafka.BrokerAddressFamily.V4,
+            SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext
+        };
+        
+        var messages = new List<string>();
+        using var consumer = new Confluent.Kafka.ConsumerBuilder<Confluent.Kafka.Ignore, string>(config)
+            .SetLogHandler((_, _) => { })
+            .SetErrorHandler((_, _) => { })
+            .Build();
+        
+        consumer.Subscribe(topic);
+        var deadline = DateTime.UtcNow.Add(timeout);
+        
+        TestContext.WriteLine($"🔍 Starting consumption from '{topic}' (timeout: {timeout.TotalSeconds}s, expected: {expectedCount})");
+        
+        while (DateTime.UtcNow < deadline && messages.Count < expectedCount && !ct.IsCancellationRequested)
+        {
+            var consumeResult = consumer.Consume(TimeSpan.FromSeconds(1));
+            if (consumeResult != null && consumeResult.Message != null)
+            {
+                messages.Add(consumeResult.Message.Value);
+                if (messages.Count % 10 == 0 || messages.Count == expectedCount)
+                {
+                    TestContext.WriteLine($"  📥 Consumed {messages.Count}/{expectedCount} messages");
+                }
+            }
+        }
+        
+        TestContext.WriteLine($"✅ Consumption complete: {messages.Count}/{expectedCount} messages");
+        return Task.FromResult(messages);
     }
     
     private static async Task<GatewayMetrics> QueryGatewayMetricsAsync(string gatewayEndpoint, string jobId, CancellationToken ct)
