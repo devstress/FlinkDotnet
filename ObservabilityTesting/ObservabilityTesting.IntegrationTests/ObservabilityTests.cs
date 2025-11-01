@@ -517,29 +517,20 @@ public class ObservabilityTests : LocalTestingTestBase
     
     private static async Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
     {
+        // Match LocalTesting configuration exactly - this is known to work
         var producerConfig = new Confluent.Kafka.ProducerConfig
         {
             BootstrapServers = KafkaConnectionString,
-            Acks = Confluent.Kafka.Acks.All,
-            // CRITICAL: Match LocalTesting configuration + workaround for Aspire advertised listener bug
             EnableIdempotence = true,
-            BrokerAddressFamily = Confluent.Kafka.BrokerAddressFamily.V4,  // Force IPv4
-            SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext,
+            Acks = Confluent.Kafka.Acks.All,
             LingerMs = 5,
-            // WORKAROUND: Disable metadata refresh and retries to prevent reconnection to wrong advertised addresses
-            // Aspire advertises wrong ports (e.g., PLAINTEXT_HOST://localhost:40023) instead of actual mapped ports
-            TopicMetadataRefreshIntervalMs = -1,  // Disable automatic metadata refresh
-            MetadataMaxAgeMs = int.MaxValue,  // Never expire metadata
-            SocketKeepaliveEnable = true,  // Keep initial connection alive
-            ReconnectBackoffMs = 10000,  // Long reconnect backoff
-            ReconnectBackoffMaxMs = 60000,
-            MessageSendMaxRetries = 0,  // Don't retry on failure (would trigger metadata refresh)
-            RequestTimeoutMs = 30000
+            BrokerAddressFamily = Confluent.Kafka.BrokerAddressFamily.V4,
+            SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext
         };
         
         using var producer = new Confluent.Kafka.ProducerBuilder<string, string>(producerConfig)
-            .SetLogHandler((_, _) => { })  // Suppress verbose logs
-            .SetErrorHandler((_, _) => { })  // Suppress error logs
+            .SetLogHandler((_, _) => { })
+            .SetErrorHandler((_, _) => { })
             .Build();
         
         for (var i = 0; i < count; i++)
@@ -553,7 +544,7 @@ public class ObservabilityTests : LocalTestingTestBase
             await producer.ProduceAsync(topic, message, ct);
         }
         
-        producer.Flush(ct);
+        producer.Flush(TimeSpan.FromSeconds(10));
     }
     
     private static async Task<GatewayMetrics> QueryGatewayMetricsAsync(string gatewayEndpoint, string jobId, CancellationToken ct)
@@ -849,16 +840,15 @@ public class ObservabilityTests : LocalTestingTestBase
             var consumedMessages = 0;
             var uppercaseCount = 0;
 
+            // Match LocalTesting consumer configuration
             var consumerConfig = new Confluent.Kafka.ConsumerConfig
             {
                 BootstrapServers = kafkaBootstrap,
                 GroupId = $"test-consumer-{Guid.NewGuid()}",
                 AutoOffsetReset = Confluent.Kafka.AutoOffsetReset.Earliest,
                 EnableAutoCommit = false,
-                // Match LocalTesting configuration for reliable connectivity
                 BrokerAddressFamily = Confluent.Kafka.BrokerAddressFamily.V4,
-                SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext,
-                MetadataMaxAgeMs = 300000  // 5 minutes to avoid metadata refresh issues
+                SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext
             };
 
             using (var consumer = new Confluent.Kafka.ConsumerBuilder<string, string>(consumerConfig).Build())
