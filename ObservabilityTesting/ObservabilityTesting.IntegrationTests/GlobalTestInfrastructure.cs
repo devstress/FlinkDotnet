@@ -36,6 +36,18 @@ public class GlobalTestInfrastructure
     {
         get; private set;
     } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
+    public static string? KafkaFlinkBootstrapServers
+    {
+        get; private set;
+    } // Kafka bootstrap servers for Flink jobs (e.g., "kafka:9092")
+    public static string? KafkaEndpoint
+    {
+        get; private set;
+    } // Kafka endpoint for host connections (e.g., "localhost:32804")
+    public static string? KafkaContainerIp
+    {
+        get; private set;
+    } // Kafka container IP address (e.g., "172.17.0.2")
     public static string? TemporalEndpoint
     {
         get; private set;
@@ -55,9 +67,9 @@ public class GlobalTestInfrastructure
         try
         {
             _previousLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE");
-            // CRITICAL: ObservabilityTesting requires LEARNINGCOURSE=true for Prometheus/Grafana stack
-            // Override the default LocalTesting behavior of disabling LEARNINGCOURSE mode
-            Console.WriteLine("✅ Setting LEARNINGCOURSE=true for ObservabilityTesting (requires Prometheus/Grafana)");
+            // ObservabilityTesting ALWAYS runs in LEARNINGCOURSE mode (Prometheus/Grafana stack required)
+            // No environment variable check needed - we force it to true
+            Console.WriteLine("✅ Setting LEARNINGCOURSE=true for ObservabilityTesting (always enabled)");
             Environment.SetEnvironmentVariable("LEARNINGCOURSE", "true");
 
             // Clean up test-logs directory from previous test runs
@@ -154,6 +166,7 @@ public class GlobalTestInfrastructure
 
             // Store for use in tests (replaces hostname-based connection)
             KafkaContainerIpForFlink = kafkaContainerIp;
+            KafkaContainerIp = kafkaContainerIp; // Also store without suffix for backward compatibility
 
             // CRITICAL: Use Aspire's configuration system to get Kafka connection string
             // This is the proper Aspire pattern instead of hardcoding or Docker inspection
@@ -188,6 +201,9 @@ public class GlobalTestInfrastructure
             KafkaConnectionString = !string.IsNullOrEmpty(KafkaConnectionStringFromConfig)
                 ? KafkaConnectionStringFromConfig
                 : discoveredKafkaEndpoint;
+            
+            // Store discovered endpoint for tests that need it
+            KafkaEndpoint = discoveredKafkaEndpoint;
 
             // CRITICAL: Flink jobs run in containers and need internal Docker network address
             // Cannot use localhost - must use kafka:9092 for container-to-container communication
@@ -753,6 +769,11 @@ public class GlobalTestInfrastructure
     private static string ExtractKafkaEndpointFromPorts(string kafkaContainers)
     {
         var lines = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        
+        // Cache container name and port for debugging
+        string? discoveredContainer = null;
+        string? discoveredPort = null;
+        
         foreach (var line in lines)
         {
             // Parse format: "container-name|port-mappings"
@@ -772,19 +793,28 @@ public class GlobalTestInfrastructure
                 continue;
             }
 
-            // Look for port mapping to 9092 (Kafka's default listener port)
-            // Aspire maps container port 9092 to a dynamic host port for external access
-            // Format: 127.0.0.1:PORT->9092/tcp or 0.0.0.0:PORT->9092/tcp
-            var match = System.Text.RegularExpressions.Regex.Match(ports, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9092");
+            // Look for port mapping to 9093 (Kafka's external listener port for host connections)
+            // Aspire's default Kafka configuration exposes port 9093 for external access
+            // Format: 127.0.0.1:PORT->9093/tcp or 0.0.0.0:PORT->9093/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(ports, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9093");
             if (match.Success)
             {
-                var port = match.Groups[1].Value;
-                Console.WriteLine($"🔍 Found Kafka port mapping for {containerName}: host {port} -> container 9092");
-                return $"localhost:{port}";
+                discoveredPort = match.Groups[1].Value;
+                discoveredContainer = containerName;
+                
+                Console.WriteLine($"✅ Discovered Kafka endpoint:");
+                Console.WriteLine($"   Container Name: {containerName}");
+                Console.WriteLine($"   Host Port: {discoveredPort}");
+                Console.WriteLine($"   Container Port: 9093");
+                Console.WriteLine($"   Full Endpoint: localhost:{discoveredPort}");
+                Console.WriteLine($"   Full Port Mapping: {ports}");
+                
+                return $"localhost:{discoveredPort}";
             }
         }
 
-        throw new InvalidOperationException($"Could not determine Kafka endpoint from Docker/Podman ports: {kafkaContainers}");
+        throw new InvalidOperationException($"Could not determine Kafka endpoint from Docker/Podman ports: {kafkaContainers}\n" +
+                                          $"Searched containers: {string.Join(", ", lines.Select(l => l.Split('|')[0]))}");
     }
 
     /// <summary>

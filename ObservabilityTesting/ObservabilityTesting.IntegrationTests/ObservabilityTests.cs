@@ -29,14 +29,10 @@ public class ObservabilityTests : LocalTestingTestBase
         await base.OneTimeSetUp();
         _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         
-        // Verify LEARNINGCOURSE mode is enabled (required for observability stack)
-        var isLearningCourse = Environment.GetEnvironmentVariable("LEARNINGCOURSE")?.ToLower() == "true";
-        if (!isLearningCourse)
-        {
-            Assert.Ignore("Observability tests require LEARNINGCOURSE mode (Prometheus/Grafana stack). Set LEARNINGCOURSE=true environment variable.");
-        }
+        // ObservabilityTesting always runs in LEARNINGCOURSE mode (no flag check needed)
+        // GlobalTestInfrastructure automatically sets LEARNINGCOURSE=true for this test suite
         
-        TestContext.WriteLine("✅ Observability test suite initialized (LEARNINGCOURSE mode enabled)");
+        TestContext.WriteLine("✅ Observability test suite initialized (LEARNINGCOURSE mode always enabled)");
     }
     
     [OneTimeTearDown]
@@ -795,7 +791,7 @@ public class ObservabilityTests : LocalTestingTestBase
         // Arrange: Set up environment variables for SampleApp
         var gatewayEndpoint = await GetGatewayEndpointAsync();
         var kafkaBootstrap = GlobalTestInfrastructure.KafkaEndpoint;
-        var kafkaFlinkBootstrap = GlobalTestInfrastructure.KafkaContainerIp;
+        var kafkaFlinkBootstrap = GlobalTestInfrastructure.KafkaFlinkBootstrapServers;
 
         TestContext.WriteLine($"Gateway Endpoint: {gatewayEndpoint}");
         TestContext.WriteLine($"Kafka Bootstrap (Host): {kafkaBootstrap}");

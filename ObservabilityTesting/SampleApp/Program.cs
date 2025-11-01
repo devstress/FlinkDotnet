@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
 using Flink.JobBuilder.Models;
-using Serilog;
 using FlinkDotNet.DataStream;
+using Serilog;
 
 namespace SampleApp
 {
@@ -97,7 +97,7 @@ namespace SampleApp
             Console.WriteLine();
 
             Console.WriteLine(">> Step 2/3: Submitting Flink job via FlinkDotNet JobGateway...");
-            var jobId = await SubmitJobToGatewayAsync();
+            string jobId = await SubmitJobToGatewayAsync();
             Console.WriteLine();
 
             Console.WriteLine(">> Step 3/3: Producing test messages...");
@@ -133,8 +133,14 @@ namespace SampleApp
 
             Console.WriteLine($"   Submitting job to FlinkDotNet JobGateway at {FlinkJobGatewayUrl}...");
 
-            using HttpClient httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-            HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{FlinkJobGatewayUrl}/api/v1/jobs/submit", jobDefinition);
+            using HttpClient httpClient = new()
+            {
+                Timeout = TimeSpan.FromSeconds(30)
+            };
+
+            // Ensure URL doesn't have double slashes when combining
+            string gatewayBaseUrl = FlinkJobGatewayUrl.TrimEnd('/');
+            HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{gatewayBaseUrl}/api/v1/jobs/submit", jobDefinition);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -155,7 +161,7 @@ namespace SampleApp
 
         private static async Task ProduceMessagesAsync()
         {
-            ProducerConfig producerConfig = new ProducerConfig
+            ProducerConfig producerConfig = new()
             {
                 BootstrapServers = KafkaBootstrapServers,
                 EnableIdempotence = true,
@@ -191,7 +197,10 @@ namespace SampleApp
 
         private static async Task CreateTopicsAsync()
         {
-            AdminClientConfig adminConfig = new() { BootstrapServers = KafkaBootstrapServers };
+            AdminClientConfig adminConfig = new()
+            {
+                BootstrapServers = KafkaBootstrapServers
+            };
             using IAdminClient admin = new AdminClientBuilder(adminConfig).Build();
 
             TopicSpecification[] topicsToCreate =
@@ -207,7 +216,7 @@ namespace SampleApp
             }
             catch (CreateTopicsException ex)
             {
-                System.Collections.Generic.List<CreateTopicReport> errors = ex.Results.Where(r => r.Error.Code != ErrorCode.TopicAlreadyExists).ToList();
+                System.Collections.Generic.List<CreateTopicReport> errors = [.. ex.Results.Where(r => r.Error.Code != ErrorCode.TopicAlreadyExists)];
                 if (!errors.Any())
                 {
                     Console.WriteLine("   [SUCCESS] Topics already exist");
@@ -223,7 +232,13 @@ namespace SampleApp
 
     public class JobSubmissionResponse
     {
-        public string? JobId { get; set; }
-        public string? Status { get; set; }
+        public string? JobId
+        {
+            get; set;
+        }
+        public string? Status
+        {
+            get; set;
+        }
     }
 }
