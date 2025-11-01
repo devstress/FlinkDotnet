@@ -23,12 +23,6 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj">
-      <SetConfiguration>Configuration=Release</SetConfiguration>
-    </ProjectReference>
-  </ItemGroup>
-
   <!-- Build FlinkDotNet JobGateway Docker image during 'dotnet build' only, not during 'dotnet run' -->
   <Target Name="BuildGatewayDockerImage" BeforeTargets="Build" Condition="'$(DOTNET_RUNNING_IN_CONTAINER)' == '' AND '$(MSBuildRuntimeType)' == 'Core'">
     <PropertyGroup>
