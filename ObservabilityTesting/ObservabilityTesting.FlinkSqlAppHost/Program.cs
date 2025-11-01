@@ -27,10 +27,11 @@ Console.WriteLine("🔍 Running in OBSERVABILITY TESTING mode");
 Console.WriteLine("   ✅ Full stack enabled: Kafka + Flink + Prometheus + Grafana + JobGateway");
 
 // 1. Kafka - Message broker for test data
+// Using simple configuration like LocalTesting/ReleasePackagesTesting (NO KafkaUI)
+// KafkaUI adds extra listener configuration that causes advertised listener issues
 Console.WriteLine("[INFO] Configuring Kafka...");
 IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
-    .WithLifetime(ContainerLifetime.Persistent)
-    .WithKafkaUI();
+    .WithLifetime(ContainerLifetime.Persistent);
 
 // Flink configuration file with correct jobmanager.rpc.address
 string flinkConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-config.yaml");
