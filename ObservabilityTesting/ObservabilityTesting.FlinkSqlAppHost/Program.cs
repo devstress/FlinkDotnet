@@ -29,8 +29,8 @@ Console.WriteLine("   ✅ Full stack enabled: Kafka + Flink + Prometheus + Grafa
 // 1. Kafka - Message broker for test data
 Console.WriteLine("[INFO] Configuring Kafka...");
 IResourceBuilder<KafkaServerResource> _ = builder.AddKafka("kafka")
-    .WithLifetime(ContainerLifetime.Persistent)
-    .WithKafkaUI();
+    .WithLifetime(ContainerLifetime.Persistent);
+// .WithKafkaUI();  // DISABLED: Testing if KafkaUI causes container recreation
 
 // Flink configuration file with correct jobmanager.rpc.address
 string flinkConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-config.yaml");
