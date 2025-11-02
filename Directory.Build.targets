@@ -13,6 +13,7 @@
 
   <!-- Run dotnet format before build to ensure code formatting consistency -->
   <!-- Only runs for non-test projects to avoid overhead -->
+  <!-- Note: Overridden (disabled) in LocalTesting, LearningCourse, ObservabilityTesting, BackPressureExample, ReleasePackagesTesting, and FlinkIRRunner folders -->
   <Target Name="FormatCode" BeforeTargets="CoreCompile" Condition="'$(IsTestProject)' != 'true' AND '$(DesignTimeBuild)' != 'true' AND '$(BuildingProject)' != 'false'">
     <Message Text="Running dotnet format on $(MSBuildProjectName)..." Importance="High" />
     <Exec Command="dotnet format --no-restore --verbosity quiet" 
