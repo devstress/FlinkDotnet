@@ -46,22 +46,42 @@ public partial class FlinkJobManager : IFlinkJobManager
     };
 
     /// <summary>
-    /// Gets or sets the delay between SQL Gateway retry attempts.
-    /// Static field for testability (can be set to 1ms in tests).
+    /// Thread-safe delay configuration using Interlocked operations on backing fields (stored as ticks)
+    /// These allow concurrent test execution and production job submissions without race conditions
     /// </summary>
-    public static TimeSpan SqlGatewayRetryDelay { get; set; } = TimeSpan.FromSeconds(1);
+    private static long s_sqlGatewayRetryDelayTicks = TimeSpan.FromSeconds(1).Ticks;
+    private static long s_jarRegistrationPollingDelayTicks = TimeSpan.FromSeconds(1).Ticks;
+    private static long s_jobRecoveryPollingDelayTicks = TimeSpan.FromSeconds(1).Ticks;
+
+    /// <summary>
+    /// Gets or sets the delay between SQL Gateway retry attempts.
+    /// Thread-safe for parallel test execution and production job submissions.
+    /// </summary>
+    public static TimeSpan SqlGatewayRetryDelay
+    {
+        get => TimeSpan.FromTicks(Interlocked.Read(ref s_sqlGatewayRetryDelayTicks));
+        set => Interlocked.Exchange(ref s_sqlGatewayRetryDelayTicks, value.Ticks);
+    }
 
     /// <summary>
     /// Gets or sets the delay between JAR registration polling attempts.
-    /// Static field for testability (can be set to 1ms in tests).
+    /// Thread-safe for parallel test execution and production job submissions.
     /// </summary>
-    public static TimeSpan JarRegistrationPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
+    public static TimeSpan JarRegistrationPollingDelay
+    {
+        get => TimeSpan.FromTicks(Interlocked.Read(ref s_jarRegistrationPollingDelayTicks));
+        set => Interlocked.Exchange(ref s_jarRegistrationPollingDelayTicks, value.Ticks);
+    }
 
     /// <summary>
     /// Gets or sets the delay between job recovery polling attempts.
-    /// Static field for testability (can be set to 1ms in tests).
+    /// Thread-safe for parallel test execution and production job submissions.
     /// </summary>
-    public static TimeSpan JobRecoveryPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
+    public static TimeSpan JobRecoveryPollingDelay
+    {
+        get => TimeSpan.FromTicks(Interlocked.Read(ref s_jobRecoveryPollingDelayTicks));
+        set => Interlocked.Exchange(ref s_jobRecoveryPollingDelayTicks, value.Ticks);
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FlinkJobManager"/> class.
