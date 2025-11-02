@@ -59,7 +59,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
 
         var gatewayEndpoint = await GetGatewayEndpointAsync();
-        var kafkaBootstrap = GlobalTestInfrastructure.KafkaEndpoint;
+        var kafkaBootstrap = GlobalTestInfrastructure.KafkaConnectionString;
 
         TestContext.WriteLine($"Gateway Endpoint: {gatewayEndpoint}");
         TestContext.WriteLine($"Kafka Bootstrap: {kafkaBootstrap}");

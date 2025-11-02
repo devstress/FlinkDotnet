@@ -36,18 +36,6 @@ public class GlobalTestInfrastructure
     {
         get; private set;
     } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
-    public static string? KafkaFlinkBootstrapServers
-    {
-        get; private set;
-    } // Kafka bootstrap servers for Flink jobs (e.g., "kafka:9092")
-    public static string? KafkaEndpoint
-    {
-        get; private set;
-    } // Kafka endpoint for host connections (e.g., "localhost:32804")
-    public static string? KafkaContainerIp
-    {
-        get; private set;
-    } // Kafka container IP address (e.g., "172.17.0.2")
     public static string? TemporalEndpoint
     {
         get; private set;
@@ -166,7 +154,6 @@ public class GlobalTestInfrastructure
 
             // Store for use in tests (replaces hostname-based connection)
             KafkaContainerIpForFlink = kafkaContainerIp;
-            KafkaContainerIp = kafkaContainerIp; // Also store without suffix for backward compatibility
 
             // CRITICAL: Use Aspire's configuration system to get Kafka connection string
             // This is the proper Aspire pattern instead of hardcoding or Docker inspection
@@ -201,20 +188,12 @@ public class GlobalTestInfrastructure
             KafkaConnectionString = !string.IsNullOrEmpty(KafkaConnectionStringFromConfig)
                 ? KafkaConnectionStringFromConfig
                 : discoveredKafkaEndpoint;
-            
-            // Store discovered endpoint for tests that need it
-            KafkaEndpoint = discoveredKafkaEndpoint;
-
-            // CRITICAL: Flink jobs run in containers and need internal Docker network address
-            // Cannot use localhost - must use kafka:9092 for container-to-container communication
-            KafkaFlinkBootstrapServers = "kafka:9092";
 
             Console.WriteLine($"✅ Kafka connection strings:");
             Console.WriteLine($"   📡 From Aspire config: {KafkaConnectionStringFromConfig ?? "(not set)"}");
             Console.WriteLine($"   📡 From Docker discovery: {discoveredKafkaEndpoint}");
-            Console.WriteLine($"   📡 For test producers/consumers (host): {KafkaConnectionString}");
-            Console.WriteLine($"   📡 For Flink jobs (containers): {KafkaFlinkBootstrapServers}");
-            Console.WriteLine($"   ℹ️  Tests use localhost:port, Flink jobs use kafka:9092");
+            Console.WriteLine($"   📡 Using for tests: {KafkaConnectionString}");
+            Console.WriteLine($"   ℹ️  This address will be used by both test producers/consumers AND Flink jobs");
 
             // Get Flink endpoint and wait for readiness (don't require free slots initially - TaskManager registration takes time)
             var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
@@ -827,11 +806,10 @@ public class GlobalTestInfrastructure
 
             Console.WriteLine($"✅ Kafka container IP discovered: {ip}");
 
-            // CRITICAL FIX: Use port 9092 (PLAINTEXT listener) for container-to-container communication
-            // Port 9092 is the standard Kafka PLAINTEXT listener for internal/inter-broker communication
+            // Return IP with PLAINTEXT_INTERNAL port (9093)
+            // Port 9093 is configured as PLAINTEXT_INTERNAL listener in Aspire's Kafka setup
             // This is used by Flink jobs running in containers to connect to Kafka
-            // Port 9093 (PLAINTEXT_EXTERNAL) is for external clients and may have DNS resolution issues
-            return $"{ip}:9092";
+            return $"{ip}:9093";
         }
         catch (Exception ex)
         {
