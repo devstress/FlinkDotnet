@@ -71,8 +71,7 @@ public class TableApiTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "table-api-test-job",
-                JobName = "Table API Test",
+                                JobName = "Table API Test",
                 Version = "1.0"
             }
         };
@@ -347,8 +346,7 @@ public class TableApiTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "ptf-test-job",
-                JobName = "PTF Test",
+                                JobName = "PTF Test",
                 Version = "1.0"
             }
         };

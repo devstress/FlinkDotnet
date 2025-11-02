@@ -62,8 +62,7 @@ public class MaterializedTableTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "materialized-table-job",
-                JobName = "Materialized Table Test",
+                                JobName = "Materialized Table Test",
                 Version = "1.0"
             }
         };

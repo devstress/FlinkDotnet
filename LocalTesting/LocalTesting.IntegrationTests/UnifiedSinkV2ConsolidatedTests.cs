@@ -78,8 +78,7 @@ public class UnifiedSinkV2ConsolidatedTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "exactly-once-job",
-                JobName = "Exactly-Once Test",
+                                JobName = "Exactly-Once Test",
                 Version = "1.0",
                 Parallelism = 4
             }
@@ -104,7 +103,7 @@ public class UnifiedSinkV2ConsolidatedTests
                 Semantics = "at-least-once",
                 Stateful = false
             },
-            Metadata = new JobMetadata { JobId = "at-least-once-job", Version = "1.0" }
+            Metadata = new JobMetadata { Version = "1.0" }
         };
 
         // Part C: Custom Sink
@@ -131,7 +130,7 @@ public class UnifiedSinkV2ConsolidatedTests
                     { "backoffMs", "1000" }
                 }
             },
-            Metadata = new JobMetadata { JobId = "custom-sink-job", Version = "1.0" }
+            Metadata = new JobMetadata { Version = "1.0" }
         };
 
         // Act: Serialize and deserialize all three job types
@@ -330,7 +329,7 @@ public class UnifiedSinkV2ConsolidatedTests
                 BootstrapServers = "localhost:9092",
                 Serializer = "json"
             },
-            Metadata = new JobMetadata { JobId = "legacy-job", Version = "1.0" }
+            Metadata = new JobMetadata { Version = "1.0" }
         };
 
         // Part B: Unified Sink v2
@@ -352,7 +351,7 @@ public class UnifiedSinkV2ConsolidatedTests
                 Semantics = "exactly-once",
                 CommitterConfig = new SinkCommitterConfig { Enabled = true }
             },
-            Metadata = new JobMetadata { JobId = "unified-job", Version = "1.0" }
+            Metadata = new JobMetadata { Version = "1.0" }
         };
 
         // Act: Serialize both
@@ -471,8 +470,7 @@ public class UnifiedSinkV2ConsolidatedTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "complete-job",
-                JobName = "Complete Event Processor",
+                                JobName = "Complete Event Processor",
                 Version = "1.0",
                 Parallelism = 4
             }

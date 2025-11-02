@@ -120,8 +120,7 @@ public class PaimonIntegrationTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "paimon-table-job",
-                JobName = "Paimon Table Test",
+                                JobName = "Paimon Table Test",
                 Version = "1.0"
             }
         };

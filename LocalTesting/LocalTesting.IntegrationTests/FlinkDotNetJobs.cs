@@ -49,7 +49,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }
@@ -75,7 +75,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }
@@ -102,7 +102,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }
@@ -130,7 +130,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }
@@ -177,9 +177,7 @@ public static class FlinkDotNetJobs
                 ExecutionMode = "gateway"
             },
             Metadata = new JobMetadata
-            {
-                JobId = GenerateFlinkJobId(),
-                JobName = jobName,
+            {                JobName = jobName,
                 CreatedAt = DateTime.UtcNow,
                 Version = "1.0"
             }
@@ -242,9 +240,7 @@ public static class FlinkDotNetJobs
                 ExecutionMode = "gateway"
             },
             Metadata = new JobMetadata
-            {
-                JobId = GenerateFlinkJobId(),
-                JobName = jobName,
+            {                JobName = jobName,
                 CreatedAt = DateTime.UtcNow,
                 Version = "1.0"
             }
@@ -290,7 +286,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }
