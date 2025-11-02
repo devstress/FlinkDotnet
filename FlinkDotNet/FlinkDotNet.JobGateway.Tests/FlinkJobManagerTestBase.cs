@@ -11,6 +11,7 @@ namespace FlinkDotNet.JobGateway.Tests
     /// <summary>
     /// Base class for FlinkJobManager tests providing common setup for thread-safe parallel execution.
     /// Sets up IConfiguration mocking to avoid Environment.SetEnvironmentVariable calls.
+    /// Uses OneTimeSetUp/OneTimeTearDown to create one HttpClient per test fixture for thread-safe parallel execution.
     /// </summary>
     public abstract class FlinkJobManagerTestBase
     {
@@ -18,6 +19,29 @@ namespace FlinkDotNet.JobGateway.Tests
         protected Mock<IConfiguration> _mockConfiguration = null!;
         protected Mock<HttpMessageHandler> _mockHttpMessageHandler = null!;
         protected HttpClient _httpClient = null!;
+
+        [OneTimeSetUp]
+        public virtual void OneTimeSetup()
+        {
+            // Create HttpClient once per test fixture (class)
+            // Each test class gets its own instance, avoiding disposal conflicts in parallel execution
+            this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+            
+            // Setup default handler for unmocked HTTP requests to fail fast
+            _ = this._mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
+            
+            // Don't set BaseAddress here - FlinkJobManager constructor will set it
+            this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
+            {
+                Timeout = TimeSpan.FromSeconds(1)
+            };
+        }
 
         [SetUp]
         public virtual void Setup()
@@ -47,28 +71,12 @@ namespace FlinkDotNet.JobGateway.Tests
                     this._mockConfiguration.Setup(c => c["FLINK_RUNNER_JAR_PATH"]).Returns(jarPath);
                 }
             }
-
-            this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            
-            // Setup default handler for unmocked HTTP requests to fail fast
-            _ = this._mockHttpMessageHandler
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>())
-                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-            
-            this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
-            {
-                BaseAddress = new Uri("http://localhost:8081"),
-                Timeout = TimeSpan.FromSeconds(1)
-            };
         }
 
-        [TearDown]
-        public virtual void TearDown()
+        [OneTimeTearDown]
+        public virtual void OneTimeTearDown()
         {
+            // Dispose HttpClient once when all tests in this fixture complete
             this._httpClient?.Dispose();
         }
 
