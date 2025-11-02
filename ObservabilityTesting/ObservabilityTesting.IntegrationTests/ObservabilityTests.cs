@@ -162,7 +162,9 @@ public class ObservabilityTests : LocalTestingTestBase
                 try
                 {
                     using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-                    await httpClient.PostAsync($"{gatewayEndpoint}/api/v1/jobs/{jobId}/cancel", null);
+                    // Remove trailing slash to avoid double slashes
+                    var baseUrl = gatewayEndpoint.TrimEnd('/');
+                    await httpClient.PostAsync($"{baseUrl}/api/v1/jobs/{jobId}/cancel", null);
                     TestContext.WriteLine($"Cancelled job {jobId}");
                 }
                 catch { /* Ignore cleanup errors */ }
@@ -323,7 +325,9 @@ public class ObservabilityTests : LocalTestingTestBase
     private async Task<string> SubmitJobViaGatewayAsync(string gatewayEndpoint, object jobDefinition, CancellationToken ct)
     {
         var jsonContent = JsonContent.Create(jobDefinition);
-        var response = await _httpClient!.PostAsync($"{gatewayEndpoint}/api/v1/jobs/submit", jsonContent, ct);
+        // Remove trailing slash from endpoint to avoid double slashes
+        var baseUrl = gatewayEndpoint.TrimEnd('/');
+        var response = await _httpClient!.PostAsync($"{baseUrl}/api/v1/jobs/submit", jsonContent, ct);
         response.EnsureSuccessStatusCode();
         
         var result = await response.Content.ReadFromJsonAsync<JobSubmissionResult>(cancellationToken: ct);
@@ -399,7 +403,9 @@ public class ObservabilityTests : LocalTestingTestBase
 
     private async Task<GatewayMetrics> QueryGatewayMetricsAsync(string gatewayEndpoint, string jobId, CancellationToken ct)
     {
-        var response = await _httpClient!.GetAsync($"{gatewayEndpoint}/api/v1/jobs/{jobId}/metrics", ct);
+        // Remove trailing slash to avoid double slashes
+        var baseUrl = gatewayEndpoint.TrimEnd('/');
+        var response = await _httpClient!.GetAsync($"{baseUrl}/api/v1/jobs/{jobId}/metrics", ct);
         response.EnsureSuccessStatusCode();
         
         var metricsJson = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
