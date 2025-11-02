@@ -36,9 +36,6 @@ _ = builder.AddKafka("kafka")
 Console.WriteLine("[INFO] Kafka configured with Aspire default settings");
 Console.WriteLine("  - Will use Aspire's default listener configuration");
 
-// Flink configuration file with correct jobmanager.rpc.address
-string flinkConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-config.yaml");
-
 // Constants for Flink container configuration
 const string FlinkImage = "flink";
 const string FlinkVersion = "2.1.0-java17";
@@ -46,39 +43,37 @@ const string FlinkVersion = "2.1.0-java17";
 // 2. Flink JobManager with Prometheus metrics enabled
 Console.WriteLine("[INFO] Configuring Flink JobManager with Prometheus metrics...");
 
-string metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
+// Configure JobManager FLINK_PROPERTIES (metrics configuration)
+string jobManagerFlinkProperties =
+    "metrics.reporters: prom\n" +
+    "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
+    "metrics.reporter.prom.port: 9250\n" +
+    "metrics.reporter.prom.filterLabelValueCharacters: false\n";
+
 IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-jobmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8081, name: "jobmanager-http")
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
-    .WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true)  // Mount as flink-conf.yaml
-    .WithEntrypoint("/bin/bash")
-    .WithArgs("-c", "bin/jobmanager.sh start && tail -f /dev/null")
+    .WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties)  // Metrics configuration
+    .WithArgs("jobmanager")  // Use standard Flink Docker entrypoint
     .WithLifetime(ContainerLifetime.Persistent);
-
-if (File.Exists(metricsJarPath))
-{
-    jobManager = jobManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
-    Console.WriteLine("   [INFO] Prometheus metrics JAR mounted for JobManager");
-}
 
 // 3. Flink TaskManager with Prometheus metrics enabled  
 Console.WriteLine("[INFO] Configuring Flink TaskManager with Prometheus metrics...");
 
+// Configure TaskManager FLINK_PROPERTIES (memory and metrics)
+string taskManagerFlinkProperties =
+    "metrics.reporters: prom\n" +
+    "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
+    "metrics.reporter.prom.port: 9251\n" +
+    "metrics.reporter.prom.filterLabelValueCharacters: false\n";
+
 IResourceBuilder<ContainerResource> taskManager = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
-    .WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true)  // Mount as flink-conf.yaml
-    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // Standard Flink environment variable
-    .WithEnvironment("FLINK_PROPERTIES", "jobmanager.rpc.address: flink-jobmanager\nmetrics.reporter.prom.port: 9251\n")  // Override for TaskManager
-    .WithEntrypoint("/bin/bash")
-    .WithArgs("-c", "bin/taskmanager.sh start && tail -f /dev/null")
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // Standard Flink environment variable  
+    .WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties)  // Metrics configuration only
+    .WithArgs("taskmanager")  // Use standard Flink Docker entrypoint
     .WaitFor(jobManager)
     .WithLifetime(ContainerLifetime.Persistent);
-
-if (File.Exists(metricsJarPath))
-{
-    _ = (IResourceBuilder<KafkaServerResource>) taskManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
-    Console.WriteLine("   [INFO] Prometheus metrics JAR mounted for TaskManager");
-}
 
 // 4. Flink SQL Gateway - Required for FlinkDotNet JobGateway to communicate with Flink
 Console.WriteLine("[INFO] Configuring Flink SQL Gateway...");
