@@ -34,16 +34,9 @@ namespace FlinkDotNet.JobGateway.Tests
 
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
             
-            // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
-            _ = this._mockHttpMessageHandler
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>())
-                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-
-            // Setup common JAR-related mocks to avoid 30-second timeouts in WaitForJarRegistrationAsync
+            // Setup JAR-related mocks BEFORE default handler to avoid 30-second timeouts
+            // In Moq.Protected, first matching setup wins, so specific mocks must come first
+            
             // Mock JAR upload
             _ = this._mockHttpMessageHandler
                 .Protected()
@@ -85,6 +78,16 @@ namespace FlinkDotNet.JobGateway.Tests
                     StatusCode = HttpStatusCode.OK,
                     Content = new StringContent("{\"jobid\":\"test-flink-job-id-123\"}")
                 });
+            
+            // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
+            // This MUST come AFTER specific mocks because in Moq.Protected, first match wins
+            _ = this._mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
             
             this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
