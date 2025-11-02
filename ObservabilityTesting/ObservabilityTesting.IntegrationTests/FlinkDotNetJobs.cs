@@ -49,7 +49,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }
@@ -95,7 +95,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }
@@ -140,7 +140,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }
@@ -168,7 +168,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }
@@ -198,7 +198,7 @@ public static class FlinkDotNetJobs
         return new JobSubmissionResult
         {
             Success = true,
-            JobId = jobClient.GetJobId(),
+            FlinkJobId = jobClient.GetJobId(),
             SubmittedAt = DateTime.UtcNow
         };
     }

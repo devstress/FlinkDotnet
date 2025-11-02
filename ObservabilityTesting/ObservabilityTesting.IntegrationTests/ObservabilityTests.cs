@@ -417,20 +417,72 @@ public class ObservabilityTests : LocalTestingTestBase
 
     private async Task<string> GetGatewayEndpointAsync()
     {
-        var port = await GlobalTestInfrastructure.AppHost!.GetAllocatedEndpointAsync("jobgateway");
-        return $"http://localhost:{port}";
+        // Use the existing GlobalTestInfrastructure method that discovers endpoint from Docker
+        return await GlobalTestInfrastructure.GetGatewayEndpointAsync();
     }
 
     private async Task<string> GetPrometheusEndpointAsync()
     {
-        var port = await GlobalTestInfrastructure.AppHost!.GetAllocatedEndpointAsync("prometheus");
-        return $"http://localhost:{port}";
+        return await GetPrometheusEndpointFromDockerAsync();
     }
 
     private async Task<string> GetGrafanaEndpointAsync()
     {
-        var port = await GlobalTestInfrastructure.AppHost!.GetAllocatedEndpointAsync("grafana");
-        return $"http://localhost:{port}";
+        return await GetGrafanaEndpointFromDockerAsync();
+    }
+
+    private static async Task<string> GetPrometheusEndpointFromDockerAsync()
+    {
+        try
+        {
+            var prometheusContainers = await GlobalTestInfrastructure.RunDockerCommandAsync("ps --filter \"name=prometheus\" --format \"{{.Ports}}\"");
+            var lines = prometheusContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var line in lines)
+            {
+                if (line.Contains("->9090/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->9090");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}";
+                    }
+                }
+            }
+
+            throw new InvalidOperationException($"Could not determine Prometheus endpoint from Docker ports: {prometheusContainers}");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to get Prometheus endpoint: {ex.Message}", ex);
+        }
+    }
+
+    private static async Task<string> GetGrafanaEndpointFromDockerAsync()
+    {
+        try
+        {
+            var grafanaContainers = await GlobalTestInfrastructure.RunDockerCommandAsync("ps --filter \"name=grafana\" --format \"{{.Ports}}\"");
+            var lines = grafanaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var line in lines)
+            {
+                if (line.Contains("->3000/tcp"))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->3000");
+                    if (match.Success)
+                    {
+                        return $"http://localhost:{match.Groups[1].Value}";
+                    }
+                }
+            }
+
+            throw new InvalidOperationException($"Could not determine Grafana endpoint from Docker ports: {grafanaContainers}");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to get Grafana endpoint: {ex.Message}", ex);
+        }
     }
 
     private static void AssertMetricWithinTolerance(long actual, long expected, string metricName)
