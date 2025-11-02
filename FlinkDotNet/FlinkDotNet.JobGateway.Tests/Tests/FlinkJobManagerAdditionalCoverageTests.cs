@@ -37,53 +37,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
             
-            // Setup JAR-related mocks BEFORE default handler to avoid 30-second timeouts
-            // In Moq.Protected, first matching setup wins, so specific mocks must come first
-            
-            // Mock JAR upload
-            _ = this._mockHttpMessageHandler
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/jars/upload")),
-                    ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent("{\"filename\":\"flink-ir-runner-java17.jar\",\"status\":\"success\"}")
-                });
-
-            // Mock JAR list endpoint
-            _ = this._mockHttpMessageHandler
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(req => 
-                        req.Method == HttpMethod.Get && 
-                        req.RequestUri!.PathAndQuery.Contains("/jars") &&
-                        !req.RequestUri.PathAndQuery.Contains("/upload")),
-                    ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent("{\"files\":[{\"id\":\"flink-ir-runner-java17.jar\",\"name\":\"flink-ir-runner-java17.jar\",\"uploaded\":1234567890}]}")
-                });
-
-            // Mock JAR run
-            _ = this._mockHttpMessageHandler
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/jars/") && req.RequestUri.PathAndQuery.Contains("/run")),
-                    ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent("{\"jobid\":\"test-flink-job-id-123\"}")
-                });
-            
-            // Setup default handler for unmocked HTTP requests to fail fast instead of timing out  
-            // This MUST come AFTER specific mocks because in Moq.Protected, first match wins
+            // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
             _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -399,23 +353,6 @@ namespace FlinkDotNet.JobGateway.Tests
                 {
                     StatusCode = HttpStatusCode.OK,
                     Content = new StringContent("{\"filename\":\"flink-ir-runner-java17.jar\",\"status\":\"success\"}")
-                });
-
-            // Mock JAR list endpoint - Return uploaded JAR to avoid 30-second polling delay
-            // This MUST come after /jars/upload to avoid matching that endpoint
-            _ = this._mockHttpMessageHandler
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.Is<HttpRequestMessage>(req => 
-                        req.Method == HttpMethod.Get && 
-                        req.RequestUri!.PathAndQuery.Contains("/jars") &&
-                        !req.RequestUri.PathAndQuery.Contains("/upload")),
-                    ItExpr.IsAny<CancellationToken>())
-                .ReturnsAsync(new HttpResponseMessage
-                {
-                    StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent("{\"files\":[{\"id\":\"flink-ir-runner-java17.jar\",\"name\":\"flink-ir-runner-java17.jar\",\"uploaded\":1234567890}]}")
                 });
 
             // Mock JAR run

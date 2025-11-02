@@ -189,7 +189,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 .ReturnsAsync(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent("{\"files\":[{\"id\":\"flink-ir-runner-java17.jar\",\"name\":\"flink-ir-runner-java17.jar\",\"uploaded\":1234567890}]}")
+                    Content = new StringContent("{\"files\":[]}")
                 });
 
             // Mock JAR upload - Return proper JAR ID to avoid 30-second polling delay
