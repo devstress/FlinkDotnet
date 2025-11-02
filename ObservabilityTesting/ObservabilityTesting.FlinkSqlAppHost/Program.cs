@@ -30,7 +30,7 @@ Console.WriteLine("   ✅ Full stack enabled: Kafka + Flink + Prometheus + Grafa
 // Using simple configuration like LocalTesting/ReleasePackagesTesting (NO KafkaUI)
 // KafkaUI adds extra listener configuration that causes advertised listener issues
 Console.WriteLine("[INFO] Configuring Kafka...");
-IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
+_ = builder.AddKafka("kafka")
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("[INFO] Kafka configured with Aspire default settings");
