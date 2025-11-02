@@ -50,17 +50,18 @@ public class JobDefinitionValidatorTests
     [Test]
     public void Validate_WithEmptyJobId_ReturnsError()
     {
+        // JobId is no longer required - test now validates job is valid without it
         var job = new JobDefinition
         {
             Metadata = new JobMetadata { Version = "1.0" },
-            Source = new KafkaSourceDefinition { Topic = "test" },
-            Sink = new KafkaSinkDefinition { Topic = "output" }
+            Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+            Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
         };
 
         var result = JobDefinitionValidator.Validate(job);
 
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors, Contains.Item("metadata.jobId is required"));
+        // Should be valid now since JobId is no longer required
+        Assert.That(result.IsValid, Is.True);
     }
 
     [Test]

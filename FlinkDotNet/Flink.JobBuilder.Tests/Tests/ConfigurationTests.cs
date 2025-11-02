@@ -25,7 +25,8 @@ public class ConfigurationTests
     [Test]
     public void JobMetadata_SetJobId_ReturnsValue()
     {
-        var metadata = new JobMetadata { };
+        // This test was for JobId which is now removed. Testing JobName instead
+        var metadata = new JobMetadata { JobName = "test-job-123" };
         Assert.That(metadata.JobName, Is.EqualTo("test-job-123"));
     }
 
@@ -133,7 +134,7 @@ public class ConfigurationTests
     [Test]
     public void JobSubmissionResult_Success_SetsProperty()
     {
-        var result = new JobSubmissionResult { Success = true };
+        var result = new JobSubmissionResult { Success = true, FlinkJobId = "job-123" };
         Assert.That(result.Success, Is.True);
         Assert.That(result.FlinkJobId, Is.EqualTo("job-123"));
     }

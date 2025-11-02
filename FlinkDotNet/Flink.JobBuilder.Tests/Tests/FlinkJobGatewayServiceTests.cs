@@ -197,7 +197,6 @@ public class FlinkJobGatewayServiceTests
 
         // Assert
         Assert.That(result.Success, Is.True, $"Expected success but got error: {result.ErrorMessage}");
-        Assert.That(result.FlinkJobId, Is.EqualTo("test-job-1"));
         Assert.That(result.FlinkJobId, Is.EqualTo("flink-123"));
     }
 

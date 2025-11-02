@@ -86,7 +86,8 @@ public class JobDefinitionModelTests
     {
         var metadata = new JobMetadata();
 
-        Assert.That(metadata.JobName, Is.EqualTo(string.Empty));
+        // JobName is nullable and defaults to null
+        Assert.That(metadata.JobName, Is.Null);
         Assert.That(metadata.Version, Is.EqualTo(string.Empty));
         Assert.That(metadata.CreatedAt, Is.EqualTo(default(DateTime)));
     }
@@ -110,7 +111,6 @@ public class JobDefinitionModelTests
             Properties = properties
         };
 
-        Assert.That(metadata.JobName, Is.EqualTo("job-123"));
         Assert.That(metadata.JobName, Is.EqualTo("Test Job"));
         Assert.That(metadata.CreatedAt, Is.EqualTo(createdAt));
         Assert.That(metadata.Version, Is.EqualTo("1.0.0"));

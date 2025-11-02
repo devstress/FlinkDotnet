@@ -417,7 +417,7 @@ public class ModelIntegrationTests
     {
         var metadata = new JobMetadata { };
 
-        Assert.That(metadata.JobName, Is.EqualTo("minimal-job"));
+        // JobMetadata with minimal config should have null JobName
         Assert.That(metadata.JobName, Is.Null);
         Assert.That(metadata.Parallelism, Is.Null);
     }

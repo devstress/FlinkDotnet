@@ -23,7 +23,7 @@ public class JobResultsModelTests
     [Test]
     public void JobSubmissionResult_SetJobId_ReturnsValue()
     {
-        var result = new JobSubmissionResult { };
+        var result = new JobSubmissionResult { FlinkJobId = "job-123" };
 
         Assert.That(result.FlinkJobId, Is.EqualTo("job-123"));
     }
@@ -84,7 +84,6 @@ public class JobResultsModelTests
     {
         var result = JobSubmissionResult.CreateSuccess("flink-456");
 
-        Assert.That(result.FlinkJobId, Is.EqualTo("job-123"));
         Assert.That(result.FlinkJobId, Is.EqualTo("flink-456"));
         Assert.That(result.Success, Is.True);
         Assert.That(result.IsSuccess, Is.True);
@@ -107,7 +106,8 @@ public class JobResultsModelTests
     {
         var result = JobSubmissionResult.CreateFailure("Connection timeout");
 
-        Assert.That(result.FlinkJobId, Is.EqualTo("job-123"));
+        // CreateFailure doesn't set FlinkJobId, it should be empty
+        Assert.That(result.FlinkJobId, Is.EqualTo(string.Empty));
         Assert.That(result.Success, Is.False);
         Assert.That(result.IsSuccess, Is.False);
         Assert.That(result.ErrorMessage, Is.EqualTo("Connection timeout"));
@@ -159,7 +159,6 @@ public class JobResultsModelTests
             Metrics = metrics
         };
 
-        Assert.That(result.FlinkJobId, Is.EqualTo("job-123"));
         Assert.That(result.FlinkJobId, Is.EqualTo("flink-456"));
         Assert.That(result.State, Is.EqualTo("FINISHED"));
         Assert.That(result.Success, Is.True);
@@ -250,7 +249,6 @@ public class JobResultsModelTests
             Metrics = metrics
         };
 
-        Assert.That(status.FlinkJobId, Is.EqualTo("job-123"));
         Assert.That(status.FlinkJobId, Is.EqualTo("flink-456"));
         Assert.That(status.State, Is.EqualTo("RUNNING"));
         Assert.That(status.StartTime, Is.EqualTo(startTime));

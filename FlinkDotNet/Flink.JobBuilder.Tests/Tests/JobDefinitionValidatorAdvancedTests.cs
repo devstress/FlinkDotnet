@@ -830,8 +830,9 @@ public class JobDefinitionValidatorAdvancedTests
         var result = JobDefinitionValidator.Validate(job);
 
         Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors.Count, Is.GreaterThanOrEqualTo(8)); // Multiple validation errors
-        Assert.That(result.Errors, Contains.Item("metadata.jobId is required"));
+        // Now 7 errors instead of 8 (JobId no longer required)
+        Assert.That(result.Errors.Count, Is.GreaterThanOrEqualTo(7));
+        // Remove JobId assertion - it's no longer required
         Assert.That(result.Errors, Contains.Item("metadata.version is required"));
         Assert.That(result.Errors, Contains.Item("source.kafka.topic is required"));
         Assert.That(result.Errors, Contains.Item("operations[0].filter.expression is required"));

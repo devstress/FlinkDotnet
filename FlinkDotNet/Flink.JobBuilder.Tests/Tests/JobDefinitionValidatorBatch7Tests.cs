@@ -319,12 +319,11 @@ public class JobDefinitionValidatorBatch7Tests
     [Test]
     public void Validate_WithEmptyJobId_ReturnsError()
     {
-        // Arrange
+        // JobId is no longer required - test now validates job is valid without it
         var jobDefinition = new JobDefinition
         {
             Metadata = new JobMetadata
             {
-                // Invalid
                 Version = "1.0"
             },
             Source = new KafkaSourceDefinition
@@ -338,20 +337,18 @@ public class JobDefinitionValidatorBatch7Tests
         // Act
         var result = JobDefinitionValidator.Validate(jobDefinition);
 
-        // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors, Has.Some.Contain("jobId is required"));
+        // Assert - Should be valid now since JobId is no longer required
+        Assert.That(result.IsValid, Is.True);
     }
 
     [Test]
     public void Validate_WithWhitespaceJobId_ReturnsError()
     {
-        // Arrange
+        // JobId is no longer required - test now validates job is valid without it
         var jobDefinition = new JobDefinition
         {
             Metadata = new JobMetadata
             {
-                // Invalid - whitespace only
                 Version = "1.0"
             },
             Source = new KafkaSourceDefinition
@@ -365,9 +362,8 @@ public class JobDefinitionValidatorBatch7Tests
         // Act
         var result = JobDefinitionValidator.Validate(jobDefinition);
 
-        // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors, Has.Some.Contain("jobId is required"));
+        // Assert - Should be valid now since JobId is no longer required
+        Assert.That(result.IsValid, Is.True);
     }
 
     [Test]
