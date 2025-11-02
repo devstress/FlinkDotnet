@@ -192,7 +192,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     Content = new StringContent("{\"files\":[]}")
                 });
 
-            // Mock JAR upload
+            // Mock JAR upload - Return proper JAR ID to avoid 30-second polling delay
             _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -202,7 +202,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 .ReturnsAsync(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent("{\"filename\":\"/tmp/test-jar.jar\",\"status\":\"success\"}")
+                    Content = new StringContent("{\"filename\":\"flink-ir-runner-java17.jar\",\"status\":\"success\"}")
                 });
 
             // Mock JAR run
