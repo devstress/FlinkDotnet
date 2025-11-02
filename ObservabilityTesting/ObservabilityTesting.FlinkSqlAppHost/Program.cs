@@ -67,7 +67,8 @@ Console.WriteLine("[INFO] Configuring Flink TaskManager with Prometheus metrics.
 IResourceBuilder<ContainerResource> taskManager = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
     .WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true)  // Mount as flink-conf.yaml
-    .WithEnvironment("FLINK_PROPERTIES", "metrics.reporter.prom.port: 9251\n")  // Override metrics port for TaskManager
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // Standard Flink environment variable
+    .WithEnvironment("FLINK_PROPERTIES", "jobmanager.rpc.address: flink-jobmanager\nmetrics.reporter.prom.port: 9251\n")  // Override for TaskManager
     .WithEntrypoint("/bin/bash")
     .WithArgs("-c", "bin/taskmanager.sh start && tail -f /dev/null")
     .WaitFor(jobManager)
