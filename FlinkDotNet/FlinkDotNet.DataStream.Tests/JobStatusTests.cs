@@ -142,6 +142,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var status = new JobStatus
             {
+                                FlinkJobId = "job-xyz-123",
                                 JobName = "Complex Streaming Job",
                 State = "FAILED",
                 Parallelism = 8,

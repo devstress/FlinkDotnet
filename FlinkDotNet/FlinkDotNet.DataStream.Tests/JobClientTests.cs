@@ -497,7 +497,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var client = new JobClient("test-job", TimeSpan.FromSeconds(1))
             {
-                FlinkJobId = ""
+                FlinkJobId = "test-id"
             };
 
             // Act

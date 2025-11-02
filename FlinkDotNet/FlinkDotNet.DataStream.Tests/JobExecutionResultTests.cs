@@ -11,14 +11,12 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var result = new JobExecutionResult();
-            var jobId = "test-job-123";
             var jobName = "Test Job";
             var startTime = DateTime.UtcNow;
             var endTime = startTime.AddMinutes(5);
             var error = "Test error message";
 
             // Act
-            result.JobName = jobId;
             result.JobName = jobName;
             result.Success = true;
             result.StartTime = startTime;
@@ -26,7 +24,6 @@ namespace FlinkDotNet.DataStream.Tests
             result.Error = error;
 
             // Assert
-            Assert.That(result.JobName, Is.EqualTo(jobId));
             Assert.That(result.JobName, Is.EqualTo(jobName));
             Assert.That(result.Success, Is.True);
             Assert.That(result.StartTime, Is.EqualTo(startTime));
@@ -41,7 +38,6 @@ namespace FlinkDotNet.DataStream.Tests
             var result = new JobExecutionResult();
 
             // Assert
-            Assert.That(result.JobName, Is.EqualTo(string.Empty));
             Assert.That(result.JobName, Is.EqualTo(string.Empty));
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.Null);
@@ -92,7 +88,6 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Assert
-            Assert.That(result.JobName, Is.EqualTo("job-456"));
             Assert.That(result.JobName, Is.EqualTo("Integration Test Job"));
             Assert.That(result.Success, Is.False);
             Assert.That(result.StartTime, Is.EqualTo(startTime));

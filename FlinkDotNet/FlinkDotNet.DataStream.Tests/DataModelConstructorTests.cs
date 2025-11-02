@@ -46,7 +46,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Assert
-            Assert.That(result.JobName, Is.EqualTo("test-id"));
+            Assert.That(result.JobName, Is.EqualTo("test-job"));
         }
 
         #endregion
