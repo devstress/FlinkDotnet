@@ -310,7 +310,8 @@ public partial class FlinkJobManager : IFlinkJobManager
                 string rawFlinkJobId = await this.SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
                 string normalizedJobId = NormalizeFlinkJobId(rawFlinkJobId);
                 this.TrackJob(jobDefinition, normalizedJobId);
-                return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, normalizedJobId);
+                // Use the Flink cluster job ID as the ONLY job ID
+                return JobSubmissionResult.CreateSuccess(normalizedJobId, normalizedJobId);
             }
 
             // Standard JAR submission flow (including TableEnvironment SQL)
@@ -332,7 +333,8 @@ public partial class FlinkJobManager : IFlinkJobManager
             this.TrackJob(jobDefinition, normalizedClusterJobId);
 
             this._logger.LogInformation("✅ Job submitted successfully to Flink cluster");
-            return JobSubmissionResult.CreateSuccess(jobDefinition.Metadata.JobId, normalizedClusterJobId);
+            // Use the Flink cluster job ID as the ONLY job ID
+            return JobSubmissionResult.CreateSuccess(normalizedClusterJobId, normalizedClusterJobId);
         }
         catch (Exception ex)
         {
@@ -783,7 +785,19 @@ public partial class FlinkJobManager : IFlinkJobManager
 
     private static DateTime? ExtractTimestamp(JsonElement element, string propertyName)
     {
+        // Handle null elements - can't get properties from a null JSON element
+        if (element.ValueKind == JsonValueKind.Null || element.ValueKind == JsonValueKind.Undefined)
+        {
+            return null;
+        }
+
         if (!element.TryGetProperty(propertyName, out JsonElement timeEl))
+        {
+            return null;
+        }
+
+        // Handle null values in JSON (e.g., when checkpoints haven't been created yet)
+        if (timeEl.ValueKind == JsonValueKind.Null)
         {
             return null;
         }

@@ -107,7 +107,7 @@ namespace FlinkDotNet.DataStream
                 },
                 Metadata = new JobMetadata
                 {
-                    JobId = Guid.NewGuid().ToString("n"),
+                    JobId = string.Empty, // Will be assigned by Flink when job is submitted
                     Parallelism = this._executionConfig.Parallelism > 0 ? this._executionConfig.Parallelism : null,
                     CreatedAt = DateTime.UtcNow,
                     Version = "1.0"
@@ -396,8 +396,9 @@ namespace FlinkDotNet.DataStream
             if (this._operationCapture?.HasOperations() == true)
             {
                 // Translate captured operations to JobDefinition
-                string jobId = System.Guid.NewGuid().ToString();
-                _log.Debug("[ExecuteAsync] Translating native DataStream API operations with jobId={JobId}", jobId);
+                // Don't generate JobId - let Flink assign it
+                string jobId = string.Empty;
+                _log.Debug("[ExecuteAsync] Translating native DataStream API operations (JobId will be assigned by Flink)");
                 jobToSubmit = this._operationCapture.ToJobDefinition(jobId, name);
                 this._logger?.LogInformation("Translated native DataStream API operations to JobDefinition");
             }
@@ -427,8 +428,8 @@ namespace FlinkDotNet.DataStream
             }
             catch (Exception ex)
             {
-                this._logger?.LogError(ex, "Failed to submit job {JobId} to gateway", jobToSubmit.Metadata.JobId);
-                throw new InvalidOperationException($"Failed to submit job {jobToSubmit.Metadata.JobId} to Flink Job Gateway", ex);
+                this._logger?.LogError(ex, "Failed to submit job to gateway");
+                throw new InvalidOperationException("Failed to submit job to Flink Job Gateway", ex);
             }
 
             if (!submit.Success)
@@ -444,9 +445,10 @@ namespace FlinkDotNet.DataStream
             }
 
             // Create and return JobClient for lifecycle management
+            // Use the Flink-assigned job ID (JobId and FlinkJobId are now the same)
             JobClient jobClient = new(name)
             {
-                JobId = submit.FlinkJobId ?? jobToSubmit.Metadata.JobId
+                JobId = submit.JobId // Use Flink-assigned job ID
             };
 
             _log.Information("[ExecuteAsync] Job submitted successfully - JobId={JobId}", jobClient.JobId);

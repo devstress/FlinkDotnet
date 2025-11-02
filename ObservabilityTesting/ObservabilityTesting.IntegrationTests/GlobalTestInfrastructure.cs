@@ -793,10 +793,14 @@ public class GlobalTestInfrastructure
                 continue;
             }
 
-            // Look for port mapping to 9093 (Kafka's external listener port for host connections)
-            // Aspire's default Kafka configuration exposes port 9093 for external access
-            // Format: 127.0.0.1:PORT->9093/tcp or 0.0.0.0:PORT->9093/tcp
-            var match = System.Text.RegularExpressions.Regex.Match(ports, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9093");
+            // CRITICAL FIX: Use port 9092 (PLAINTEXT listener) instead of 9093 (PLAINTEXT_INTERNAL)
+            // Port 9093's PLAINTEXT_INTERNAL listener advertises "kafka:9093" which causes DNS failures from host
+            // Port 9092's PLAINTEXT listener advertises "kafka:9092" but is accessible from host via port forwarding
+            // This avoids the "Failed to resolve 'kafka:9093'" error
+            //
+            // Look for port mapping to 9092 (Kafka's PLAINTEXT listener)
+            // Format: 127.0.0.1:PORT->9092/tcp or 0.0.0.0:PORT->9092/tcp
+            var match = System.Text.RegularExpressions.Regex.Match(ports, @"(?:127\.0\.0\.1|0\.0\.0\.0):(\d+)->9092");
             if (match.Success)
             {
                 discoveredPort = match.Groups[1].Value;
@@ -805,7 +809,7 @@ public class GlobalTestInfrastructure
                 Console.WriteLine($"✅ Discovered Kafka endpoint:");
                 Console.WriteLine($"   Container Name: {containerName}");
                 Console.WriteLine($"   Host Port: {discoveredPort}");
-                Console.WriteLine($"   Container Port: 9093");
+                Console.WriteLine($"   Container Port: 9092");
                 Console.WriteLine($"   Full Endpoint: localhost:{discoveredPort}");
                 Console.WriteLine($"   Full Port Mapping: {ports}");
                 
