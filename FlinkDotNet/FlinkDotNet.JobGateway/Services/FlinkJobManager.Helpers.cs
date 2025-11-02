@@ -78,7 +78,7 @@ public partial class FlinkJobManager
         catch (Exception ex)
         {
             this._logger.LogError(ex, "❌ Failed to submit jar to Flink REST API: {Message}", ex.Message);
-            throw new InvalidOperationException($"Failed to submit jar to Flink REST API for job {jobDefinition.Metadata.JobId}", ex);
+            throw new InvalidOperationException($"Failed to submit jar to Flink REST API for job {jobDefinition.Metadata.JobName ?? "Unnamed"}", ex);
         }
     }
 
@@ -106,7 +106,7 @@ public partial class FlinkJobManager
             entryClass = "com.flink.jobgateway.FlinkJobRunner",
             programArgsList = new[] { "--irBase64", irBase64 },
             parallelism = jobDefinition.Metadata.Parallelism ?? 1,
-            jobName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId
+            jobName = jobDefinition.Metadata.JobName ?? "Unnamed Job"
         };
 
         string requestJson = JsonSerializer.Serialize(runRequest);
@@ -141,7 +141,7 @@ public partial class FlinkJobManager
         if (string.IsNullOrEmpty(jobId))
         {
             this._logger.LogWarning("⚠️ JobId not in response, attempting recovery...");
-            string targetName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
+            string targetName = jobDefinition.Metadata.JobName ?? "Unnamed Job";
             jobId = await this.TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
         }
 
@@ -162,7 +162,7 @@ public partial class FlinkJobManager
         {
             FlinkRunResponse? run = JsonSerializer.Deserialize<FlinkRunResponse>(runContent,
                 s_caseInsensitiveDeserializerOptions);
-            string? jobId = run?.JobId;
+            string? jobId = run?.FlinkJobId;
             if (jobId != null)
             {
                 this._logger.LogInformation(
@@ -183,7 +183,7 @@ public partial class FlinkJobManager
     private async Task<string> SubmitSqlGatewayJobAsync(SqlSourceDefinition sqlSource, JobDefinition jobDefinition)
     {
         this.LogSectionHeader("📡 [FlinkJobManager] Submitting SQL job to SQL Gateway",
-            ("📋 JobId", jobDefinition.Metadata.JobId));
+            ("📝 Job Name", jobDefinition.Metadata.JobName ?? "Unnamed"));
 
         try
         {
@@ -254,7 +254,7 @@ public partial class FlinkJobManager
 
     private async Task<string> CreateSqlGatewaySessionAsync(HttpClient client, JobDefinition jobDefinition)
     {
-        string sessionName = jobDefinition.Metadata.JobName ?? jobDefinition.Metadata.JobId;
+        string sessionName = jobDefinition.Metadata.JobName ?? "Unnamed Job";
         this._logger.LogInformation("🚀 POST {BaseAddress}/v1/sessions (Creating session: {SessionName})", client.BaseAddress, sessionName);
 
         object sessionRequest = new
@@ -1037,10 +1037,6 @@ public partial class FlinkJobManager
         if (jobDefinition.Metadata == null)
         {
             errors.Add("Job metadata is required");
-        }
-        else if (string.IsNullOrEmpty(jobDefinition.Metadata.JobId))
-        {
-            errors.Add("Job ID is required");
         }
 
         if (jobDefinition.Source == null)

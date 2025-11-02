@@ -39,11 +39,6 @@ namespace Flink.JobBuilder.Models
     public class JobMetadata
     {
         /// <summary>
-        /// Unique identifier for the job
-        /// </summary>
-        public string JobId { get; set; } = string.Empty;
-
-        /// <summary>
         /// Human-readable name for the job
         /// </summary>
         public string? JobName

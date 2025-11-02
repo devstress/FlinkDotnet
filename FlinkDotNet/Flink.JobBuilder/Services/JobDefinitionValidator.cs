@@ -51,11 +51,6 @@ namespace Flink.JobBuilder.Services
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(metadata.JobId))
-            {
-                errors.Add("metadata.jobId is required");
-            }
-
             if (string.IsNullOrWhiteSpace(metadata.Version))
             {
                 errors.Add("metadata.version is required");

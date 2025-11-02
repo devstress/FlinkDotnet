@@ -107,7 +107,6 @@ namespace FlinkDotNet.DataStream
                 },
                 Metadata = new JobMetadata
                 {
-                    JobId = string.Empty, // Will be assigned by Flink when job is submitted
                     Parallelism = this._executionConfig.Parallelism > 0 ? this._executionConfig.Parallelism : null,
                     CreatedAt = DateTime.UtcNow,
                     Version = "1.0"
@@ -445,13 +444,13 @@ namespace FlinkDotNet.DataStream
             }
 
             // Create and return JobClient for lifecycle management
-            // Use the Flink-assigned job ID (JobId and FlinkJobId are now the same)
+            // Use the Flink-assigned job ID
             JobClient jobClient = new(name)
             {
-                JobId = submit.JobId // Use Flink-assigned job ID
+                FlinkJobId = submit.FlinkJobId
             };
 
-            _log.Information("[ExecuteAsync] Job submitted successfully - JobId={JobId}", jobClient.JobId);
+            _log.Information("[ExecuteAsync] Job submitted successfully - FlinkJobId={FlinkJobId}", jobClient.FlinkJobId);
             return jobClient;
         }
 
@@ -507,7 +506,6 @@ namespace FlinkDotNet.DataStream
 
     public class JobExecutionResult
     {
-        public string JobId { get; set; } = string.Empty;
         public string JobName { get; set; } = string.Empty;
         public bool Success
         {
@@ -559,7 +557,7 @@ namespace FlinkDotNet.DataStream
         private readonly FlinkJobGatewayService _gateway;
         private readonly HttpClient _flinkHttp;
         private bool _disposed;
-        public string JobId { get; set; } = string.Empty;
+        public string FlinkJobId { get; set; } = string.Empty;
         public string JobName
         {
             get; set;
@@ -617,7 +615,7 @@ namespace FlinkDotNet.DataStream
         /// Gets the Flink job ID.
         /// Implementation of IJobClient.GetJobId().
         /// </summary>
-        public string GetJobId() => this.JobId;
+        public string GetJobId() => this.FlinkJobId;
 
         /// <summary>
         /// Cancels the Flink job using the Flink REST API.
@@ -625,13 +623,13 @@ namespace FlinkDotNet.DataStream
         /// </summary>
         public async Task CancelAsync(CancellationToken cancellationToken = default)
         {
-            bool success = await this._gateway.CancelJobAsync(this.JobId, cancellationToken);
+            bool success = await this._gateway.CancelJobAsync(this.FlinkJobId, cancellationToken);
             if (success)
             {
                 return;
             }
 
-            throw new InvalidOperationException($"Failed to cancel job {this.JobId}");
+            throw new InvalidOperationException($"Failed to cancel job {this.FlinkJobId}");
         }
 
         /// <summary>
@@ -643,7 +641,6 @@ namespace FlinkDotNet.DataStream
             JobStatus status = await this.GetJobStatusAsync(cancellationToken);
             return new JobExecutionResult
             {
-                JobId = this.JobId,
                 JobName = this.JobName,
                 Success = status.State == "FINISHED",
                 StartTime = status.StartTime,
@@ -662,7 +659,7 @@ namespace FlinkDotNet.DataStream
                 targetDirectory = savepointPath,
                 cancelJob
             };
-            HttpResponseMessage resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/savepoints",
+            HttpResponseMessage resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.FlinkJobId}/savepoints",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
             bool ok = resp.IsSuccessStatusCode;
             string text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -691,10 +688,10 @@ namespace FlinkDotNet.DataStream
 
         public async Task<JobStatus> GetJobStatusAsync(CancellationToken cancellationToken = default)
         {
-            Flink.JobBuilder.Models.JobStatus status = await this._gateway.GetJobStatusAsync(this.JobId, cancellationToken).ConfigureAwait(false);
+            Flink.JobBuilder.Models.JobStatus status = await this._gateway.GetJobStatusAsync(this.FlinkJobId, cancellationToken).ConfigureAwait(false);
             return new JobStatus
             {
-                JobId = this.JobId,
+                FlinkJobId = this.FlinkJobId,
                 JobName = this.JobName,
                 State = status.State ?? "UNKNOWN",
                 Parallelism = status.Metrics?.Parallelism ?? 0,
@@ -712,7 +709,7 @@ namespace FlinkDotNet.DataStream
                 targetDirectory = savepointPath,
                 drain
             };
-            HttpResponseMessage resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.JobId}/stop",
+            HttpResponseMessage resp = await this._flinkHttp.PostAsync($"/v1/jobs/{this.FlinkJobId}/stop",
                 new StringContent(System.Text.Json.JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json"), cancellationToken).ConfigureAwait(false);
             bool ok = resp.IsSuccessStatusCode;
             string text = await resp.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
@@ -794,7 +791,7 @@ namespace FlinkDotNet.DataStream
     /// </summary>
     public class JobStatus
     {
-        public string JobId { get; set; } = string.Empty;
+        public string FlinkJobId { get; set; } = string.Empty;
         public string JobName { get; set; } = string.Empty;
         public string State { get; set; } = string.Empty;
         public int Parallelism

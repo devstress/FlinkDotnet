@@ -11,7 +11,6 @@ public partial class FlinkJobManager
 {
     private sealed class JobInfo
     {
-        public string JobId { get; set; } = string.Empty;
         public string FlinkJobId { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public DateTime SubmissionTime
@@ -32,7 +31,7 @@ public partial class FlinkJobManager
 
     private sealed class FlinkRunResponse
     {
-        public string JobId { get; set; } = string.Empty;
+        public string FlinkJobId { get; set; } = string.Empty;
     }
 
     private sealed class FlinkJarsList

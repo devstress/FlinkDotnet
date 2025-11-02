@@ -286,7 +286,6 @@ public partial class FlinkJobManager : IFlinkJobManager
     public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition)
     {
         this.LogSectionHeader("🔧 [FlinkJobManager] Processing job submission",
-            ("📋 JobId", jobDefinition.Metadata.JobId),
             ("📝 Job Name", jobDefinition.Metadata.JobName ?? "Unnamed"));
 
         try
@@ -295,7 +294,7 @@ public partial class FlinkJobManager : IFlinkJobManager
             if (!validation.IsValid)
             {
                 this._logger.LogError("❌ Job validation failed: {Errors}", string.Join(", ", validation.Errors));
-                return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId,
+                return JobSubmissionResult.CreateFailure(
                     $"Job validation failed: {string.Join(", ", validation.Errors)}");
             }
 
@@ -303,15 +302,14 @@ public partial class FlinkJobManager : IFlinkJobManager
             if (jobDefinition.Source is SqlSourceDefinition sqlSource &&
                 sqlSource.ExecutionMode == "gateway")
             {
-                this._logger.LogInformation("✅ Validation passed | 🔀 Using SQL Gateway execution mode for job {JobId}", jobDefinition.Metadata.JobId);
+                this._logger.LogInformation("✅ Validation passed | 🔀 Using SQL Gateway execution mode for job {JobName}", jobDefinition.Metadata.JobName);
 
                 // SQL Gateway jobs are submitted directly via SQL Gateway REST API
                 // No need to check JobManager cluster health - SQL Gateway handles job submission
                 string rawFlinkJobId = await this.SubmitSqlGatewayJobAsync(sqlSource, jobDefinition);
                 string normalizedJobId = NormalizeFlinkJobId(rawFlinkJobId);
                 this.TrackJob(jobDefinition, normalizedJobId);
-                // Use the Flink cluster job ID as the ONLY job ID
-                return JobSubmissionResult.CreateSuccess(normalizedJobId, normalizedJobId);
+                return JobSubmissionResult.CreateSuccess(normalizedJobId);
             }
 
             // Standard JAR submission flow (including TableEnvironment SQL)
@@ -333,13 +331,12 @@ public partial class FlinkJobManager : IFlinkJobManager
             this.TrackJob(jobDefinition, normalizedClusterJobId);
 
             this._logger.LogInformation("✅ Job submitted successfully to Flink cluster");
-            // Use the Flink cluster job ID as the ONLY job ID
-            return JobSubmissionResult.CreateSuccess(normalizedClusterJobId, normalizedClusterJobId);
+            return JobSubmissionResult.CreateSuccess(normalizedClusterJobId);
         }
         catch (Exception ex)
         {
-            this._logger.LogError(ex, "❌ Failed to submit job {JobId}: {Message}", jobDefinition.Metadata.JobId, ex.Message);
-            return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, ex.Message);
+            this._logger.LogError(ex, "❌ Failed to submit job {JobName}: {Message}", jobDefinition.Metadata.JobName, ex.Message);
+            return JobSubmissionResult.CreateFailure(ex.Message);
         }
     }
 
@@ -407,7 +404,6 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         this._jobMapping[normalizedJobId] = new JobInfo
         {
-            JobId = jobDefinition.Metadata.JobId,
             FlinkJobId = normalizedJobId,
             Status = "RUNNING",  // Jobs only submitted to healthy clusters
             SubmissionTime = DateTime.UtcNow,
@@ -438,9 +434,7 @@ public partial class FlinkJobManager : IFlinkJobManager
                     ? stateProp.GetString() ?? "UNKNOWN"
                     : "UNKNOWN";
 
-                // Try to get JobId from mapping, fallback to FlinkJobId
-                string jobId = this._jobMapping.TryGetValue(flinkJobId, out JobInfo? info) ? info.JobId : flinkJobId;
-                return new JobStatus { JobId = jobId, FlinkJobId = flinkJobId, State = state };
+                return new JobStatus { FlinkJobId = flinkJobId, State = state };
             }
 
             if (response.StatusCode == HttpStatusCode.NotFound)

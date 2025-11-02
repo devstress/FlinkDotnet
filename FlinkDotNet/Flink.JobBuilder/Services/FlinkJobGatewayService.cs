@@ -73,9 +73,9 @@ namespace Flink.JobBuilder.Services
         public async Task<JobSubmissionResult> SubmitJobAsync(JobDefinition jobDefinition, CancellationToken cancellationToken = default)
         {
             string targetUrl = new Uri(this._httpClient.BaseAddress!, "/api/v1/jobs/submit").ToString();
-            this._logger?.LogInformation("Submitting job {JobId} to Flink Job Gateway at {Url}", jobDefinition.Metadata.JobId, targetUrl);
-            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobId}, Source.BootstrapServers={BootstrapServers}, TargetUrl={TargetUrl}",
-                jobDefinition.Metadata.JobId, (jobDefinition.Source as KafkaSourceDefinition)?.BootstrapServers, targetUrl);
+            this._logger?.LogInformation("Submitting job {JobName} to Flink Job Gateway at {Url}", jobDefinition.Metadata.JobName, targetUrl);
+            _log.Information("[FlinkJobGatewayService.SubmitJobAsync] Submitting job {JobName}, Source.BootstrapServers={BootstrapServers}, TargetUrl={TargetUrl}",
+                jobDefinition.Metadata.JobName, (jobDefinition.Source as KafkaSourceDefinition)?.BootstrapServers, targetUrl);
 
             JobSubmissionResult? validation = this.ValidateJobDefinition(jobDefinition);
             if (validation != null)
@@ -102,7 +102,7 @@ namespace Flink.JobBuilder.Services
 
             string msg = $"Job validation failed: {string.Join(", ", validation.Errors)}";
             this._logger?.LogWarning("Job validation failed: {ValidationErrors}", msg);
-            return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, msg);
+            return JobSubmissionResult.CreateFailure(msg);
         }
 
         private string SerializeAndLogJobDefinition(JobDefinition jobDefinition)
@@ -118,10 +118,10 @@ namespace Flink.JobBuilder.Services
             bool hasDiscriminatorToken = json.Contains("\"type\"", StringComparison.Ordinal);
             string firstSnippet = json.Length > 500 ? json[..500] + "...(truncated)" : json;
             this._logger?.LogInformation(
-                "Job {JobId} JSON serialized (length={Length}, hasDiscriminatorToken={HasType}). Snippet: {Snippet}",
-                jobDefinition.Metadata.JobId, json.Length, hasDiscriminatorToken, firstSnippet);
+                "Job {JobName} JSON serialized (length={Length}, hasDiscriminatorToken={HasType}). Snippet: {Snippet}",
+                jobDefinition.Metadata.JobName, json.Length, hasDiscriminatorToken, firstSnippet);
 
-            this.CountDiscriminatorOccurrences(jobDefinition.Metadata.JobId, json);
+            this.CountDiscriminatorOccurrences(jobDefinition.Metadata.JobName ?? "Unnamed", json);
         }
 
         private static void LogBootstrapServersInJson(string json)
@@ -152,7 +152,7 @@ namespace Flink.JobBuilder.Services
             }
         }
 
-        private void CountDiscriminatorOccurrences(string jobId, string json)
+        private void CountDiscriminatorOccurrences(string jobName, string json)
         {
             if (this._logger == null)
             {
@@ -166,7 +166,7 @@ namespace Flink.JobBuilder.Services
                 typeCount++;
                 idx += 6;
             }
-            this._logger.LogDebug("Job {JobId} discriminator occurrences: {TypeCount}", jobId, typeCount);
+            this._logger.LogDebug("Job {JobName} discriminator occurrences: {TypeCount}", jobName, typeCount);
         }
 
         private async Task<JobSubmissionResult> ProcessSubmissionResponseAsync(
@@ -181,7 +181,7 @@ namespace Flink.JobBuilder.Services
             {
                 string errorMsg = $"Gateway returned empty response body from {targetUrl} - this indicates a serialization problem in the Gateway";
                 this._logger?.LogError("Gateway returned empty response body from {TargetUrl} - this indicates a serialization problem in the Gateway", targetUrl);
-                return JobSubmissionResult.CreateFailure(jobDefinition.Metadata.JobId, errorMsg);
+                return JobSubmissionResult.CreateFailure(errorMsg);
             }
 
             string responseSnippet = rawResponse.Length > 600 ? rawResponse[..600] + "...(truncated)" : rawResponse;
@@ -203,24 +203,23 @@ namespace Flink.JobBuilder.Services
             }
             catch (Exception ex)
             {
-                this._logger?.LogError(ex, "Deserialization of JobSubmissionResult failed for Job {JobId}. Raw response snippet: {Snippet}",
-                    jobDefinition.Metadata.JobId, responseSnippet);
+                this._logger?.LogError(ex, "Deserialization of JobSubmissionResult failed for Job {JobName}. Raw response snippet: {Snippet}",
+                    jobDefinition.Metadata.JobName, responseSnippet);
             }
 
             if (result != null)
             {
                 result.SubmittedAt = DateTime.UtcNow;
-                this._logger?.LogInformation("Job {JobId} submitted successfully. Flink Job ID: {FlinkJobId}. Raw response snippet: {Snippet}",
-                    jobDefinition.Metadata.JobId, result.FlinkJobId, responseSnippet);
+                this._logger?.LogInformation("Job {JobName} submitted successfully. Flink Job ID: {FlinkJobId}. Raw response snippet: {Snippet}",
+                    jobDefinition.Metadata.JobName, result.FlinkJobId, responseSnippet);
                 return result;
             }
 
-            this._logger?.LogWarning("Job {JobId} submission success status but null result. Raw response snippet: {Snippet}",
-                jobDefinition.Metadata.JobId, responseSnippet);
+            this._logger?.LogWarning("Job {JobName} submission success status but null result. Raw response snippet: {Snippet}",
+                jobDefinition.Metadata.JobName, responseSnippet);
 
             return await Task.FromResult(new JobSubmissionResult
             {
-                JobId = jobDefinition.Metadata.JobId,
                 Success = false,
                 ErrorMessage = "Deserialization failed",
                 SubmittedAt = DateTime.UtcNow
@@ -233,14 +232,13 @@ namespace Flink.JobBuilder.Services
             string responseSnippet,
             string targetUrl)
         {
-            this._logger?.LogWarning("Job {JobId} submission failed HTTP {Status} to {Url}. Raw response snippet: {Snippet}",
-                jobDefinition.Metadata.JobId, response.StatusCode, targetUrl, responseSnippet);
-            this._logger?.LogError("Failed to submit job {JobId}. Status: {StatusCode}, URL: {Url}",
-                jobDefinition.Metadata.JobId, response.StatusCode, targetUrl);
+            this._logger?.LogWarning("Job {JobName} submission failed HTTP {Status} to {Url}. Raw response snippet: {Snippet}",
+                jobDefinition.Metadata.JobName, response.StatusCode, targetUrl, responseSnippet);
+            this._logger?.LogError("Failed to submit job {JobName}. Status: {StatusCode}, URL: {Url}",
+                jobDefinition.Metadata.JobName, response.StatusCode, targetUrl);
 
             return new JobSubmissionResult
             {
-                JobId = jobDefinition.Metadata.JobId,
                 Success = false,
                 ErrorMessage = $"HTTP {response.StatusCode} from {targetUrl}: {responseSnippet}",
                 SubmittedAt = DateTime.UtcNow
