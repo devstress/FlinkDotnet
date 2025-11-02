@@ -118,7 +118,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             using var client = new JobClient("test-job")
             {
-                JobId = "test-job-id-123"
+                FlinkJobId = "test-job-id-123"
             };
 
             // Act
@@ -497,7 +497,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             var client = new JobClient("test-job", TimeSpan.FromSeconds(1))
             {
-                JobId = "test-id"
+                FlinkJobId = "test-id"
             };
 
             // Act
@@ -526,7 +526,7 @@ namespace FlinkDotNet.DataStream.Tests
         public void JobClient_IJobClientGetJobId_MatchesImplementation()
         {
             // Arrange
-            using var client = new JobClient("test-job") { JobId = "abc-123" };
+            using var client = new JobClient("test-job") { FlinkJobId = "abc-123" };
             IJobClient interfaceClient = client;
 
             // Act
@@ -620,7 +620,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Use reflection to inject the mocked HTTP client
             var client = new JobClient("test-job", TimeSpan.FromSeconds(1))
             {
-                JobId = jobId
+                FlinkJobId = jobId
             };
 
             // Set the private _flinkHttp field using reflection

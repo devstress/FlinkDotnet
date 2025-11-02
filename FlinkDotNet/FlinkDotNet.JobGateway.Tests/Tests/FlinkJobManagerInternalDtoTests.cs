@@ -36,9 +36,20 @@ namespace FlinkDotNet.JobGateway.Tests
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+            
+            // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
+            _ = this._mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
+            
             this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
-                BaseAddress = new Uri("http://localhost:8081")
+                BaseAddress = new Uri("http://localhost:8081"),
+                Timeout = TimeSpan.FromSeconds(1) // Short timeout for unmocked calls
             };
         }
 
@@ -66,7 +77,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
                 var jobDef = new JobDefinition
                 {
-                    Metadata = new JobMetadata { JobId = "test-jar-env", JobName = "JAR Env Test" },
+                    Metadata = new JobMetadata { JobName = "JAR Env Test" },
                     Source = new KafkaSourceDefinition
                     {
                         BootstrapServers = "localhost:9092",
@@ -99,7 +110,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-jar-search", JobName = "JAR Search Test" },
+                Metadata = new JobMetadata { JobName = "JAR Search Test" },
                 Source = new KafkaSourceDefinition
                 {
                     BootstrapServers = "localhost:9092",
@@ -126,7 +137,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-jar-multi-path", JobName = "JAR Multi Path Test" },
+                Metadata = new JobMetadata { JobName = "JAR Multi Path Test" },
                 Source = new KafkaSourceDefinition
                 {
                     BootstrapServers = "localhost:9092",

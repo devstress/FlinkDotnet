@@ -58,8 +58,7 @@ public class ModelTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "model-test-job",
-                JobName = "Model Test",
+                                JobName = "Model Test",
                 Version = "1.0"
             }
         };

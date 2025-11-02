@@ -213,8 +213,7 @@ public class JobDefinitionValidatorComprehensiveBranchCoverageTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "test-job",
-                JobName = "Test Job"
+                                JobName = "Test Job"
             }
         };
     }

@@ -18,7 +18,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - FilterOperation with invalid expression
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -41,7 +41,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - MapOperation with invalid expression
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -64,7 +64,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - GroupByOperation with no key or keys
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -87,7 +87,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - AggregateOperation with invalid aggregation type
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -110,7 +110,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - WindowOperation with invalid window type
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -133,7 +133,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - JoinOperation with missing rightSource
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -156,7 +156,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - AsyncFunctionOperation with invalid timeout
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -184,7 +184,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - ProcessFunctionOperation with missing processType
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -207,7 +207,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - StateOperation with invalid state type
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -230,7 +230,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - TimerOperation with invalid timer type
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -253,7 +253,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - RetryOperation with no delayMs values
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -281,7 +281,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - SideOutputOperation with missing outputTag
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations =
             [
@@ -313,7 +313,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - SqlSource with no statements
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition { Statements = [] }, // Invalid: no statements
             Sink = null // SQL jobs don't require sink
         };
@@ -332,7 +332,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - FileSource with no path
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition { Path = "", Format = "json" }, // Invalid: no path
             Sink = new ConsoleSinkDefinition()
         };
@@ -351,7 +351,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - HttpSource with invalid interval
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition { Url = "http://example.com", IntervalSeconds = 0 }, // Invalid: interval <= 0
             Sink = new ConsoleSinkDefinition()
         };
@@ -370,7 +370,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - DatabaseSource with no connection string
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "", // Invalid
@@ -398,7 +398,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - KafkaSink with invalid serializer
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new KafkaSinkDefinition
             {
@@ -422,7 +422,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - FileSink with no format
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new FileSinkDefinition { Path = "/tmp/output", Format = "" } // Invalid: no format
         };
@@ -441,7 +441,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - HttpSink with invalid timeout
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new HttpSinkDefinition { Url = "http://example.com", TimeoutMs = 0 } // Invalid: timeout <= 0
         };
@@ -460,7 +460,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - DatabaseSink with no table
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new DatabaseSinkDefinition
             {
@@ -483,7 +483,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - RedisSink with no operationType
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new RedisSinkDefinition
             {
@@ -506,7 +506,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - ConsoleSink (has no required validation, but tests the case)
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new ConsoleSinkDefinition() // Valid console sink
         };
@@ -528,7 +528,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - Job with null operations
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = null, // Null operations
             Sink = new ConsoleSinkDefinition()
@@ -547,7 +547,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - Job with empty operations list
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = [], // Empty operations
             Sink = new ConsoleSinkDefinition()
@@ -566,7 +566,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - Job with null source
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = null, // Null source
             Sink = new ConsoleSinkDefinition()
         };
@@ -585,7 +585,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - Non-SQL job with null sink
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = null // Null sink for non-SQL job
         };
@@ -604,7 +604,7 @@ public class JobDefinitionValidatorOperationSwitchCoverageTests
         // Arrange - SQL job with null sink (allowed for SQL jobs)
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition { Statements = ["SELECT * FROM table1"] },
             Sink = null // Null sink is allowed for SQL jobs
         };

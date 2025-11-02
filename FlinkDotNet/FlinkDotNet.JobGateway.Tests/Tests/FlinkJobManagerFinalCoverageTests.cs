@@ -3,6 +3,7 @@ using FlinkDotNet.JobGateway.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Moq.Protected;
 
 namespace FlinkDotNet.JobGateway.Tests.Tests;
 
@@ -29,7 +30,20 @@ public class FlinkJobManagerFinalCoverageTests
         this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
         this._mockConfiguration = new Mock<IConfiguration>();
         this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-        this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object);
+        
+        // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
+        _ = this._mockHttpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
+        
+        this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
+        {
+            Timeout = TimeSpan.FromSeconds(1) // Short timeout for unmocked calls
+        };
 
         // Reset all environment variables before each test
         Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", null);

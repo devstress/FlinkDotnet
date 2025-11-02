@@ -30,10 +30,10 @@ namespace FlinkDotNet.DataStream.Tests
             var expected = "test-job-id-123";
 
             // Act
-            result.JobId = expected;
+            result.JobName = expected;
 
             // Assert
-            Assert.That(result.JobId, Is.EqualTo(expected));
+            Assert.That(result.JobName, Is.EqualTo(expected));
         }
 
         [Test]
@@ -131,7 +131,7 @@ namespace FlinkDotNet.DataStream.Tests
             var result = new JobExecutionResult();
 
             // Assert
-            Assert.That(result.JobId, Is.EqualTo(string.Empty));
+            Assert.That(result.JobName, Is.EqualTo(string.Empty));
             Assert.That(result.JobName, Is.EqualTo(string.Empty));
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.Null);
@@ -149,10 +149,10 @@ namespace FlinkDotNet.DataStream.Tests
             var expected = "test-job-id-456";
 
             // Act
-            status.JobId = expected;
+            status.FlinkJobId = expected;
 
             // Assert
-            Assert.That(status.JobId, Is.EqualTo(expected));
+            Assert.That(status.FlinkJobId, Is.EqualTo(expected));
         }
 
         [Test]
@@ -286,7 +286,7 @@ namespace FlinkDotNet.DataStream.Tests
             var status = new JobStatus();
 
             // Assert
-            Assert.That(status.JobId, Is.EqualTo(string.Empty));
+            Assert.That(status.FlinkJobId, Is.EqualTo(string.Empty));
             Assert.That(status.JobName, Is.EqualTo(string.Empty));
             Assert.That(status.State, Is.EqualTo(string.Empty));
             Assert.That(status.Parallelism, Is.EqualTo(0));
@@ -479,10 +479,10 @@ namespace FlinkDotNet.DataStream.Tests
             var expected = "job-id-789";
 
             // Act
-            client.JobId = expected;
+            client.FlinkJobId = expected;
 
             // Assert
-            Assert.That(client.JobId, Is.EqualTo(expected));
+            Assert.That(client.FlinkJobId, Is.EqualTo(expected));
         }
 
         [Test]
@@ -491,7 +491,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange
             using var client = new JobClient("Test Job");
             var expected = "job-id-abc-123";
-            client.JobId = expected;
+            client.FlinkJobId = expected;
 
             // Act
             var actual = client.GetJobId();

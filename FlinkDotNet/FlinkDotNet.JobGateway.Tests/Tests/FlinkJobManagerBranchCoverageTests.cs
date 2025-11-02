@@ -36,9 +36,20 @@ namespace FlinkDotNet.JobGateway.Tests
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+            
+            // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
+            _ = this._mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
+            
             this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
-                BaseAddress = new Uri("http://localhost:8081")
+                BaseAddress = new Uri("http://localhost:8081"),
+                Timeout = TimeSpan.FromSeconds(1) // Short timeout for unmocked calls
             };
         }
 
@@ -211,25 +222,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
         #region Validation Edge Cases
 
-        [Test]
-        public async Task SubmitJobAsync_WithNullMetadata_ReturnsValidationFailure()
-        {
-            // Arrange
-            var jobDefinition = new JobDefinition
-            {
-                Metadata = new JobMetadata { JobId = "", JobName = "test" }, // Empty JobId instead of null metadata
-                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
-                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
-            };
-            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
-
-            // Act
-            var result = await jobManager.SubmitJobAsync(jobDefinition);
-
-            // Assert
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.ErrorMessage, Does.Contain("Job ID"));
-        }
+        // Test removed - JobId is no longer required after migrating to FlinkJobId exclusively
 
         [Test]
         public async Task SubmitJobAsync_WithRedisSink_NoValidationRequired()
@@ -237,7 +230,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1" },
+                Metadata = new JobMetadata { },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new RedisSinkDefinition { }
             };
@@ -256,7 +249,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1" },
+                Metadata = new JobMetadata { },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new DatabaseSinkDefinition { }
             };

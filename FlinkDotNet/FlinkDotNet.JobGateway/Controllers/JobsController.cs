@@ -51,8 +51,7 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
         JobDefinition jobDefinition = jobDefResult.JobDefinition!;
         this.EnsureJobMetadata(jobDefinition);
 
-        this._logger.LogInformation("📋 Job metadata: JobId={JobId}, JobName={JobName}",
-            jobDefinition.Metadata.JobId,
+        this._logger.LogInformation("📋 Job metadata: JobName={JobName}",
             jobDefinition.Metadata.JobName ?? "Unnamed");
 
         return await this.SubmitJobToFlinkAsync(jobDefinition);
@@ -136,14 +135,14 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
         // Allow sink-less SQL jobs
         if (jobDefinition.Source is SqlSourceDefinition && jobDefinition.Sink == null)
         {
-            this._logger.LogDebug("SQL job without sink accepted (statements define sinks). JobId placeholder will be set if missing.");
+            this._logger.LogDebug("SQL job without sink accepted (statements define sinks).");
         }
 
         // Ensure metadata basics
         jobDefinition.Metadata ??= new JobMetadata();
-        if (string.IsNullOrWhiteSpace(jobDefinition.Metadata.JobId))
+        if (string.IsNullOrWhiteSpace(jobDefinition.Metadata.JobName))
         {
-            jobDefinition.Metadata.JobId = Guid.NewGuid().ToString();
+            jobDefinition.Metadata.JobName = $"job-{Guid.NewGuid():N}";
         }
     }
 
@@ -160,12 +159,11 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
                     """
                     {BorderTop}
                     ║ ✅ [Gateway] Job submitted successfully
-                    ║ 📋 JobId: {JobId}
                     ║ 🆔 FlinkJobId: {FlinkJobId}
                     ║ 📤 Response: 200 OK
                     {BorderBottom}
                     """,
-                    LogBorderTop, result.JobId, result.FlinkJobId, LogBorderBottom);
+                    LogBorderTop, result.FlinkJobId, LogBorderBottom);
                 return this.Ok(result);
             }
 
@@ -173,12 +171,11 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
                 """
                 {BorderTop}
                 ║ ❌ [Gateway] Job submission failed
-                ║ 📋 JobId: {JobId}
                 ║ ⚠️ Error: {ErrorMessage}
                 ║ 📤 Response: 400 Bad Request
                 {BorderBottom}
                 """,
-                LogBorderTop, result.JobId, result.ErrorMessage, LogBorderBottom);
+                LogBorderTop, result.ErrorMessage, LogBorderBottom);
             return this.BadRequest(result);
         }
         catch (Exception ex)
@@ -187,14 +184,12 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
                 """
                 {BorderTop}
                 ║ ❌ [Gateway] Exception during job submission
-                ║ 📋 JobId: {JobId}
                 ║ 💥 Exception: {Message}
                 ║ 📤 Response: 500 Internal Server Error
                 {BorderBottom}
                 """,
-                LogBorderTop, jobDefinition.Metadata.JobId, ex.Message, LogBorderBottom);
+                LogBorderTop, ex.Message, LogBorderBottom);
             JobSubmissionResult result = JobSubmissionResult.CreateFailure(
-                jobDefinition.Metadata.JobId,
                 $"Internal server error: {ex.Message}");
             return this.StatusCode(500, result);
         }

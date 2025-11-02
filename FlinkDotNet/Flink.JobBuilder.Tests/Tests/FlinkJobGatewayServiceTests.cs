@@ -162,7 +162,7 @@ public class FlinkJobGatewayServiceTests
 
         var invalidJob = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "" }, // Invalid: empty JobId
+            Metadata = new JobMetadata { }, // Invalid: empty JobId
             Source = new KafkaSourceDefinition(),
             Sink = new KafkaSinkDefinition(),
             Operations = new System.Collections.Generic.List<IOperationDefinition>()
@@ -182,8 +182,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var responseJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
         {
-            JobId = "test-job-1",
-            FlinkJobId = "flink-123",
+                        FlinkJobId = "flink-123",
             Success = true
         });
 
@@ -198,7 +197,6 @@ public class FlinkJobGatewayServiceTests
 
         // Assert
         Assert.That(result.Success, Is.True, $"Expected success but got error: {result.ErrorMessage}");
-        Assert.That(result.JobId, Is.EqualTo("test-job-1"));
         Assert.That(result.FlinkJobId, Is.EqualTo("flink-123"));
     }
 
@@ -568,8 +566,7 @@ public class FlinkJobGatewayServiceTests
                 }
                 var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
-                    JobId = "retry-test",
-                    FlinkJobId = "flink-retry",
+                                        FlinkJobId = "flink-retry",
                     Success = true
                 });
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -635,8 +632,7 @@ public class FlinkJobGatewayServiceTests
                 }
                 var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
-                    JobId = "rate-limit-test",
-                    FlinkJobId = "flink-rate",
+                                        FlinkJobId = "flink-rate",
                     Success = true
                 });
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -681,8 +677,7 @@ public class FlinkJobGatewayServiceTests
                 }
                 var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
-                    JobId = "cluster-ready-test",
-                    FlinkJobId = "flink-ready",
+                                        FlinkJobId = "flink-ready",
                     Success = true
                 });
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -796,8 +791,7 @@ public class FlinkJobGatewayServiceTests
                 }
                 var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
-                    JobId = "exception-retry-test",
-                    FlinkJobId = "flink-exception",
+                                        FlinkJobId = "flink-exception",
                     Success = true
                 });
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -967,7 +961,6 @@ public class FlinkJobGatewayServiceTests
         {
             Metadata = new JobMetadata
             {
-                JobId = jobId,
                 Version = "1.0",
                 JobName = $"Test Job {jobId}",
                 Parallelism = 1

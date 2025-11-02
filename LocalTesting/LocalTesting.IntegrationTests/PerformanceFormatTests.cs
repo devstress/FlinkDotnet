@@ -38,8 +38,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "flash-ssd-job",
-                Version = "1.0",
+                                Version = "1.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
@@ -68,8 +67,7 @@ public class PerformanceFormatTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                JobId = "spinning-disk-job",
-                Version = "1.0",
+                                Version = "1.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
@@ -92,8 +90,7 @@ public class PerformanceFormatTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                JobId = "minimal-job",
-                Version = "1.0",
+                                Version = "1.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
@@ -184,7 +181,7 @@ public class PerformanceFormatTests
                 },
                 Semantics = "exactly-once"
             },
-            Metadata = new JobMetadata { JobId = "size-batching-job", Version = "1.0" }
+            Metadata = new JobMetadata { Version = "1.0" }
         };
 
         // Part B: Time-based batching
@@ -210,7 +207,7 @@ public class PerformanceFormatTests
                     }
                 }
             },
-            Metadata = new JobMetadata { JobId = "time-batching-job", Version = "1.0" }
+            Metadata = new JobMetadata { Version = "1.0" }
         };
 
         // Part C: No batching config (defaults)
@@ -231,7 +228,7 @@ public class PerformanceFormatTests
                     // No BatchingConfig - should work fine
                 }
             },
-            Metadata = new JobMetadata { JobId = "no-batching-job", Version = "1.0" }
+            Metadata = new JobMetadata { Version = "1.0" }
         };
 
         // Act: Serialize and deserialize
@@ -330,8 +327,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "optimized-job",
-                JobName = "High-Performance Event Processor",
+                                JobName = "High-Performance Event Processor",
                 Version = "1.0",
                 Parallelism = 8,
                 StateBackendConfig = new StateBackendConfig
@@ -382,7 +378,7 @@ public class PerformanceFormatTests
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "kafka:9092" },
-            Metadata = new JobMetadata { JobId = "standard-job", Version = "1.0" }
+            Metadata = new JobMetadata { Version = "1.0" }
         };
 
         // Act: Serialize and validate
@@ -462,8 +458,7 @@ public class PerformanceFormatTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                JobId = "rocksdb-job",
-                StateBackendConfig = new StateBackendConfig
+                                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://bucket/checkpoints"
@@ -477,8 +472,7 @@ public class PerformanceFormatTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                JobId = "hashmap-job",
-                StateBackendConfig = new StateBackendConfig
+                                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "hashmap"
                     // No checkpoint dir needed for hashmap
@@ -492,8 +486,7 @@ public class PerformanceFormatTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                JobId = "filesystem-job",
-                StateBackendConfig = new StateBackendConfig
+                                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "filesystem",
                     CheckpointDir = "file:///tmp/checkpoints"
@@ -508,8 +501,7 @@ public class PerformanceFormatTests
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                JobId = "empty-options-job",
-                StateBackendConfig = new StateBackendConfig
+                                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://bucket/checkpoints",
@@ -534,8 +526,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "state-only-job",
-                StateBackendConfig = new StateBackendConfig
+                                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://bucket/checkpoints"
@@ -560,9 +551,7 @@ public class PerformanceFormatTests
                 }
             },
             Metadata = new JobMetadata
-            {
-                JobId = "batching-only-job"
-                // No StateBackendConfig
+            {                // No StateBackendConfig
             }
         };
 
@@ -574,7 +563,7 @@ public class PerformanceFormatTests
         {
             var json = JsonSerializer.Serialize(job);
             var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
-            Assert.That(deserialized, Is.Not.Null, $"Job {job.Metadata.JobId} should deserialize");
+            Assert.That(deserialized, Is.Not.Null, $"Job {job.Metadata.JobName} should deserialize");
             deserializedJobs.Add(deserialized!);
         }
 
@@ -662,8 +651,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "high-throughput-job",
-                JobName = "High-Throughput Event Processor",
+                                JobName = "High-Throughput Event Processor",
                 Version = "1.0",
                 Parallelism = 16,
                 StateBackendConfig = new StateBackendConfig
@@ -722,8 +710,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "low-latency-job",
-                JobName = "Low-Latency Stream Processor",
+                                JobName = "Low-Latency Stream Processor",
                 Version = "1.0",
                 Parallelism = 4,
                 StateBackendConfig = new StateBackendConfig

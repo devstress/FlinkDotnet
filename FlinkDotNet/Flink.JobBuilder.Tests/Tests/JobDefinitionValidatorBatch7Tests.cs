@@ -18,7 +18,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition
             {
                 Url = "https://api.example.com/data",
@@ -41,7 +41,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition
             {
                 Url = "https://api.example.com/data",
@@ -64,7 +64,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "jdbc:postgresql://localhost/db",
@@ -88,7 +88,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "jdbc:postgresql://localhost/db",
@@ -112,7 +112,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition
             {
                 Path = "",  // Invalid - empty path
@@ -135,7 +135,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition
             {
                 Path = "/data/input.txt",
@@ -158,7 +158,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition
             {
                 Url = "",  // Invalid - empty URL
@@ -181,7 +181,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "",  // Invalid - empty
@@ -205,7 +205,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "jdbc:postgresql://localhost/db",
@@ -229,7 +229,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "",  // Invalid - empty topic
@@ -253,7 +253,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition
             {
                 Statements = new List<string>()  // Invalid - empty list
@@ -274,7 +274,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition
             {
                 Statements = null!  // Invalid - null
@@ -319,12 +319,11 @@ public class JobDefinitionValidatorBatch7Tests
     [Test]
     public void Validate_WithEmptyJobId_ReturnsError()
     {
-        // Arrange
+        // JobId is no longer required - test now validates job is valid without it
         var jobDefinition = new JobDefinition
         {
             Metadata = new JobMetadata
             {
-                JobId = "",  // Invalid
                 Version = "1.0"
             },
             Source = new KafkaSourceDefinition
@@ -338,20 +337,18 @@ public class JobDefinitionValidatorBatch7Tests
         // Act
         var result = JobDefinitionValidator.Validate(jobDefinition);
 
-        // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors, Has.Some.Contain("jobId is required"));
+        // Assert - Should be valid now since JobId is no longer required
+        Assert.That(result.IsValid, Is.True);
     }
 
     [Test]
     public void Validate_WithWhitespaceJobId_ReturnsError()
     {
-        // Arrange
+        // JobId is no longer required - test now validates job is valid without it
         var jobDefinition = new JobDefinition
         {
             Metadata = new JobMetadata
             {
-                JobId = "   ",  // Invalid - whitespace only
                 Version = "1.0"
             },
             Source = new KafkaSourceDefinition
@@ -365,9 +362,8 @@ public class JobDefinitionValidatorBatch7Tests
         // Act
         var result = JobDefinitionValidator.Validate(jobDefinition);
 
-        // Assert
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors, Has.Some.Contain("jobId is required"));
+        // Assert - Should be valid now since JobId is no longer required
+        Assert.That(result.IsValid, Is.True);
     }
 
     [Test]
@@ -378,8 +374,7 @@ public class JobDefinitionValidatorBatch7Tests
         {
             Metadata = new JobMetadata
             {
-                JobId = "test-job",
-                Version = ""  // Invalid
+                                Version = ""  // Invalid
             },
             Source = new KafkaSourceDefinition
             {
@@ -405,8 +400,7 @@ public class JobDefinitionValidatorBatch7Tests
         {
             Metadata = new JobMetadata
             {
-                JobId = "test-job",
-                Version = "1.0",
+                                Version = "1.0",
                 Parallelism = 0  // Invalid
             },
             Source = new KafkaSourceDefinition
@@ -433,8 +427,7 @@ public class JobDefinitionValidatorBatch7Tests
         {
             Metadata = new JobMetadata
             {
-                JobId = "test-job",
-                Version = "1.0",
+                                Version = "1.0",
                 Parallelism = -5  // Invalid
             },
             Source = new KafkaSourceDefinition
@@ -463,7 +456,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = null!,  // Invalid
             Sink = new ConsoleSinkDefinition()
         };
@@ -482,7 +475,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "test",
@@ -505,7 +498,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange - SQL jobs don't require sinks
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition
             {
                 Statements = new List<string> { "SELECT * FROM table" }
@@ -532,8 +525,7 @@ public class JobDefinitionValidatorBatch7Tests
         {
             Metadata = new JobMetadata
             {
-                JobId = "valid-job",
-                Version = "1.0",
+                                Version = "1.0",
                 Parallelism = 4
             },
             Source = new KafkaSourceDefinition
@@ -559,7 +551,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "http-job", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition
             {
                 Url = "https://api.example.com/data",
@@ -581,7 +573,7 @@ public class JobDefinitionValidatorBatch7Tests
         // Arrange
         var jobDefinition = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "db-job", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "jdbc:postgresql://localhost/db",

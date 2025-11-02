@@ -146,7 +146,6 @@ namespace Flink.JobBuilder.Tests
                 Operations = new System.Collections.Generic.List<IOperationDefinition>(),
                 Metadata = new JobMetadata
                 {
-                    JobId = "test-job-" + Guid.NewGuid().ToString()[..8],
                     JobName = "Test Job",
                     Version = "1.0",
                     CreatedAt = DateTime.UtcNow,

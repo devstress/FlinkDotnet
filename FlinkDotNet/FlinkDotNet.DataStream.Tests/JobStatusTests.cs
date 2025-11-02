@@ -21,7 +21,7 @@ namespace FlinkDotNet.DataStream.Tests
             var error = "Connection timeout";
 
             // Act
-            status.JobId = jobId;
+            status.FlinkJobId = jobId;
             status.JobName = jobName;
             status.State = state;
             status.Parallelism = parallelism;
@@ -31,7 +31,7 @@ namespace FlinkDotNet.DataStream.Tests
             status.Error = error;
 
             // Assert
-            Assert.That(status.JobId, Is.EqualTo(jobId));
+            Assert.That(status.FlinkJobId, Is.EqualTo(jobId));
             Assert.That(status.JobName, Is.EqualTo(jobName));
             Assert.That(status.State, Is.EqualTo(state));
             Assert.That(status.Parallelism, Is.EqualTo(parallelism));
@@ -48,7 +48,7 @@ namespace FlinkDotNet.DataStream.Tests
             var status = new JobStatus();
 
             // Assert
-            Assert.That(status.JobId, Is.EqualTo(string.Empty));
+            Assert.That(status.FlinkJobId, Is.EqualTo(string.Empty));
             Assert.That(status.JobName, Is.EqualTo(string.Empty));
             Assert.That(status.State, Is.EqualTo(string.Empty));
             Assert.That(status.Parallelism, Is.EqualTo(0));
@@ -110,8 +110,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var status = new JobStatus
             {
-                JobId = "running-job",
-                State = "RUNNING",
+                                State = "RUNNING",
                 EndTime = null
             };
 
@@ -125,8 +124,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var status = new JobStatus
             {
-                JobId = "successful-job",
-                State = "FINISHED",
+                                State = "FINISHED",
                 Error = null
             };
 
@@ -144,8 +142,8 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var status = new JobStatus
             {
-                JobId = "job-xyz-123",
-                JobName = "Complex Streaming Job",
+                                FlinkJobId = "job-xyz-123",
+                                JobName = "Complex Streaming Job",
                 State = "FAILED",
                 Parallelism = 8,
                 MaxParallelism = 256,
@@ -155,7 +153,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Assert
-            Assert.That(status.JobId, Is.EqualTo("job-xyz-123"));
+            Assert.That(status.FlinkJobId, Is.EqualTo("job-xyz-123"));
             Assert.That(status.JobName, Is.EqualTo("Complex Streaming Job"));
             Assert.That(status.State, Is.EqualTo("FAILED"));
             Assert.That(status.Parallelism, Is.EqualTo(8));

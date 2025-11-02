@@ -22,7 +22,7 @@ public class JobDefinitionValidatorDefaultCaseTests
         // Arrange - Create a mock unknown source type
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new UnknownSourceDefinition(),
             Sink = new ConsoleSinkDefinition()
         };
@@ -49,7 +49,7 @@ public class JobDefinitionValidatorDefaultCaseTests
         // Arrange - Create a job with unknown operation type
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "test",
@@ -83,7 +83,7 @@ public class JobDefinitionValidatorDefaultCaseTests
         // Arrange - Create a job with unknown sink type
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "test",

@@ -17,8 +17,7 @@ public class JobStatusBranchCoverageTests
         // Arrange
         var status = new JobStatus
         {
-            JobId = "test-job",
-            State = "FINISHED",
+                        State = "FINISHED",
             StartTime = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc),
             EndTime = new DateTime(2025, 1, 1, 11, 30, 0, DateTimeKind.Utc)
         };
@@ -37,8 +36,7 @@ public class JobStatusBranchCoverageTests
         // Arrange
         var status = new JobStatus
         {
-            JobId = "test-job",
-            State = "RUNNING",
+                        State = "RUNNING",
             StartTime = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc),
             EndTime = null
         };
@@ -56,8 +54,7 @@ public class JobStatusBranchCoverageTests
         // Arrange
         var status = new JobStatus
         {
-            JobId = "test-job",
-            State = "FAILED",
+                        State = "FAILED",
             StartTime = null,
             EndTime = new DateTime(2025, 1, 1, 11, 30, 0, DateTimeKind.Utc)
         };
@@ -75,8 +72,7 @@ public class JobStatusBranchCoverageTests
         // Arrange
         var status = new JobStatus
         {
-            JobId = "test-job",
-            State = "CREATED",
+                        State = "CREATED",
             StartTime = null,
             EndTime = null
         };
@@ -94,8 +90,7 @@ public class JobStatusBranchCoverageTests
         // Arrange & Act
         var status = new JobStatus
         {
-            JobId = "test-job",
-            State = "FAILED",
+                        State = "FAILED",
             ErrorMessage = "Connection timeout"
         };
 
@@ -117,8 +112,7 @@ public class JobStatusBranchCoverageTests
         // Act
         var status = new JobStatus
         {
-            JobId = "test-job",
-            Metrics = metrics
+                        Metrics = metrics
         };
 
         // Assert

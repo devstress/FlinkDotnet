@@ -548,7 +548,7 @@ public class GlobalTestInfrastructure
     }
 
 
-    private static async Task<string> RunDockerCommandAsync(string arguments)
+    public static async Task<string> RunDockerCommandAsync(string arguments)
     {
         // Try Docker first, then Podman if Docker fails or returns empty
         var dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
@@ -690,7 +690,7 @@ public class GlobalTestInfrastructure
         }
     }
 
-    private static async Task<string> GetGatewayEndpointAsync()
+    public static async Task<string> GetGatewayEndpointAsync()
     {
         // Gateway is now a Docker container (using pre-built image), so we need to discover its dynamically allocated port
         try

@@ -37,8 +37,7 @@ public class ModelIntegrationTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "streaming-job-1",
-                JobName = "Streaming Aggregation Job",
+                                JobName = "Streaming Aggregation Job",
                 Parallelism = 4,
                 Version = "1.0.0"
             }
@@ -68,8 +67,7 @@ public class ModelIntegrationTests
             Sink = null,
             Metadata = new JobMetadata
             {
-                JobId = "sql-job-1",
-                JobName = "Pure SQL Job"
+                                JobName = "Pure SQL Job"
             }
         };
 
@@ -394,8 +392,7 @@ public class ModelIntegrationTests
     {
         var metadata = new JobMetadata
         {
-            JobId = "complex-job-123",
-            JobName = "Production Data Pipeline",
+                        JobName = "Production Data Pipeline",
             CreatedAt = DateTime.UtcNow,
             Version = "2.1.0",
             Parallelism = 16,
@@ -418,12 +415,9 @@ public class ModelIntegrationTests
     [Test]
     public void JobMetadata_MinimalConfiguration_ValidJob()
     {
-        var metadata = new JobMetadata
-        {
-            JobId = "minimal-job"
-        };
+        var metadata = new JobMetadata { };
 
-        Assert.That(metadata.JobId, Is.EqualTo("minimal-job"));
+        // JobMetadata with minimal config should have null JobName
         Assert.That(metadata.JobName, Is.Null);
         Assert.That(metadata.Parallelism, Is.Null);
     }
@@ -470,8 +464,7 @@ public class ModelIntegrationTests
 
         var status = new JobStatus
         {
-            JobId = "job-123",
-            FlinkJobId = "flink-456",
+                        FlinkJobId = "flink-456",
             State = "FINISHED",
             StartTime = startTime,
             EndTime = endTime,
@@ -490,7 +483,7 @@ public class ModelIntegrationTests
     [Test]
     public void JobSubmissionResult_SuccessWithMetadata_CompleteInfo()
     {
-        var result = JobSubmissionResult.CreateSuccess("job-123", "flink-456");
+        var result = JobSubmissionResult.CreateSuccess("flink-456");
         result.Metadata["cluster"] = "prod-cluster-1";
         result.Metadata["namespace"] = "data-pipelines";
 

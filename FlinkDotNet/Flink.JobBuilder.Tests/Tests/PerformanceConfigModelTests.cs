@@ -337,8 +337,7 @@ public class PerformanceConfigModelTests
 
         var metadata = new JobMetadata
         {
-            JobId = "test-job",
-            StateBackendConfig = stateBackendConfig
+                        StateBackendConfig = stateBackendConfig
         };
 
         Assert.That(metadata.StateBackendConfig, Is.Not.Null);
@@ -349,10 +348,7 @@ public class PerformanceConfigModelTests
     [Test]
     public void JobMetadata_WithoutStateBackendConfig_StateBackendConfigIsNull()
     {
-        var metadata = new JobMetadata
-        {
-            JobId = "test-job"
-        };
+        var metadata = new JobMetadata { };
 
         Assert.That(metadata.StateBackendConfig, Is.Null);
     }
@@ -382,8 +378,7 @@ public class PerformanceConfigModelTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "optimized-job",
-                StateBackendConfig = new StateBackendConfig
+                                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://bucket/checkpoints",
@@ -637,8 +632,7 @@ public class PerformanceConfigModelTests
 
         var metadata = new JobMetadata
         {
-            JobId = "test-job",
-            ExecutionPlanConfig = planConfig
+                        ExecutionPlanConfig = planConfig
         };
 
         Assert.That(metadata.ExecutionPlanConfig, Is.Not.Null);
@@ -657,8 +651,7 @@ public class PerformanceConfigModelTests
 
         var metadata = new JobMetadata
         {
-            JobId = "test-job",
-            OptimizerConfig = optimizerConfig
+                        OptimizerConfig = optimizerConfig
         };
 
         Assert.That(metadata.OptimizerConfig, Is.Not.Null);
@@ -671,8 +664,7 @@ public class PerformanceConfigModelTests
     {
         var metadata = new JobMetadata
         {
-            JobId = "fully-optimized-job",
-            StateBackendConfig = new StateBackendConfig
+                        StateBackendConfig = new StateBackendConfig
             {
                 Type = "rocksdb",
                 CheckpointDir = "s3://bucket/checkpoints"
@@ -723,8 +715,7 @@ public class PerformanceConfigModelTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "fully-optimized-job",
-                StateBackendConfig = new StateBackendConfig
+                                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://production/checkpoints",

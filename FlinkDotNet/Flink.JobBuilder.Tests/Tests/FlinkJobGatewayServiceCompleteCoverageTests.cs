@@ -114,8 +114,8 @@ public class FlinkJobGatewayServiceCompleteCoverageTests
         {
             Metadata = new JobMetadata
             {
-                JobId = "", // Invalid - empty jobId
-                Version = "1.0.0"
+                // Invalid - empty version (Version is required)
+                Version = ""
             },
             Source = new KafkaSourceDefinition
             {
@@ -510,8 +510,7 @@ public class FlinkJobGatewayServiceCompleteCoverageTests
         {
             Metadata = new JobMetadata
             {
-                JobId = "test-job-123",
-                JobName = "Test Job",
+                                JobName = "Test Job",
                 Version = "1.0.0"
             },
             Source = new KafkaSourceDefinition

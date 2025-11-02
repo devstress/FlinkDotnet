@@ -178,7 +178,7 @@ namespace FlinkDotNet.JobGateway.Tests
             this._mockJobManager.Verify(
                 x => x.SubmitJobAsync(It.Is<JobDefinition>(j =>
                     j.Metadata != null &&
-                    j.Metadata.JobId == "custom-job-id")),
+                    j.Metadata.JobName == "Custom Job Name")),
                 Times.Once);
         }
 

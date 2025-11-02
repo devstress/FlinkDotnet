@@ -134,10 +134,10 @@ namespace FlinkDotNet.DataStream
             _logger.Information("[OperationCapture.CaptureKafkaSink] Created KafkaSinkDefinition with BootstrapServers={BootstrapServers}", this._kafkaSink.BootstrapServers);
         }
 
-        public JobDefinition ToJobDefinition(string jobId, string jobName)
+        public JobDefinition ToJobDefinition(string jobName)
         {
-            _logger.Debug("[OperationCapture.ToJobDefinition] Starting translation - jobId={JobId}, jobName={JobName}, kafkaSource.BootstrapServers={BootstrapServers}",
-                jobId, jobName, this._kafkaSource?.BootstrapServers);
+            _logger.Debug("[OperationCapture.ToJobDefinition] Starting translation - jobName={JobName}, kafkaSource.BootstrapServers={BootstrapServers}",
+                jobName, this._kafkaSource?.BootstrapServers);
 
             if (this._kafkaSource == null)
             {
@@ -145,7 +145,7 @@ namespace FlinkDotNet.DataStream
                 throw new System.InvalidOperationException("No Kafka source defined. Use AddKafkaSource() or FromKafka() before executing.");
             }
 
-            JobDefinition jobDef = this.CreateJobDefinition(jobId, jobName);
+            JobDefinition jobDef = this.CreateJobDefinition(jobName);
             _logger.Debug("[OperationCapture.ToJobDefinition] After CreateJobDefinition - Source.BootstrapServers={BootstrapServers}",
                 (jobDef.Source as KafkaSourceDefinition)?.BootstrapServers);
 
@@ -160,7 +160,7 @@ namespace FlinkDotNet.DataStream
             return jobDef;
         }
 
-        private JobDefinition CreateJobDefinition(string jobId, string jobName)
+        private JobDefinition CreateJobDefinition(string jobName)
         {
             _logger.Debug("[OperationCapture.CreateJobDefinition] Creating JobDefinition with _kafkaSource.BootstrapServers={BootstrapServers}", this._kafkaSource?.BootstrapServers);
 
@@ -171,7 +171,6 @@ namespace FlinkDotNet.DataStream
                 Sink = this._kafkaSink,
                 Metadata = new JobMetadata
                 {
-                    JobId = jobId,
                     JobName = jobName,
                     CreatedAt = System.DateTime.UtcNow,
                     Version = "1.0",

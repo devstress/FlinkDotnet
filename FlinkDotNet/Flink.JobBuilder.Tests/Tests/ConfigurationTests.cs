@@ -25,8 +25,9 @@ public class ConfigurationTests
     [Test]
     public void JobMetadata_SetJobId_ReturnsValue()
     {
-        var metadata = new JobMetadata { JobId = "test-job-123" };
-        Assert.That(metadata.JobId, Is.EqualTo("test-job-123"));
+        // This test was for JobId which is now removed. Testing JobName instead
+        var metadata = new JobMetadata { JobName = "test-job-123" };
+        Assert.That(metadata.JobName, Is.EqualTo("test-job-123"));
     }
 
     [Test]
@@ -118,7 +119,7 @@ public class ConfigurationTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "j1", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "in" },
             Operations = new List<IOperationDefinition>(),
             Sink = new KafkaSinkDefinition { Topic = "out" }
@@ -133,9 +134,9 @@ public class ConfigurationTests
     [Test]
     public void JobSubmissionResult_Success_SetsProperty()
     {
-        var result = new JobSubmissionResult { Success = true, JobId = "job-123" };
+        var result = new JobSubmissionResult { Success = true, FlinkJobId = "job-123" };
         Assert.That(result.Success, Is.True);
-        Assert.That(result.JobId, Is.EqualTo("job-123"));
+        Assert.That(result.FlinkJobId, Is.EqualTo("job-123"));
     }
 
     [Test]

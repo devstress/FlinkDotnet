@@ -8,7 +8,6 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class JobSubmissionResult
     {
-        public string JobId { get; set; } = string.Empty;
         public string FlinkJobId { get; set; } = string.Empty;
         public bool Success
         {
@@ -32,11 +31,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Creates a successful job submission result
         /// </summary>
-        public static JobSubmissionResult CreateSuccess(string jobId, string flinkJobId)
+        public static JobSubmissionResult CreateSuccess(string flinkJobId)
         {
             return new JobSubmissionResult
             {
-                JobId = jobId,
                 FlinkJobId = flinkJobId,
                 Success = true,
                 SubmittedAt = DateTime.UtcNow
@@ -46,11 +44,10 @@ namespace Flink.JobBuilder.Models
         /// <summary>
         /// Creates a failed job submission result
         /// </summary>
-        public static JobSubmissionResult CreateFailure(string jobId, string errorMessage)
+        public static JobSubmissionResult CreateFailure(string errorMessage)
         {
             return new JobSubmissionResult
             {
-                JobId = jobId,
                 Success = false,
                 ErrorMessage = errorMessage,
                 SubmittedAt = DateTime.UtcNow
@@ -63,7 +60,6 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class JobExecutionResult
     {
-        public string JobId { get; set; } = string.Empty;
         public string FlinkJobId { get; set; } = string.Empty;
         public string State { get; set; } = string.Empty;
         public bool Success
@@ -89,7 +85,6 @@ namespace Flink.JobBuilder.Models
     /// </summary>
     public class JobStatus
     {
-        public string JobId { get; set; } = string.Empty;
         public string FlinkJobId { get; set; } = string.Empty;
         /// <summary>
         /// State of the job: CREATED, RUNNING, FINISHED, FAILED, CANCELED

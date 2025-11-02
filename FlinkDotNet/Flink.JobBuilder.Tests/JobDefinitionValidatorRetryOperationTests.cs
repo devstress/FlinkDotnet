@@ -15,7 +15,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -40,7 +40,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -65,7 +65,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -90,7 +90,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -114,7 +114,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -138,7 +138,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -163,7 +163,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -188,7 +188,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -213,7 +213,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -238,7 +238,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -263,7 +263,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -288,7 +288,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -313,7 +313,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {
@@ -338,7 +338,7 @@ namespace Flink.JobBuilder.Tests
         {
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } },
                 Operations = new List<IOperationDefinition>
                 {

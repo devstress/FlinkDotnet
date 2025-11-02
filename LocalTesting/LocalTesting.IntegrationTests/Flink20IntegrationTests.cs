@@ -34,8 +34,7 @@ public class Flink20IntegrationTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "s3-disaggregated-state-job",
-                Version = "2.0.0",
+                                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",
@@ -90,8 +89,7 @@ public class Flink20IntegrationTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "hdfs-disaggregated-state-job",
-                Version = "2.0.0",
+                                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",
@@ -139,8 +137,7 @@ public class Flink20IntegrationTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "azure-disaggregated-state-job",
-                Version = "2.0.0",
+                                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",
@@ -184,8 +181,7 @@ public class Flink20IntegrationTests
             },
             Metadata = new JobMetadata
             {
-                JobId = "gcs-disaggregated-state-job",
-                Version = "2.0.0",
+                                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",
@@ -235,8 +231,7 @@ public class Flink20IntegrationTests
             Sink = new KafkaSinkDefinition { Topic = "legacy-output" },
             Metadata = new JobMetadata
             {
-                JobId = "legacy-rocksdb-job",
-                Version = "1.20.0",
+                                Version = "1.20.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
@@ -254,8 +249,7 @@ public class Flink20IntegrationTests
             Sink = new KafkaSinkDefinition { Topic = "modern-output" },
             Metadata = new JobMetadata
             {
-                JobId = "modern-disaggregated-job",
-                Version = "2.0.0",
+                                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",

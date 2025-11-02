@@ -35,9 +35,20 @@ namespace FlinkDotNet.JobGateway.Tests
             _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+            
+            // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
+            _ = _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
+            
             _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
             {
-                BaseAddress = new Uri("http://localhost:8081")
+                BaseAddress = new Uri("http://localhost:8081"),
+                Timeout = TimeSpan.FromSeconds(1) // Short timeout for unmocked calls
             };
         }
 
@@ -141,8 +152,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "db-sink-job",
-                    JobName = "Database Sink Job"
+                                        JobName = "Database Sink Job"
                 },
                 Source = new FileSourceDefinition
                 {
@@ -198,8 +208,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "file-sink-job",
-                    JobName = "File Sink Job"
+                                        JobName = "File Sink Job"
                 },
                 Source = new KafkaSourceDefinition
                 {

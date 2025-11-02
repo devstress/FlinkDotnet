@@ -19,7 +19,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition
             {
                 Statements = null!
@@ -40,7 +40,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition
             {
                 Statements = []
@@ -65,7 +65,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = null!,
@@ -89,7 +89,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "",
@@ -116,7 +116,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition
             {
                 Path = null!
@@ -137,7 +137,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition
             {
                 Path = ""
@@ -162,7 +162,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -189,7 +189,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -216,7 +216,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -242,7 +242,7 @@ public class JobDefinitionValidatorNullChecksTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",

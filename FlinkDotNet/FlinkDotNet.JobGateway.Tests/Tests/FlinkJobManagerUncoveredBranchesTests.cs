@@ -38,9 +38,20 @@ namespace FlinkDotNet.JobGateway.Tests
             _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+            
+            // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
+            _ = _mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
+            
             _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
             {
-                BaseAddress = new Uri("http://localhost:8081")
+                BaseAddress = new Uri("http://localhost:8081"),
+                Timeout = TimeSpan.FromSeconds(1) // Short timeout for unmocked calls
             };
         }
 
@@ -664,8 +675,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "jar-job-no-connectors",
-                    JobName = "JAR Job Without Connectors"
+                                        JobName = "JAR Job Without Connectors"
                 },
                 Source = new FileSourceDefinition
                 {
@@ -714,8 +724,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "kafka-job",
-                    JobName = "Kafka Job"
+                                        JobName = "Kafka Job"
                 },
                 Source = new KafkaSourceDefinition
                 {
@@ -1086,8 +1095,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "jar-job-quick-registration",
-                    JobName = "JAR Job Quick Registration"
+                                        JobName = "JAR Job Quick Registration"
                 },
                 Source = new FileSourceDefinition
                 {
@@ -1148,8 +1156,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "jar-job-delayed-registration",
-                    JobName = "JAR Job Delayed Registration"
+                                        JobName = "JAR Job Delayed Registration"
                 },
                 Source = new FileSourceDefinition
                 {

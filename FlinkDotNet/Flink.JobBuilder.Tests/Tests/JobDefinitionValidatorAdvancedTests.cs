@@ -13,7 +13,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -33,7 +33,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -57,7 +57,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -81,7 +81,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -105,7 +105,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -129,7 +129,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -157,7 +157,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -177,7 +177,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -200,7 +200,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -220,7 +220,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -240,7 +240,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -260,7 +260,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -284,7 +284,7 @@ public class JobDefinitionValidatorAdvancedTests
         {
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Operations = new List<IOperationDefinition>
                 {
@@ -308,7 +308,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -328,7 +328,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -348,7 +348,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -372,7 +372,7 @@ public class JobDefinitionValidatorAdvancedTests
         {
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Operations = new List<IOperationDefinition>
                 {
@@ -396,7 +396,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -421,7 +421,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -446,7 +446,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -471,7 +471,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -496,7 +496,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -521,7 +521,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -546,7 +546,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -574,7 +574,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -599,7 +599,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -624,7 +624,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -649,7 +649,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -677,7 +677,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output", Serializer = "xml" }
         };
@@ -697,7 +697,7 @@ public class JobDefinitionValidatorAdvancedTests
         {
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Sink = new KafkaSinkDefinition { Topic = "output", Serializer = serializer }
             };
@@ -713,7 +713,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new RedisSinkDefinition { ConnectionString = "", OperationType = "increment" }
         };
@@ -729,7 +729,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379", OperationType = "" }
         };
@@ -745,7 +745,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379", OperationType = "increment" }
         };
@@ -764,7 +764,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new HttpSinkDefinition { Url = "", TimeoutMs = 5000 }
         };
@@ -780,7 +780,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new HttpSinkDefinition { Url = "http://api.example.com", TimeoutMs = 0 }
         };
@@ -796,7 +796,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new HttpSinkDefinition { Url = "http://api.example.com", TimeoutMs = 1_300_000 }
         };
@@ -816,7 +816,7 @@ public class JobDefinitionValidatorAdvancedTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "", Version = "" },
+            Metadata = new JobMetadata { Version = "" },
             Source = new KafkaSourceDefinition { Topic = "" },
             Operations = new List<IOperationDefinition>
             {
@@ -830,8 +830,9 @@ public class JobDefinitionValidatorAdvancedTests
         var result = JobDefinitionValidator.Validate(job);
 
         Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors.Count, Is.GreaterThanOrEqualTo(8)); // Multiple validation errors
-        Assert.That(result.Errors, Contains.Item("metadata.jobId is required"));
+        // Now 7 errors instead of 8 (JobId no longer required)
+        Assert.That(result.Errors.Count, Is.GreaterThanOrEqualTo(7));
+        // Remove JobId assertion - it's no longer required
         Assert.That(result.Errors, Contains.Item("metadata.version is required"));
         Assert.That(result.Errors, Contains.Item("source.kafka.topic is required"));
         Assert.That(result.Errors, Contains.Item("operations[0].filter.expression is required"));

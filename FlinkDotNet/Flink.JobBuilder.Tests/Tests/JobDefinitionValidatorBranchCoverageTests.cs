@@ -14,17 +14,18 @@ public class JobDefinitionValidatorBranchCoverageTests
     [Test]
     public void Validate_WithWhitespaceJobId_ReturnsError()
     {
+        // JobId is no longer required - test now validates job is valid without it
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "   ", Version = "1.0" },
-            Source = new KafkaSourceDefinition { Topic = "test" },
-            Sink = new KafkaSinkDefinition { Topic = "output" }
+            Metadata = new JobMetadata { Version = "1.0" },
+            Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+            Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
         };
 
         var result = JobDefinitionValidator.Validate(job);
 
-        Assert.That(result.IsValid, Is.False);
-        Assert.That(result.Errors, Contains.Item("metadata.jobId is required"));
+        // Should be valid now since JobId is no longer required
+        Assert.That(result.IsValid, Is.True);
     }
 
     [Test]
@@ -32,7 +33,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "  " },
+            Metadata = new JobMetadata { Version = "  " },
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
@@ -52,7 +53,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT * FROM table" } },
             Sink = null
         };
@@ -67,7 +68,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = null
         };
@@ -87,7 +88,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition { Statements = null }
         };
 
@@ -102,7 +103,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition { Statements = new List<string>() }
         };
 
@@ -117,7 +118,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "  " },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
@@ -133,7 +134,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition { Path = "  ", Format = "csv" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
@@ -149,7 +150,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition { Path = "/data/file.csv", Format = "  " },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
@@ -165,7 +166,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition { Url = "  ", IntervalSeconds = 10 },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
@@ -181,7 +182,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition { Url = "http://example.com", IntervalSeconds = 0 },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
@@ -197,7 +198,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition { Url = "http://example.com", IntervalSeconds = -1 },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
@@ -213,7 +214,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "  ",
@@ -234,7 +235,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost",
@@ -255,7 +256,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost",
@@ -276,7 +277,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost",
@@ -301,7 +302,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -321,7 +322,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -341,7 +342,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -361,7 +362,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -381,7 +382,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -401,7 +402,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -421,7 +422,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -441,7 +442,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -461,7 +462,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -486,7 +487,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -511,7 +512,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -536,7 +537,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -561,7 +562,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -586,7 +587,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -611,7 +612,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -637,7 +638,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -663,7 +664,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -689,7 +690,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -715,7 +716,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -740,7 +741,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -765,7 +766,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -790,7 +791,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -815,7 +816,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -840,7 +841,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -865,7 +866,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -885,7 +886,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -909,7 +910,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -933,7 +934,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -957,7 +958,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -982,7 +983,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1007,7 +1008,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1031,7 +1032,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1055,7 +1056,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1079,7 +1080,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1103,7 +1104,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1127,7 +1128,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1152,7 +1153,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1177,7 +1178,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1202,7 +1203,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1227,7 +1228,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1252,7 +1253,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1277,7 +1278,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1302,7 +1303,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1327,7 +1328,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1352,7 +1353,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -1381,7 +1382,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "  " }
         };
@@ -1397,7 +1398,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output", Serializer = "avro" }
         };
@@ -1413,7 +1414,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new FileSinkDefinition { Path = "  ", Format = "csv" }
         };
@@ -1429,7 +1430,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new FileSinkDefinition { Path = "/data/output.csv", Format = "  " }
         };
@@ -1445,7 +1446,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new HttpSinkDefinition { Url = "  ", TimeoutMs = 5000 }
         };
@@ -1461,7 +1462,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new HttpSinkDefinition { Url = "http://example.com", TimeoutMs = 0 }
         };
@@ -1477,7 +1478,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new HttpSinkDefinition { Url = "http://example.com", TimeoutMs = -1 }
         };
@@ -1493,7 +1494,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new HttpSinkDefinition { Url = "http://example.com", TimeoutMs = 1_300_000 }
         };
@@ -1509,7 +1510,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new DatabaseSinkDefinition { ConnectionString = "  ", Table = "output_table" }
         };
@@ -1525,7 +1526,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new DatabaseSinkDefinition { ConnectionString = "Server=localhost", Table = "  " }
         };
@@ -1541,7 +1542,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new RedisSinkDefinition { ConnectionString = "  ", OperationType = "SET" }
         };
@@ -1557,7 +1558,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379", OperationType = "  " }
         };
@@ -1577,7 +1578,7 @@ public class JobDefinitionValidatorBranchCoverageTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new ConsoleSinkDefinition()
         };
