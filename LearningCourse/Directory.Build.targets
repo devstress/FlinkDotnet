@@ -1,0 +1,5 @@
+<Project>
+  <!-- Override FormatCode target from root Directory.Build.targets -->
+  <!-- Disable dotnet format for LearningCourse projects to speed up builds -->
+  <Target Name="FormatCode" />
+</Project>
