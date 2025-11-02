@@ -42,6 +42,49 @@ namespace FlinkDotNet.JobGateway.Tests
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
                 .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
+
+            // Setup common JAR-related mocks to avoid 30-second timeouts in WaitForJarRegistrationAsync
+            // Mock JAR upload
+            _ = this._mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/jars/upload")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"filename\":\"flink-ir-runner-java17.jar\",\"status\":\"success\"}")
+                });
+
+            // Mock JAR list endpoint
+            _ = this._mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => 
+                        req.Method == HttpMethod.Get && 
+                        req.RequestUri!.PathAndQuery.Contains("/jars") &&
+                        !req.RequestUri.PathAndQuery.Contains("/upload")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"files\":[{\"id\":\"flink-ir-runner-java17.jar\",\"name\":\"flink-ir-runner-java17.jar\",\"uploaded\":1234567890}]}")
+                });
+
+            // Mock JAR run
+            _ = this._mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => req.RequestUri!.PathAndQuery.Contains("/jars/") && req.RequestUri.PathAndQuery.Contains("/run")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"jobid\":\"test-flink-job-id-123\"}")
+                });
             
             this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
