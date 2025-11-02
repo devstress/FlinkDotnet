@@ -551,8 +551,7 @@ public class SourceSinkDefinitionsTests
     {
         var metadata = new JobMetadata
         {
-            JobId = "job-123",
-            JobName = null
+                        JobName = null
         };
 
         Assert.That(metadata.JobName, Is.Null);
@@ -563,8 +562,7 @@ public class SourceSinkDefinitionsTests
     {
         var metadata = new JobMetadata
         {
-            JobId = "job-123",
-            JobName = "My Flink Job"
+                        JobName = "My Flink Job"
         };
 
         Assert.That(metadata.JobName, Is.EqualTo("My Flink Job"));

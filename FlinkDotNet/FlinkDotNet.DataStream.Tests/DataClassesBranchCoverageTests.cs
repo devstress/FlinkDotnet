@@ -93,7 +93,7 @@ namespace FlinkDotNet.DataStream.Tests
             var status = new JobStatus();
 
             // Assert
-            Assert.That(status.JobId, Is.EqualTo(string.Empty));
+            Assert.That(status.FlinkJobId, Is.EqualTo(string.Empty));
             Assert.That(status.JobName, Is.EqualTo(string.Empty));
             Assert.That(status.State, Is.EqualTo(string.Empty));
             Assert.That(status.Parallelism, Is.EqualTo(0));
@@ -106,13 +106,13 @@ namespace FlinkDotNet.DataStream.Tests
             var status = new JobStatus();
 
             // Act
-            status.JobId = "job-789";
+            status.FlinkJobId = "job-789";
             status.JobName = "Test Job";
             status.State = "RUNNING";
             status.Parallelism = 4;
 
             // Assert
-            Assert.That(status.JobId, Is.EqualTo("job-789"));
+            Assert.That(status.FlinkJobId, Is.EqualTo("job-789"));
             Assert.That(status.JobName, Is.EqualTo("Test Job"));
             Assert.That(status.State, Is.EqualTo("RUNNING"));
             Assert.That(status.Parallelism, Is.EqualTo(4));
@@ -129,7 +129,7 @@ namespace FlinkDotNet.DataStream.Tests
             var result = new JobExecutionResult();
 
             // Assert
-            Assert.That(result.JobId, Is.EqualTo(string.Empty));
+            Assert.That(result.JobName, Is.EqualTo(string.Empty));
             Assert.That(result.Success, Is.False);
         }
 
@@ -140,11 +140,11 @@ namespace FlinkDotNet.DataStream.Tests
             var result = new JobExecutionResult();
 
             // Act
-            result.JobId = "exec-job-123";
+            result.JobName = "exec-job-123";
             result.Success = true;
 
             // Assert
-            Assert.That(result.JobId, Is.EqualTo("exec-job-123"));
+            Assert.That(result.JobName, Is.EqualTo("exec-job-123"));
             Assert.That(result.Success, Is.True);
         }
 

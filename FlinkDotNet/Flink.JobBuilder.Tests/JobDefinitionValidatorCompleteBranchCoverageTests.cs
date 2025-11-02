@@ -18,7 +18,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition { Statements = null }
         };
 
@@ -36,7 +36,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition { Statements = new List<string>() }
         };
 
@@ -58,7 +58,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition { Path = null, Format = "json" },
             Sink = new ConsoleSinkDefinition()
         };
@@ -77,7 +77,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition { Path = "", Format = "json" },
             Sink = new ConsoleSinkDefinition()
         };
@@ -96,7 +96,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition { Path = "/data/file.json", Format = null },
             Sink = new ConsoleSinkDefinition()
         };
@@ -115,7 +115,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition { Path = "/data/file.json", Format = "" },
             Sink = new ConsoleSinkDefinition()
         };
@@ -138,7 +138,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition { Url = null, IntervalSeconds = 10 },
             Sink = new ConsoleSinkDefinition()
         };
@@ -157,7 +157,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition { Url = "", IntervalSeconds = 10 },
             Sink = new ConsoleSinkDefinition()
         };
@@ -176,7 +176,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition { Url = "http://api.example.com", IntervalSeconds = 0 },
             Sink = new ConsoleSinkDefinition()
         };
@@ -195,7 +195,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition { Url = "http://api.example.com", IntervalSeconds = -5 },
             Sink = new ConsoleSinkDefinition()
         };
@@ -218,7 +218,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = null,
@@ -242,7 +242,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "",
@@ -266,7 +266,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost;Database=test",
@@ -290,7 +290,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost;Database=test",
@@ -314,7 +314,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost;Database=test",
@@ -338,7 +338,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost;Database=test",
@@ -366,7 +366,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -389,7 +389,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -416,7 +416,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -439,7 +439,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -466,7 +466,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -489,7 +489,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -516,7 +516,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -539,7 +539,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -562,7 +562,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -585,7 +585,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -608,7 +608,7 @@ public class JobDefinitionValidatorCompleteBranchCoverageTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {

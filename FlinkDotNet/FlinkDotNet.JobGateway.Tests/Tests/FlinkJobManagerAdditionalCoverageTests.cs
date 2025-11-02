@@ -66,7 +66,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-sql-job", JobName = "SQL Test" },
+                Metadata = new JobMetadata { JobName = "SQL Test" },
                 Source = new SqlSourceDefinition
                 {
                     Statements = new List<string> { "SELECT 1" },
@@ -104,7 +104,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
                 var jobDef = new JobDefinition
                 {
-                    Metadata = new JobMetadata { JobId = "test-sql-job", JobName = "SQL Test" },
+                    Metadata = new JobMetadata { JobName = "SQL Test" },
                     Source = new SqlSourceDefinition
                     {
                         Statements = new List<string> { "SELECT 1" },
@@ -143,7 +143,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-sql-job", JobName = "SQL Test" },
+                Metadata = new JobMetadata { JobName = "SQL Test" },
                 Source = new SqlSourceDefinition
                 {
                     Statements = new List<string> { "SELECT 1" },
@@ -180,7 +180,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-map-job", JobName = "Map Test" },
+                Metadata = new JobMetadata { JobName = "Map Test" },
                 Source = new KafkaSourceDefinition
                 {
                     BootstrapServers = "localhost:9092",
@@ -222,7 +222,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-no-ops", JobName = "No Ops Test" },
+                Metadata = new JobMetadata { JobName = "No Ops Test" },
                 Source = new KafkaSourceDefinition
                 {
                     BootstrapServers = "localhost:9092",
@@ -250,7 +250,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-null-ops", JobName = "Null Ops Test" },
+                Metadata = new JobMetadata { JobName = "Null Ops Test" },
                 Source = new KafkaSourceDefinition
                 {
                     BootstrapServers = "localhost:9092",

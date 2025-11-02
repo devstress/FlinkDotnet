@@ -18,7 +18,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -50,7 +50,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -82,7 +82,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -114,7 +114,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -150,7 +150,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -188,7 +188,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -226,7 +226,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -264,7 +264,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -302,7 +302,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -339,7 +339,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",
@@ -370,7 +370,7 @@ public class JobDefinitionOperationValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition
             {
                 Topic = "input",

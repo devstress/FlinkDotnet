@@ -17,7 +17,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -45,7 +45,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -73,7 +73,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -101,7 +101,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -129,7 +129,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -157,7 +157,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -185,7 +185,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -213,7 +213,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -242,7 +242,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -271,7 +271,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -304,7 +304,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -339,7 +339,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
 
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -374,7 +374,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
 
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -409,7 +409,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
 
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -444,7 +444,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
 
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -476,7 +476,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -504,7 +504,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -532,7 +532,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -560,7 +560,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -588,7 +588,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -616,7 +616,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -644,7 +644,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -676,7 +676,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -699,7 +699,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Operations = new List<IOperationDefinition>
             {
@@ -726,7 +726,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new FileSinkDefinition { Path = null, Format = "json" }
         };
@@ -745,7 +745,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new FileSinkDefinition { Path = "", Format = "json" }
         };
@@ -764,7 +764,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new FileSinkDefinition { Path = "/output/data", Format = null }
         };
@@ -783,7 +783,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new FileSinkDefinition { Path = "/output/data", Format = "" }
         };
@@ -806,7 +806,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new HttpSinkDefinition { Url = null, TimeoutMs = 5000 }
         };
@@ -825,7 +825,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new HttpSinkDefinition { Url = "", TimeoutMs = 5000 }
         };
@@ -844,7 +844,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new HttpSinkDefinition { Url = "http://api.example.com", TimeoutMs = 0 }
         };
@@ -863,7 +863,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new HttpSinkDefinition { Url = "http://api.example.com", TimeoutMs = -100 }
         };
@@ -882,7 +882,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new HttpSinkDefinition { Url = "http://api.example.com", TimeoutMs = 1_300_000 }
         };
@@ -905,7 +905,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new DatabaseSinkDefinition { ConnectionString = null, Table = "users" }
         };
@@ -924,7 +924,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new DatabaseSinkDefinition { ConnectionString = "", Table = "users" }
         };
@@ -943,7 +943,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new DatabaseSinkDefinition { ConnectionString = "Server=localhost", Table = null }
         };
@@ -962,7 +962,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new DatabaseSinkDefinition { ConnectionString = "Server=localhost", Table = "" }
         };
@@ -985,7 +985,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new RedisSinkDefinition { ConnectionString = null, OperationType = "SET" }
         };
@@ -1004,7 +1004,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new RedisSinkDefinition { ConnectionString = "", OperationType = "SET" }
         };
@@ -1023,7 +1023,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379", OperationType = null }
         };
@@ -1042,7 +1042,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379", OperationType = "" }
         };
@@ -1065,7 +1065,7 @@ public class JobDefinitionValidatorWindowAndSinkTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092", GroupId = "group1" },
             Sink = new KafkaSinkDefinition
             {

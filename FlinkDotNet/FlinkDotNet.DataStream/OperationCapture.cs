@@ -134,7 +134,7 @@ namespace FlinkDotNet.DataStream
             _logger.Information("[OperationCapture.CaptureKafkaSink] Created KafkaSinkDefinition with BootstrapServers={BootstrapServers}", this._kafkaSink.BootstrapServers);
         }
 
-        public JobDefinition ToJobDefinition(string jobId, string jobName)
+        public JobDefinition ToJobDefinition(string jobName)
         {
             _logger.Debug("[OperationCapture.ToJobDefinition] Starting translation - jobName={JobName}, kafkaSource.BootstrapServers={BootstrapServers}",
                 jobName, this._kafkaSource?.BootstrapServers);

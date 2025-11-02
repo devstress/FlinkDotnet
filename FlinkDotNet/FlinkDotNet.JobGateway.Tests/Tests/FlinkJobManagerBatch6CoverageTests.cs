@@ -141,8 +141,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "db-sink-job",
-                    JobName = "Database Sink Job"
+                                        JobName = "Database Sink Job"
                 },
                 Source = new FileSourceDefinition
                 {
@@ -198,8 +197,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "file-sink-job",
-                    JobName = "File Sink Job"
+                                        JobName = "File Sink Job"
                 },
                 Source = new KafkaSourceDefinition
                 {

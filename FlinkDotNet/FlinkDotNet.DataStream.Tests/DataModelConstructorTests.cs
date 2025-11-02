@@ -32,7 +32,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            Assert.That(result.JobId, Is.Not.Null);
+            Assert.That(result.JobName, Is.Not.Null);
         }
 
         [Test]
@@ -41,13 +41,12 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var result = new JobExecutionResult
             {
-                JobId = "test-id",
-                JobName = "test-job",
+                                JobName = "test-job",
                 Success = true
             };
 
             // Assert
-            Assert.That(result.JobId, Is.EqualTo("test-id"));
+            Assert.That(result.JobName, Is.EqualTo("test-id"));
         }
 
         #endregion
@@ -62,7 +61,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Assert
             Assert.That(status, Is.Not.Null);
-            Assert.That(status.JobId, Is.Not.Null);
+            Assert.That(status.FlinkJobId, Is.Not.Null);
         }
 
         [Test]
@@ -71,8 +70,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var status = new JobStatus
             {
-                JobId = "test-id",
-                State = "RUNNING",
+                                State = "RUNNING",
                 Parallelism = 4
             };
 
@@ -86,8 +84,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var status = new JobStatus
             {
-                JobId = "id",
-                JobName = "name",
+                                JobName = "name",
                 State = "RUNNING",
                 Parallelism = 4,
                 MaxParallelism = 128,

@@ -93,7 +93,6 @@ namespace FlinkDotNet.DataStream.Tests
                 },
                 Metadata = new Flink.JobBuilder.Models.JobMetadata
                 {
-                    JobId = System.Guid.NewGuid().ToString(),
                     JobName = "test-job",
                     CreatedAt = System.DateTime.UtcNow,
                     Version = "1.0"

@@ -18,7 +18,7 @@ namespace FlinkDotNet.DataStream.Tests
             var error = "Test error message";
 
             // Act
-            result.JobId = jobId;
+            result.JobName = jobId;
             result.JobName = jobName;
             result.Success = true;
             result.StartTime = startTime;
@@ -26,7 +26,7 @@ namespace FlinkDotNet.DataStream.Tests
             result.Error = error;
 
             // Assert
-            Assert.That(result.JobId, Is.EqualTo(jobId));
+            Assert.That(result.JobName, Is.EqualTo(jobId));
             Assert.That(result.JobName, Is.EqualTo(jobName));
             Assert.That(result.Success, Is.True);
             Assert.That(result.StartTime, Is.EqualTo(startTime));
@@ -41,7 +41,7 @@ namespace FlinkDotNet.DataStream.Tests
             var result = new JobExecutionResult();
 
             // Assert
-            Assert.That(result.JobId, Is.EqualTo(string.Empty));
+            Assert.That(result.JobName, Is.EqualTo(string.Empty));
             Assert.That(result.JobName, Is.EqualTo(string.Empty));
             Assert.That(result.Success, Is.False);
             Assert.That(result.Error, Is.Null);
@@ -66,8 +66,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var result = new JobExecutionResult
             {
-                JobId = "test-123",
-                Success = true,
+                                Success = true,
                 Error = null
             };
 
@@ -85,8 +84,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var result = new JobExecutionResult
             {
-                JobId = "job-456",
-                JobName = "Integration Test Job",
+                                JobName = "Integration Test Job",
                 Success = false,
                 StartTime = startTime,
                 EndTime = endTime,
@@ -94,7 +92,7 @@ namespace FlinkDotNet.DataStream.Tests
             };
 
             // Assert
-            Assert.That(result.JobId, Is.EqualTo("job-456"));
+            Assert.That(result.JobName, Is.EqualTo("job-456"));
             Assert.That(result.JobName, Is.EqualTo("Integration Test Job"));
             Assert.That(result.Success, Is.False);
             Assert.That(result.StartTime, Is.EqualTo(startTime));

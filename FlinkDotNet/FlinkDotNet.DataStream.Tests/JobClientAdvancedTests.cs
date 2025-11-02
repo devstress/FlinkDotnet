@@ -45,7 +45,7 @@ namespace FlinkDotNet.DataStream.Tests
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
 
-            jobClient.JobId = "test-job-id";
+            jobClient.FlinkJobId = "test-job-id";
 
             // Act
             var result = await jobClient.TriggerSavepointAsync("/tmp/savepoint");
@@ -76,7 +76,7 @@ namespace FlinkDotNet.DataStream.Tests
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
 
-            jobClient.JobId = "test-job-id";
+            jobClient.FlinkJobId = "test-job-id";
 
             // Act
             var result = await jobClient.TriggerSavepointAsync("/tmp/savepoint");
@@ -107,7 +107,7 @@ namespace FlinkDotNet.DataStream.Tests
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
 
-            jobClient.JobId = "test-job-id";
+            jobClient.FlinkJobId = "test-job-id";
 
             // Act
             var result = await jobClient.CancelWithSavepointAsync("/tmp/savepoint");
@@ -138,7 +138,7 @@ namespace FlinkDotNet.DataStream.Tests
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
 
-            jobClient.JobId = "test-job-id";
+            jobClient.FlinkJobId = "test-job-id";
 
             // Act
             var result = await jobClient.CancelWithSavepointAsync("/tmp/savepoint");
@@ -169,7 +169,7 @@ namespace FlinkDotNet.DataStream.Tests
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
 
-            jobClient.JobId = "test-job-id";
+            jobClient.FlinkJobId = "test-job-id";
 
             // Act
             var result = await jobClient.StopWithSavepointAsync("/tmp/savepoint", drain: true);
@@ -202,7 +202,7 @@ namespace FlinkDotNet.DataStream.Tests
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
 
-            jobClient.JobId = "test-job-id";
+            jobClient.FlinkJobId = "test-job-id";
 
             // Act
             var result = await jobClient.StopWithSavepointAsync("/tmp/savepoint", drain: false);
@@ -233,7 +233,7 @@ namespace FlinkDotNet.DataStream.Tests
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
 
-            jobClient.JobId = "test-job-id";
+            jobClient.FlinkJobId = "test-job-id";
 
             // Act
             var result = await jobClient.StopWithSavepointAsync("/tmp/savepoint");
@@ -332,7 +332,7 @@ namespace FlinkDotNet.DataStream.Tests
             var httpField = typeof(JobClient).GetField("_flinkHttp", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             httpField!.SetValue(jobClient, httpClient);
 
-            jobClient.JobId = "test-job-id";
+            jobClient.FlinkJobId = "test-job-id";
 
             // Act
             var result = await jobClient.TriggerSavepointAsync(null);

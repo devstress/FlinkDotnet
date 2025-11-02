@@ -20,7 +20,7 @@ public class DataStreamJobBackedBranchCoverageTests
         {
             Source = new KafkaSourceDefinition { Topic = "test-topic", BootstrapServers = "localhost:9092" },
             Operations = [],
-            Metadata = new JobMetadata { JobId = "test-job", JobName = "Test Job" }
+            Metadata = new JobMetadata { JobName = "Test Job" }
         };
 
         // Create a DataStream directly with JobDefinition (no OperationCapture)
@@ -42,7 +42,7 @@ public class DataStreamJobBackedBranchCoverageTests
         {
             Source = new KafkaSourceDefinition { Topic = "test-topic", BootstrapServers = "localhost:9092" },
             Operations = [],
-            Metadata = new JobMetadata { JobId = "test-job", JobName = "Test Job" }
+            Metadata = new JobMetadata { JobName = "Test Job" }
         };
 
         // Create a DataStream directly with JobDefinition (no OperationCapture)
@@ -64,7 +64,7 @@ public class DataStreamJobBackedBranchCoverageTests
         {
             Source = new KafkaSourceDefinition { Topic = "test-topic", BootstrapServers = "localhost:9092" },
             Operations = [],
-            Metadata = new JobMetadata { JobId = "test-job", JobName = "Test Job" }
+            Metadata = new JobMetadata { JobName = "Test Job" }
         };
 
         // Create a DataStream directly with JobDefinition (no OperationCapture)

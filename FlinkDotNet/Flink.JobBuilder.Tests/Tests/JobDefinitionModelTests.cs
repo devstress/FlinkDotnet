@@ -28,7 +28,7 @@ public class JobDefinitionModelTests
             new FilterOperationDefinition { Expression = "x > 0" }
         };
         var sink = new KafkaSinkDefinition { Topic = "output-topic" };
-        var metadata = new JobMetadata { JobId = "test-job" };
+        var metadata = new JobMetadata { };
 
         var jobDef = new JobDefinition
         {
@@ -86,7 +86,7 @@ public class JobDefinitionModelTests
     {
         var metadata = new JobMetadata();
 
-        Assert.That(metadata.JobId, Is.EqualTo(string.Empty));
+        Assert.That(metadata.JobName, Is.EqualTo(string.Empty));
         Assert.That(metadata.Version, Is.EqualTo(string.Empty));
         Assert.That(metadata.CreatedAt, Is.EqualTo(default(DateTime)));
     }
@@ -103,15 +103,14 @@ public class JobDefinitionModelTests
 
         var metadata = new JobMetadata
         {
-            JobId = "job-123",
-            JobName = "Test Job",
+                        JobName = "Test Job",
             CreatedAt = createdAt,
             Version = "1.0.0",
             Parallelism = 8,
             Properties = properties
         };
 
-        Assert.That(metadata.JobId, Is.EqualTo("job-123"));
+        Assert.That(metadata.JobName, Is.EqualTo("job-123"));
         Assert.That(metadata.JobName, Is.EqualTo("Test Job"));
         Assert.That(metadata.CreatedAt, Is.EqualTo(createdAt));
         Assert.That(metadata.Version, Is.EqualTo("1.0.0"));

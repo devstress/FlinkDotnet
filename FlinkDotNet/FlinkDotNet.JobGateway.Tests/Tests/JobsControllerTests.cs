@@ -100,8 +100,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "test-job-1",
-                    JobName = "Test Job",
+                                        JobName = "Test Job",
                     Version = "1.0"
                 },
                 Source = new KafkaSourceDefinition
@@ -122,7 +121,7 @@ namespace FlinkDotNet.JobGateway.Tests
             httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
-            var expectedResult = JobSubmissionResult.CreateSuccess("test-job-1", "flink-job-1");
+            var expectedResult = JobSubmissionResult.CreateSuccess("flink-job-1");
             _ = this._mockJobManager
                 .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
                 .ReturnsAsync(expectedResult);
@@ -135,7 +134,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var okResult = (OkObjectResult) result.Result!;
             var submissionResult = (JobSubmissionResult) okResult.Value!;
             Assert.That(submissionResult.IsSuccess, Is.True);
-            Assert.That(submissionResult.JobId, Is.EqualTo("test-job-1"));
+            Assert.That(submissionResult.FlinkJobId, Is.EqualTo("test-job-1"));
         }
 
         [Test]
@@ -163,7 +162,7 @@ namespace FlinkDotNet.JobGateway.Tests
             httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
-            var expectedResult = JobSubmissionResult.CreateSuccess("generated-id", "flink-job-1");
+            var expectedResult = JobSubmissionResult.CreateSuccess("flink-job-1");
             _ = this._mockJobManager
                 .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
                 .ReturnsAsync(expectedResult);
@@ -174,7 +173,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Assert
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             this._mockJobManager.Verify(m => m.SubmitJobAsync(It.Is<JobDefinition>(
-                j => j.Metadata != null && !string.IsNullOrEmpty(j.Metadata.JobId)
+                j => j.Metadata != null && !string.IsNullOrEmpty(j.Metadata.JobName)
             )), Times.Once);
         }
 
@@ -188,8 +187,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "sql-job-1",
-                    Version = "1.0"
+                                        Version = "1.0"
                 },
                 Source = new SqlSourceDefinition
                 {
@@ -208,7 +206,7 @@ namespace FlinkDotNet.JobGateway.Tests
             httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
-            var expectedResult = JobSubmissionResult.CreateSuccess("sql-job-1", "flink-sql-job-1");
+            var expectedResult = JobSubmissionResult.CreateSuccess("flink-sql-job-1");
             _ = this._mockJobManager
                 .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
                 .ReturnsAsync(expectedResult);
@@ -230,8 +228,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "failing-job",
-                    Version = "1.0"
+                                        Version = "1.0"
                 },
                 Source = new KafkaSourceDefinition { Topic = "test" },
                 Sink = new ConsoleSinkDefinition()
@@ -247,7 +244,7 @@ namespace FlinkDotNet.JobGateway.Tests
             httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
-            var failureResult = JobSubmissionResult.CreateFailure("failing-job", "Flink cluster unreachable");
+            var failureResult = JobSubmissionResult.CreateFailure("Flink cluster unreachable");
             _ = this._mockJobManager
                 .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
                 .ReturnsAsync(failureResult);
@@ -273,8 +270,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "exception-job",
-                    Version = "1.0"
+                                        Version = "1.0"
                 },
                 Source = new KafkaSourceDefinition { Topic = "test" },
                 Sink = new ConsoleSinkDefinition()
@@ -332,8 +328,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "file-job",
-                    Version = "1.0"
+                                        Version = "1.0"
                 },
                 Source = new FileSourceDefinition
                 {
@@ -357,7 +352,7 @@ namespace FlinkDotNet.JobGateway.Tests
             httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
-            var expectedResult = JobSubmissionResult.CreateSuccess("file-job", "flink-file-job-1");
+            var expectedResult = JobSubmissionResult.CreateSuccess("flink-file-job-1");
             _ = this._mockJobManager
                 .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
                 .ReturnsAsync(expectedResult);
@@ -379,8 +374,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "http-job",
-                    Version = "1.0"
+                                        Version = "1.0"
                 },
                 Source = new HttpSourceDefinition
                 {
@@ -405,7 +399,7 @@ namespace FlinkDotNet.JobGateway.Tests
             httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
-            var expectedResult = JobSubmissionResult.CreateSuccess("http-job", "flink-http-job-1");
+            var expectedResult = JobSubmissionResult.CreateSuccess("flink-http-job-1");
             _ = this._mockJobManager
                 .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
                 .ReturnsAsync(expectedResult);
@@ -427,8 +421,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "db-job",
-                    Version = "1.0",
+                                        Version = "1.0",
                     Parallelism = 4
                 },
                 Source = new DatabaseSourceDefinition
@@ -455,7 +448,7 @@ namespace FlinkDotNet.JobGateway.Tests
             httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             controller.ControllerContext = new ControllerContext { HttpContext = httpContext };
 
-            var expectedResult = JobSubmissionResult.CreateSuccess("db-job", "flink-db-job-1");
+            var expectedResult = JobSubmissionResult.CreateSuccess("flink-db-job-1");
             _ = this._mockJobManager
                 .Setup(m => m.SubmitJobAsync(It.IsAny<JobDefinition>()))
                 .ReturnsAsync(expectedResult);
@@ -467,7 +460,7 @@ namespace FlinkDotNet.JobGateway.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = (OkObjectResult) result.Result!;
             var submissionResult = (JobSubmissionResult) okResult.Value!;
-            Assert.That(submissionResult.JobId, Is.EqualTo("db-job"));
+            Assert.That(submissionResult.FlinkJobId, Is.EqualTo("db-job"));
         }
 
         #endregion

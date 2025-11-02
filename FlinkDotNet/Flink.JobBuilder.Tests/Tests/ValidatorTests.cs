@@ -13,8 +13,7 @@ public class ValidatorTests
         {
             Metadata = new JobMetadata
             {
-                JobId = "test-job",
-                Version = "1.0.0",
+                                Version = "1.0.0",
                 Parallelism = 4
             },
             Source = new KafkaSourceDefinition
@@ -61,7 +60,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "test" }
         };
@@ -77,7 +76,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = null! },
+            Metadata = new JobMetadata { Version = null! },
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = new KafkaSinkDefinition { Topic = "test" }
         };
@@ -95,8 +94,7 @@ public class ValidatorTests
         {
             Metadata = new JobMetadata
             {
-                JobId = "test",
-                Version = "1.0",
+                                Version = "1.0",
                 Parallelism = 0
             },
             Source = new KafkaSourceDefinition { Topic = "test" },
@@ -116,8 +114,7 @@ public class ValidatorTests
         {
             Metadata = new JobMetadata
             {
-                JobId = "test",
-                Version = "1.0",
+                                Version = "1.0",
                 Parallelism = -5
             },
             Source = new KafkaSourceDefinition { Topic = "test" },
@@ -135,7 +132,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = null!,
             Sink = new KafkaSinkDefinition { Topic = "test" }
         };
@@ -151,7 +148,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "test" },
             Sink = null
         };
@@ -167,7 +164,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition { Statements = new List<string>() }
         };
 
@@ -182,7 +179,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition { Statements = null! }
         };
 
@@ -197,7 +194,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "" },
             Sink = new KafkaSinkDefinition { Topic = "output" }
         };
@@ -213,7 +210,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "", Version = "" },
+            Metadata = new JobMetadata { Version = "" },
             Source = new KafkaSourceDefinition { Topic = "" },
             Sink = null
         };
@@ -229,7 +226,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "sql-job", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new SqlSourceDefinition
             {
                 Statements = new List<string> { "SELECT * FROM table" }
@@ -264,7 +261,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = new List<IOperationDefinition>
             {
@@ -284,7 +281,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new KafkaSourceDefinition { Topic = "input" },
             Operations = null!,
             Sink = new KafkaSinkDefinition { Topic = "output" }
@@ -300,7 +297,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new FileSourceDefinition { Path = "/data/input.txt" },
             Sink = new FileSinkDefinition { Path = "/data/output.txt" }
         };
@@ -315,7 +312,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition { Url = "http://api.example.com" },
             Sink = new HttpSinkDefinition { Url = "http://api.example.com/sink" }
         };
@@ -330,7 +327,7 @@ public class ValidatorTests
     {
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition { ConnectionString = "server=localhost" },
             Sink = new DatabaseSinkDefinition { ConnectionString = "server=localhost" }
         };

@@ -22,7 +22,7 @@ namespace FlinkDotNet.DataStream.Tests
 
             // Act & Assert
             var ex = Assert.Throws<InvalidOperationException>(() =>
-                capture.ToJobDefinition("test-job-id", "test-job-name"));
+                capture.ToJobDefinition("test-job-name"));
 
             Assert.That(ex!.Message, Does.Contain("No Kafka source defined"));
         }

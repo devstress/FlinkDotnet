@@ -664,8 +664,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "jar-job-no-connectors",
-                    JobName = "JAR Job Without Connectors"
+                                        JobName = "JAR Job Without Connectors"
                 },
                 Source = new FileSourceDefinition
                 {
@@ -714,8 +713,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "kafka-job",
-                    JobName = "Kafka Job"
+                                        JobName = "Kafka Job"
                 },
                 Source = new KafkaSourceDefinition
                 {
@@ -1086,8 +1084,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "jar-job-quick-registration",
-                    JobName = "JAR Job Quick Registration"
+                                        JobName = "JAR Job Quick Registration"
                 },
                 Source = new FileSourceDefinition
                 {
@@ -1148,8 +1145,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                    JobId = "jar-job-delayed-registration",
-                    JobName = "JAR Job Delayed Registration"
+                                        JobName = "JAR Job Delayed Registration"
                 },
                 Source = new FileSourceDefinition
                 {

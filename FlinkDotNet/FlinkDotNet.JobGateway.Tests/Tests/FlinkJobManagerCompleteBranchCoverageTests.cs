@@ -501,7 +501,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = null!, JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -521,7 +521,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -541,7 +541,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "   ", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -562,7 +562,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = null!,
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -582,7 +582,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = null!
             };
@@ -674,7 +674,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -695,7 +695,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -716,7 +716,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -737,7 +737,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -939,7 +939,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new FileSinkDefinition { Path = "/tmp/output" }
             };
@@ -960,7 +960,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new HttpSinkDefinition { Url = "http://localhost:8086/api" }
             };
@@ -981,7 +981,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new DatabaseSinkDefinition { ConnectionString = "Server=localhost;Database=test" }
             };
@@ -1002,7 +1002,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -1023,7 +1023,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new RedisSinkDefinition()
             };
@@ -1048,7 +1048,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new FileSourceDefinition { Path = "/tmp/input" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -1069,7 +1069,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new HttpSourceDefinition { Url = "http://localhost:8086/api" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -1090,7 +1090,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new DatabaseSourceDefinition { ConnectionString = "Server=localhost;Database=test", Query = "SELECT * FROM table" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -1115,7 +1115,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "sql-job-1", JobName = "test-sql" },
+                Metadata = new JobMetadata { JobName = "test-sql" },
                 Source = new SqlSourceDefinition
                 {
                     ExecutionMode = "gateway",
@@ -1152,7 +1152,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "sql-job-2", JobName = "test-sql" },
+                Metadata = new JobMetadata { JobName = "test-sql" },
                 Source = new SqlSourceDefinition
                 {
                     ExecutionMode = "gateway",
@@ -1185,7 +1185,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "sql-job-3", JobName = "test-sql" },
+                Metadata = new JobMetadata { JobName = "test-sql" },
                 Source = new SqlSourceDefinition
                 {
                     ExecutionMode = "gateway",
@@ -1541,7 +1541,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var longJobId = new string('a', 500);
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = longJobId, JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -1562,7 +1562,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "12345678", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -1583,7 +1583,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-αβγ-123", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -1925,7 +1925,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -1946,7 +1946,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -1967,7 +1967,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -1988,7 +1988,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2013,7 +2013,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = null },
+                Metadata = new JobMetadata { JobName = null },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2034,7 +2034,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "" },
+                Metadata = new JobMetadata { JobName = "" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2056,7 +2056,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var longName = new string('b', 1000);
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = longName },
+                Metadata = new JobMetadata { JobName = longName },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2077,7 +2077,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test@#$%^&*()job" },
+                Metadata = new JobMetadata { JobName = "test@#$%^&*()job" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2102,7 +2102,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test", Parallelism = null },
+                Metadata = new JobMetadata { JobName = "test", Parallelism = null },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2123,7 +2123,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test", Parallelism = 1 },
+                Metadata = new JobMetadata { JobName = "test", Parallelism = 1 },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2144,7 +2144,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test", Parallelism = 100 },
+                Metadata = new JobMetadata { JobName = "test", Parallelism = 100 },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2169,7 +2169,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" },
                 Operations = null
@@ -2191,7 +2191,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" },
                 Operations = new List<IOperationDefinition>()
@@ -2213,7 +2213,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" },
                 Operations = new List<IOperationDefinition> { new MapOperationDefinition { Expression = "x => x.ToUpper()" } }
@@ -2235,7 +2235,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" },
                 Operations = new List<IOperationDefinition> { new FilterOperationDefinition { Expression = "x => x.Length > 0" } }
@@ -2257,7 +2257,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" },
                 Operations = new List<IOperationDefinition>
@@ -2352,7 +2352,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2372,7 +2372,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
@@ -2392,7 +2392,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "", BootstrapServers = "localhost:9092" }
             };
@@ -2412,7 +2412,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "" }
             };
@@ -2432,7 +2432,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "host1:9092,host2:9092,host3:9092" },
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "host4:9092,host5:9092" }
             };
@@ -2457,7 +2457,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new FileSourceDefinition { Path = "" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -2477,7 +2477,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new FileSinkDefinition { Path = "" }
             };
@@ -2497,7 +2497,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new FileSourceDefinition { Path = "/absolute/path/to/file.txt" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -2518,7 +2518,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new FileSourceDefinition { Path = "relative/path/to/file.txt" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -2543,7 +2543,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new HttpSourceDefinition { Url = "" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -2563,7 +2563,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new HttpSinkDefinition { Url = "" }
             };
@@ -2583,7 +2583,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new HttpSourceDefinition { Url = "https://api.example.com/data" },
                 Sink = new HttpSinkDefinition { Url = "https://api.example.com/sink" }
             };
@@ -2604,7 +2604,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new HttpSourceDefinition { Url = "http://localhost:8086/api/data" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -2629,7 +2629,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new DatabaseSourceDefinition { ConnectionString = "", Query = "SELECT * FROM table" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -2649,7 +2649,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new DatabaseSourceDefinition { ConnectionString = "Server=localhost;Database=test", Query = "" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -2669,7 +2669,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new DatabaseSinkDefinition { ConnectionString = "" }
             };
@@ -2689,7 +2689,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new DatabaseSourceDefinition
                 {
                     ConnectionString = "Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Encrypt=True;TrustServerCertificate=False;",
@@ -2825,7 +2825,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new RedisSinkDefinition { ConnectionString = "" }
             };
@@ -2845,7 +2845,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379" }
             };
@@ -2866,7 +2866,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new RedisSinkDefinition { ConnectionString = "redis.example.com:6379,password=secret,ssl=true" }
             };
@@ -3052,7 +3052,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test\tjob", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -3073,7 +3073,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test\njob", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -3094,7 +3094,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test\rjob", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = new ConsoleSinkDefinition()
             };
@@ -3279,7 +3279,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = null!,
                 Sink = new ConsoleSinkDefinition()
             };
@@ -3304,7 +3304,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Arrange
             var jobDefinition = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-job-1", JobName = "test" },
+                Metadata = new JobMetadata { JobName = "test" },
                 Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
                 Sink = null!
             };

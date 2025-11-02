@@ -368,8 +368,7 @@ namespace FlinkDotNet.DataStream
             if (this._operationCapture?.HasOperations() == true)
             {
                 // Translate captured operations to JobDefinition
-                string jobId = System.Guid.NewGuid().ToString();
-                return this._operationCapture.ToJobDefinition(jobId, name);
+                return this._operationCapture.ToJobDefinition(name);
             }
             else if (this._activeJob != null)
             {
@@ -395,10 +394,8 @@ namespace FlinkDotNet.DataStream
             if (this._operationCapture?.HasOperations() == true)
             {
                 // Translate captured operations to JobDefinition
-                // Don't generate JobId - let Flink assign it
-                string jobId = string.Empty;
-                _log.Debug("[ExecuteAsync] Translating native DataStream API operations (JobId will be assigned by Flink)");
-                jobToSubmit = this._operationCapture.ToJobDefinition(jobId, name);
+                _log.Debug("[ExecuteAsync] Translating native DataStream API operations (FlinkJobId will be assigned by Flink)");
+                jobToSubmit = this._operationCapture.ToJobDefinition(name);
                 this._logger?.LogInformation("Translated native DataStream API operations to JobDefinition");
             }
             else if (this._activeJob != null)

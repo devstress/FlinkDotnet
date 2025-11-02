@@ -66,7 +66,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
                 var jobDef = new JobDefinition
                 {
-                    Metadata = new JobMetadata { JobId = "test-jar-env", JobName = "JAR Env Test" },
+                    Metadata = new JobMetadata { JobName = "JAR Env Test" },
                     Source = new KafkaSourceDefinition
                     {
                         BootstrapServers = "localhost:9092",
@@ -99,7 +99,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-jar-search", JobName = "JAR Search Test" },
+                Metadata = new JobMetadata { JobName = "JAR Search Test" },
                 Source = new KafkaSourceDefinition
                 {
                     BootstrapServers = "localhost:9092",
@@ -126,7 +126,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "test-jar-multi-path", JobName = "JAR Multi Path Test" },
+                Metadata = new JobMetadata { JobName = "JAR Multi Path Test" },
                 Source = new KafkaSourceDefinition
                 {
                     BootstrapServers = "localhost:9092",

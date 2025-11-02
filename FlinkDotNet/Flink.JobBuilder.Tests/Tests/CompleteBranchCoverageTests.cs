@@ -12,7 +12,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test case where Key is empty but Keys collection has values
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Operations = new List<IOperationDefinition>
                 {
@@ -37,7 +37,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test case where both Key is empty and Keys collection is empty
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Operations = new List<IOperationDefinition>
                 {
@@ -62,7 +62,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test SLIDING window with valid slide value
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Operations = new List<IOperationDefinition>
                 {
@@ -88,7 +88,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test SLIDING window without slide value
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Operations = new List<IOperationDefinition>
                 {
@@ -115,7 +115,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test SLIDING window with zero slide value
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Operations = new List<IOperationDefinition>
                 {
@@ -142,7 +142,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test to ensure SqlSourceDefinition case in switch is covered
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new SqlSourceDefinition { Statements = new List<string> { "SELECT 1" } }
             };
 
@@ -157,7 +157,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test to ensure FilterOperationDefinition case in switch is covered
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Operations = new List<IOperationDefinition>
                 {
@@ -177,7 +177,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test to ensure KafkaSinkDefinition case in switch is covered
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Sink = new KafkaSinkDefinition { Topic = "output", Serializer = "json" }
             };
@@ -193,7 +193,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test FileSinkDefinition validation
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Sink = new FileSinkDefinition { Path = "", Format = "json" }
             };
@@ -210,7 +210,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test FileSinkDefinition format validation
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Sink = new FileSinkDefinition { Path = "/path", Format = "" }
             };
@@ -227,7 +227,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test DatabaseSinkDefinition connection string validation
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Sink = new DatabaseSinkDefinition { ConnectionString = "", Table = "users" }
             };
@@ -244,7 +244,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test ConsoleSinkDefinition (covers the missing sink case in switch)
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Sink = new ConsoleSinkDefinition { Format = "json" }
             };
@@ -261,7 +261,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test HttpSinkDefinition to ensure switch case is covered
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Sink = new HttpSinkDefinition { Url = "http://example.com", TimeoutMs = 5000 }
             };
@@ -277,7 +277,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test RedisSinkDefinition to ensure switch case is covered
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new KafkaSourceDefinition { Topic = "input" },
                 Sink = new RedisSinkDefinition { ConnectionString = "localhost:6379", OperationType = "SET" }
             };
@@ -293,7 +293,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test HttpSourceDefinition to ensure switch case coverage
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new HttpSourceDefinition { Url = "http://example.com/api", IntervalSeconds = 60 },
                 Sink = new KafkaSinkDefinition { Topic = "output" }
             };
@@ -309,7 +309,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test DatabaseSourceDefinition to ensure all source types are covered
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new DatabaseSourceDefinition
                 {
                     ConnectionString = "Server=localhost;Database=test",
@@ -330,7 +330,7 @@ namespace Flink.JobBuilder.Tests.Tests
             // Test FileSourceDefinition to ensure all source types are covered
             var job = new JobDefinition
             {
-                Metadata = new JobMetadata { JobId = "job-123", Version = "1.0" },
+                Metadata = new JobMetadata { Version = "1.0" },
                 Source = new FileSourceDefinition { Path = "/data/input.json", Format = "json" },
                 Sink = new KafkaSinkDefinition { Topic = "output" }
             };

@@ -18,7 +18,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition
             {
                 Url = null!,
@@ -40,7 +40,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition
             {
                 Url = "",
@@ -62,7 +62,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition
             {
                 Url = "http://api.example.com",
@@ -85,7 +85,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new HttpSourceDefinition
             {
                 Url = "http://api.example.com",
@@ -112,7 +112,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = null!,
@@ -134,7 +134,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "",
@@ -156,7 +156,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost;Database=test;",
@@ -178,7 +178,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost;Database=test;",
@@ -200,7 +200,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost;Database=test;",
@@ -223,7 +223,7 @@ public class JobDefinitionSourceValidationTests
         // Arrange
         var job = new JobDefinition
         {
-            Metadata = new JobMetadata { JobId = "test", Version = "1.0" },
+            Metadata = new JobMetadata { Version = "1.0" },
             Source = new DatabaseSourceDefinition
             {
                 ConnectionString = "Server=localhost;Database=test;",
