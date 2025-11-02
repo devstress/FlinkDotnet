@@ -30,19 +30,11 @@ Console.WriteLine("   ✅ Full stack enabled: Kafka + Flink + Prometheus + Grafa
 // Using simple configuration like LocalTesting/ReleasePackagesTesting (NO KafkaUI)
 // KafkaUI adds extra listener configuration that causes advertised listener issues
 Console.WriteLine("[INFO] Configuring Kafka...");
-
-// CRITICAL FIX: Configure Kafka advertised listeners to avoid dynamic port issues
-// Aspire's default Kafka configuration creates multiple listeners with incorrect advertised addresses
-// We override to use only the essential listeners with correct configuration
 IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
-    .WithEnvironment("KAFKA_LISTENERS", "PLAINTEXT://0.0.0.0:9092,CONTROLLER://localhost:29093")
-    .WithEnvironment("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092")
-    .WithEnvironment("KAFKA_LISTENER_SECURITY_PROTOCOL_MAP", "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT")
     .WithLifetime(ContainerLifetime.Persistent);
 
-Console.WriteLine("[INFO] Kafka configured with simplified listener setup:");
-Console.WriteLine("  - PLAINTEXT on port 9092 (advertised as kafka:9092 for containers)");
-Console.WriteLine("  - Port 9092 will be mapped to dynamic host port for test code access");
+Console.WriteLine("[INFO] Kafka configured with Aspire default settings");
+Console.WriteLine("  - Will use Aspire's default listener configuration");
 
 // Flink configuration file with correct jobmanager.rpc.address
 string flinkConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-config.yaml");
