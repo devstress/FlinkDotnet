@@ -140,6 +140,10 @@ public class JobsController(ILogger<JobsController> logger, IFlinkJobManager fli
 
         // Ensure metadata basics
         jobDefinition.Metadata ??= new JobMetadata();
+        if (string.IsNullOrWhiteSpace(jobDefinition.Metadata.JobName))
+        {
+            jobDefinition.Metadata.JobName = $"job-{Guid.NewGuid():N}";
+        }
     }
 
     private async Task<ActionResult<JobSubmissionResult>> SubmitJobToFlinkAsync(JobDefinition jobDefinition)
