@@ -169,9 +169,10 @@ public partial class FlinkJobManager : IFlinkJobManager
             return configEndpoint;
         }
 
-        // Strategy 2: Explicit environment variables (generic, non-Aspire specific)
-        string? envHost = Environment.GetEnvironmentVariable(envHostKey);
-        string? envPort = Environment.GetEnvironmentVariable(envPortKey);
+        // Strategy 2: Explicit environment variables (via IConfiguration - no direct Environment access)
+        // IConfiguration automatically includes environment variables, so we read them through configuration
+        string? envHost = this._configuration[envHostKey];
+        string? envPort = this._configuration[envPortKey];
 
         if (!string.IsNullOrEmpty(envHost))
         {
@@ -194,14 +195,15 @@ public partial class FlinkJobManager : IFlinkJobManager
     }
 
     /// <summary>
-    /// Gets the protocol (http or https) from configuration or environment variable.
+    /// Gets the protocol (http or https) from configuration.
     /// Defaults to http for backward compatibility.
+    /// IConfiguration automatically includes environment variables.
     /// </summary>
     /// <returns>The protocol string ("http" or "https").</returns>
     private string GetProtocol()
     {
-        // Check environment variable first
-        string? envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
+        // Check via IConfiguration (includes environment variables automatically)
+        string? envProtocol = this._configuration["FLINK_PROTOCOL"];
         if (!string.IsNullOrEmpty(envProtocol))
         {
             string protocol = envProtocol.Trim().ToUpperInvariant();
@@ -562,7 +564,7 @@ public partial class FlinkJobManager : IFlinkJobManager
     private async Task<string> EnsureRunnerJarPathAsync()
     {
         // First try to find existing jar in working directory or repo structure
-        string? jarPath = FindExistingRunnerJar();
+        string? jarPath = this.FindExistingRunnerJar();
         if (jarPath != null && File.Exists(jarPath))
         {
             this._logger.LogDebug("Found existing runner jar at {Path}", jarPath);

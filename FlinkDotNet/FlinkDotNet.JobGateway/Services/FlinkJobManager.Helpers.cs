@@ -10,10 +10,10 @@ namespace FlinkDotNet.JobGateway.Services;
 
 public partial class FlinkJobManager
 {
-    private static string? FindExistingRunnerJar()
+    private string? FindExistingRunnerJar()
     {
-        // Check if FLINK_RUNNER_JAR_PATH is set
-        string? envPath = Environment.GetEnvironmentVariable("FLINK_RUNNER_JAR_PATH");
+        // Check if FLINK_RUNNER_JAR_PATH is set (via IConfiguration which includes env vars)
+        string? envPath = this._configuration["FLINK_RUNNER_JAR_PATH"];
         if (!string.IsNullOrEmpty(envPath) && File.Exists(envPath))
         {
             return envPath;
@@ -92,7 +92,7 @@ public partial class FlinkJobManager
             ("✅ JAR", jarId),
             ("📋 Kafka Source", kafkaSource?.BootstrapServers ?? "null"),
             ("📋 Kafka Sink", kafkaSink?.BootstrapServers ?? "null"),
-            ("🌍 Gateway KAFKA_BOOTSTRAP", Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP") ?? "not set"));
+            ("🌍 Gateway KAFKA_BOOTSTRAP", this._configuration["KAFKA_BOOTSTRAP"] ?? "not set"));
 
         this._logger.LogWarning(
             "⚠️ CRITICAL: Flink containers KAFKA_BOOTSTRAP env var overrides job definition " +
@@ -563,7 +563,7 @@ public partial class FlinkJobManager
         List<string> connectorJars = [];
         List<string> searchPaths = [];
 
-        string? connectorPath = Environment.GetEnvironmentVariable("FLINK_CONNECTOR_PATH");
+        string? connectorPath = this._configuration["FLINK_CONNECTOR_PATH"];
         if (!string.IsNullOrEmpty(connectorPath))
         {
             searchPaths.Add(connectorPath);
