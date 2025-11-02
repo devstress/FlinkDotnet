@@ -27,12 +27,6 @@ namespace FlinkDotNet.JobGateway.Tests
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
 
             // Clean up environment variables before each test
-            Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
-            Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", null);
-            Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);
-            Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP", null);
-            Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", null);
-            Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", null);
         }
 
         [TearDown]
@@ -180,8 +174,8 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task Program_WithEnvironmentVariables_UsesEnvironmentConfiguration()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "env-flink-host");
-            Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
+            this._mockConfiguration.Setup(c => c["FLINK_CLUSTER_HOST"]).Returns("env-flink-host");
+            this._mockConfiguration.Setup(c => c["FLINK_CLUSTER_PORT"]).Returns("9999");
 
             try
             {
@@ -191,15 +185,11 @@ namespace FlinkDotNet.JobGateway.Tests
                 // Act & Assert - Application should start with environment variables
                 var response = await this._client.GetAsync("/health");
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", null);
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);
-            }
+            
         }
 
         [Test]
+        [NonParallelizable] // This test modifies environment variables for WebApplicationFactory
         public async Task Program_WithCustomLogPath_CreatesLogDirectory()
         {
             // Arrange
@@ -226,7 +216,6 @@ namespace FlinkDotNet.JobGateway.Tests
             }
             finally
             {
-                Environment.SetEnvironmentVariable("LOG_FILE_PATH", null);
                 try
                 {
                     if (Directory.Exists(customLogPath))
@@ -347,7 +336,7 @@ namespace FlinkDotNet.JobGateway.Tests
         public async Task Program_WithAspireServiceDiscovery_UsesAspireEndpoint()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", "http://aspire-flink:8081");
+            this._mockConfiguration.Setup(c => c["services__flink-jobmanager__jm-http__0"]).Returns("http://aspire-flink:8081");
 
             try
             {
@@ -360,17 +349,14 @@ namespace FlinkDotNet.JobGateway.Tests
                 // Assert - Application should start with Aspire endpoint
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             }
-            finally
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__jm-http__0", null);
-            }
+            
         }
 
         [Test]
         public async Task Program_WithLegacyAspireFormat_UsesLegacyEndpoint()
         {
             // Arrange
-            Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", "http://legacy-aspire:8081");
+            this._mockConfiguration.Setup(c => c["services__flink-jobmanager__http__0"]).Returns("http://legacy-aspire:8081");
 
             try
             {
@@ -383,10 +369,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 // Assert
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
             }
-            finally
-            {
-                Environment.SetEnvironmentVariable("services__flink-jobmanager__http__0", null);
-            }
+            
         }
 
         private static WebApplicationFactory<Program> CreateTestFactory(bool metricsEnabled)
