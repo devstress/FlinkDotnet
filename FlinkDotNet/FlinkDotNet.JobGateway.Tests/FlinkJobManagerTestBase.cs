@@ -31,8 +31,13 @@ namespace FlinkDotNet.JobGateway.Tests
             this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
             this._mockConfiguration = new Mock<IConfiguration>();
 
-            // Setup default configuration values (returns null for any key not explicitly mocked)
-            _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+            // Setup IConfiguration to mirror Environment.GetEnvironmentVariable behavior
+            // This allows tests using Environment.SetEnvironmentVariable to work with IConfiguration
+            _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string key) => 
+            {
+                // Return actual environment variable value if set, otherwise null
+                return Environment.GetEnvironmentVariable(key);
+            });
             
             // Mock FLINK_RUNNER_JAR_PATH to avoid Maven builds during tests
             string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
@@ -71,6 +76,13 @@ namespace FlinkDotNet.JobGateway.Tests
         [TearDown]
         public virtual void TearDown()
         {
+            // Clean up environment variables to avoid test pollution
+            Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", null);
+            Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);
+            Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", null);
+            Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", null);
+            Environment.SetEnvironmentVariable("FLINK_PROTOCOL", null);
+            
             // Dispose HttpClient after each test
             this._httpClient?.Dispose();
         }
