@@ -355,6 +355,23 @@ namespace FlinkDotNet.JobGateway.Tests
                     Content = new StringContent("{\"filename\":\"flink-ir-runner-java17.jar\",\"status\":\"success\"}")
                 });
 
+            // Mock JAR list endpoint - Return uploaded JAR to avoid 30-second polling delay
+            // This MUST come after /jars/upload to avoid matching that endpoint
+            _ = this._mockHttpMessageHandler
+                .Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.Is<HttpRequestMessage>(req => 
+                        req.Method == HttpMethod.Get && 
+                        req.RequestUri!.PathAndQuery.Contains("/jars") &&
+                        !req.RequestUri.PathAndQuery.Contains("/upload")),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{\"files\":[{\"id\":\"flink-ir-runner-java17.jar\",\"name\":\"flink-ir-runner-java17.jar\",\"uploaded\":1234567890}]}")
+                });
+
             // Mock JAR run
             _ = this._mockHttpMessageHandler
                 .Protected()
