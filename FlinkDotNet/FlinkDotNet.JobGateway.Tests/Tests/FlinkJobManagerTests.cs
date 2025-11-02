@@ -47,27 +47,7 @@ namespace FlinkDotNet.JobGateway.Tests
         // Note: Full SubmitJobAsync tests are complex due to file I/O and Maven dependencies.
         // Testing validation logic separately is more reliable.
 
-        [Test]
-        public async Task SubmitJobAsync_WithMissingMetadata_ReturnsValidationFailure()
-        {
-            // Arrange
-            var jobDefinition = new JobDefinition
-            {
-                Metadata = new JobMetadata { JobName = "Test" }, // Empty JobId triggers validation
-                Source = new KafkaSourceDefinition { Topic = "test-topic", BootstrapServers = "localhost:9092" },
-                Sink = new KafkaSinkDefinition { Topic = "output-topic", BootstrapServers = "localhost:9092" }
-            };
-
-            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
-
-            // Act
-            var result = await jobManager.SubmitJobAsync(jobDefinition);
-
-            // Assert
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.ErrorMessage, Does.Contain("Job ID"));
-        }
+        // Test removed - JobId is no longer required after migrating to FlinkJobId exclusively
 
         [Test]
         public async Task SubmitJobAsync_WithMissingSource_ReturnsValidationFailure()
@@ -539,11 +519,11 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task SubmitJobAsync_WithValidationError_LogsErrorMessage()
         {
-            // Arrange
+            // Arrange - Use actually invalid job definition (missing source)
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "Test" },
-                Source = new KafkaSourceDefinition { Topic = "test-topic", BootstrapServers = "localhost:9092" },
+                Source = null!, // Actually invalid - missing source
                 Sink = new KafkaSinkDefinition { Topic = "output-topic", BootstrapServers = "localhost:9092" }
             };
 
@@ -565,26 +545,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 Times.AtLeastOnce);
         }
 
-        [Test]
-        public async Task SubmitJobAsync_WithWhitespaceJobId_ReturnsValidationFailure()
-        {
-            // Arrange
-            var jobDefinition = new JobDefinition
-            {
-                Metadata = new JobMetadata { JobName = "Test" },
-                Source = new KafkaSourceDefinition { Topic = "test-topic", BootstrapServers = "localhost:9092" },
-                Sink = new KafkaSinkDefinition { Topic = "output-topic", BootstrapServers = "localhost:9092" }
-            };
-
-            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
-
-            // Act
-            var result = await jobManager.SubmitJobAsync(jobDefinition);
-
-            // Assert
-            Assert.That(result, Is.Not.Null);
-            Assert.That(result.Success, Is.False);
-        }
+        // Test removed - JobId is no longer required after migrating to FlinkJobId exclusively
 
         [Test]
         public async Task SubmitJobAsync_WithFileSource_ValidatesPath()
@@ -1283,28 +1244,7 @@ namespace FlinkDotNet.JobGateway.Tests
             Assert.That(errors, Is.Empty);
         }
 
-        [Test]
-        public void ValidateBasicProperties_WithEmptyJobId_AddsError()
-        {
-            // Arrange
-            var jobDefinition = new JobDefinition
-            {
-                Metadata = new JobMetadata { JobName = "Valid Job" },
-                Source = new KafkaSourceDefinition { Topic = "input", BootstrapServers = "localhost:9092" },
-                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
-            };
-            var errors = new List<string>();
-
-            var method = typeof(FlinkJobManager).GetMethod("ValidateBasicProperties",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-
-            // Act
-            _ = method!.Invoke(null, new object[] { jobDefinition, errors });
-
-            // Assert
-            Assert.That(errors, Is.Not.Empty);
-            Assert.That(errors[0], Does.Contain("Job ID"));
-        }
+        // Test removed - JobId is no longer required after migrating to FlinkJobId exclusively
 
         [Test]
         public void ValidateBasicProperties_WithNullSource_AddsError()

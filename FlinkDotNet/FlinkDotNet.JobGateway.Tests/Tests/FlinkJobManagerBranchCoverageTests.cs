@@ -211,25 +211,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
         #region Validation Edge Cases
 
-        [Test]
-        public async Task SubmitJobAsync_WithNullMetadata_ReturnsValidationFailure()
-        {
-            // Arrange
-            var jobDefinition = new JobDefinition
-            {
-                Metadata = new JobMetadata { JobName = "test" }, // Empty JobId instead of null metadata
-                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
-                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
-            };
-            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
-
-            // Act
-            var result = await jobManager.SubmitJobAsync(jobDefinition);
-
-            // Assert
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.ErrorMessage, Does.Contain("Job ID"));
-        }
+        // Test removed - JobId is no longer required after migrating to FlinkJobId exclusively
 
         [Test]
         public async Task SubmitJobAsync_WithRedisSink_NoValidationRequired()

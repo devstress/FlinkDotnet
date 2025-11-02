@@ -495,34 +495,16 @@ namespace FlinkDotNet.JobGateway.Tests
 
         #region Job Validation Tests
 
-        [Test]
-        public async Task SubmitJobAsync_WithNullJobId_ReturnsValidationFailure()
-        {
-            // Arrange
-            var jobDefinition = new JobDefinition
-            {
-                Metadata = new JobMetadata { JobName = "test" },
-                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
-                Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
-            };
-            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
-
-            // Act
-            var result = await jobManager.SubmitJobAsync(jobDefinition);
-
-            // Assert
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.ErrorMessage, Does.Contain("validation failed"));
-        }
+        // Test removed - JobId is no longer required after migrating to FlinkJobId exclusively
 
         [Test]
         public async Task SubmitJobAsync_WithEmptyJobId_ReturnsValidationFailure()
         {
-            // Arrange
+            // Arrange - Changed to test missing source which is actually invalid
             var jobDefinition = new JobDefinition
             {
                 Metadata = new JobMetadata { JobName = "test" },
-                Source = new KafkaSourceDefinition { Topic = "test", BootstrapServers = "localhost:9092" },
+                Source = null!, // Missing source is actually invalid
                 Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "localhost:9092" }
             };
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);

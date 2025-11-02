@@ -134,7 +134,7 @@ namespace FlinkDotNet.JobGateway.Tests
             var okResult = (OkObjectResult) result.Result!;
             var submissionResult = (JobSubmissionResult) okResult.Value!;
             Assert.That(submissionResult.IsSuccess, Is.True);
-            Assert.That(submissionResult.FlinkJobId, Is.EqualTo("test-job-1"));
+            Assert.That(submissionResult.FlinkJobId, Is.EqualTo("flink-job-1"));
         }
 
         [Test]
@@ -460,7 +460,7 @@ namespace FlinkDotNet.JobGateway.Tests
             Assert.That(result.Result, Is.InstanceOf<OkObjectResult>());
             var okResult = (OkObjectResult) result.Result!;
             var submissionResult = (JobSubmissionResult) okResult.Value!;
-            Assert.That(submissionResult.FlinkJobId, Is.EqualTo("db-job"));
+            Assert.That(submissionResult.FlinkJobId, Is.EqualTo("flink-db-job-1"));
         }
 
         #endregion
