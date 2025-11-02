@@ -50,7 +50,7 @@ string metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "fl
 IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-jobmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8081, name: "jobmanager-http")
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
-    .WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true)  // Mount proper config
+    .WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true)  // Mount as flink-conf.yaml
     .WithEntrypoint("/bin/bash")
     .WithArgs("-c", "bin/jobmanager.sh start && tail -f /dev/null")
     .WithLifetime(ContainerLifetime.Persistent);
@@ -66,7 +66,7 @@ Console.WriteLine("[INFO] Configuring Flink TaskManager with Prometheus metrics.
 
 IResourceBuilder<ContainerResource> taskManager = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
-    .WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true)  // Mount proper config
+    .WithBindMount(flinkConfigPath, "/opt/flink/conf/flink-conf.yaml", isReadOnly: true)  // Mount as flink-conf.yaml
     .WithEnvironment("FLINK_PROPERTIES", "metrics.reporter.prom.port: 9251\n")  // Override metrics port for TaskManager
     .WithEntrypoint("/bin/bash")
     .WithArgs("-c", "bin/taskmanager.sh start && tail -f /dev/null")
