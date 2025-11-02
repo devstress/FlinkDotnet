@@ -239,24 +239,6 @@ public class GlobalTestInfrastructure
             await RetryWaitForReadyAsync("Gateway", () => LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Gateway is ready");
 
-//             // Wait for Temporal server resource with retry mechanism
-//             Console.WriteLine("⏳ Waiting for Temporal server resource to start...");
-//             await RetryHealthCheckAsync("temporal-server", app, 3, TimeSpan.FromSeconds(5));
-//             Console.WriteLine("✅ Temporal server resource reported healthy");
-// 
-//             // Then wait for Temporal to be fully initialized
-//             Console.WriteLine("⏳ Waiting for Temporal server to be fully ready...");
-//             Console.WriteLine("   ℹ️ Temporal with PostgreSQL requires initialization time...");
-// 
-//             // Give Temporal time to complete schema setup
-//             await Task.Delay(TimeSpan.FromSeconds(5)); // Optimized: Reduced from 10s to 5s
-// 
-//             // Discover actual Temporal endpoint from Docker (Aspire uses dynamic ports in testing)
-//             TemporalEndpoint = await GetTemporalEndpointAsync();
-//             Console.WriteLine($"🔍 Temporal endpoint: {TemporalEndpoint}");
-//             await RetryWaitForReadyAsync("Temporal", () => LocalTestingTestBase.WaitForTemporalReadyAsync(TemporalEndpoint, DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
-//             Console.WriteLine("✅ Temporal server is fully ready");
-
             // Log TaskManager status for debugging
             await LogTaskManagerStatusAsync();
 
@@ -718,33 +700,6 @@ public class GlobalTestInfrastructure
         }
     }
 
-//     private static async Task<string> GetTemporalEndpointAsync()
-//     {
-//         try
-//         {
-//             var temporalContainers = await RunDockerCommandAsync("ps --filter \"name=temporal-server\" --format \"{{.Ports}}\"");
-//             var lines = temporalContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-// 
-//             foreach (var line in lines)
-//             {
-//                 // Look for port mapping to 7233 (Temporal gRPC port)
-//                 if (line.Contains("->7233/tcp"))
-//                 {
-//                     var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->7233");
-//                     if (match.Success)
-//                     {
-//                         return $"localhost:{match.Groups[1].Value}";
-//                     }
-//                 }
-//             }
-// 
-//             throw new InvalidOperationException($"Could not determine Temporal endpoint from Docker ports: {temporalContainers}");
-//         }
-//         catch (Exception ex)
-//         {
-//             throw new InvalidOperationException($"Failed to get Temporal endpoint: {ex.Message}", ex);
-//         }
-
     /// <summary>
     /// Get the dynamically allocated Kafka endpoint from Aspire.
     /// Aspire DCP assigns random ports during testing, so we must query the actual endpoint.
@@ -872,8 +827,11 @@ public class GlobalTestInfrastructure
 
             Console.WriteLine($"✅ Kafka container IP discovered: {ip}");
 
-            // Return IP with PLAINTEXT_INTERNAL port (9093)
-            return $"{ip}:9093";
+            // CRITICAL FIX: Use port 9092 (PLAINTEXT listener) for container-to-container communication
+            // Port 9092 is the standard Kafka PLAINTEXT listener for internal/inter-broker communication
+            // This is used by Flink jobs running in containers to connect to Kafka
+            // Port 9093 (PLAINTEXT_EXTERNAL) is for external clients and may have DNS resolution issues
+            return $"{ip}:9092";
         }
         catch (Exception ex)
         {

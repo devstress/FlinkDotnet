@@ -360,7 +360,7 @@ public class ObservabilityTests : LocalTestingTestBase
         producer.Flush(TimeSpan.FromSeconds(10));
     }
 
-    private async Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
+    private Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
     {
         var consumed = new List<string>();
         
@@ -394,7 +394,7 @@ public class ObservabilityTests : LocalTestingTestBase
             }
         }
 
-        return consumed;
+        return Task.FromResult(consumed);
     }
 
     private async Task<GatewayMetrics> QueryGatewayMetricsAsync(string gatewayEndpoint, string jobId, CancellationToken ct)
