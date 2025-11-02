@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Flink.JobBuilder.Models;
 using ObservabilityTesting.FlinkSqlAppHost;
 using NUnit.Framework;
 
@@ -322,14 +323,13 @@ public class ObservabilityTests : LocalTestingTestBase
     private async Task<string> SubmitJobViaGatewayAsync(string gatewayEndpoint, object jobDefinition, CancellationToken ct)
     {
         var jsonContent = JsonContent.Create(jobDefinition);
-        var response = await _httpClient!.PostAsync($"{gatewayEndpoint}/api/v1/jobs", jsonContent, ct);
+        var response = await _httpClient!.PostAsync($"{gatewayEndpoint}/api/v1/jobs/submit", jsonContent, ct);
         response.EnsureSuccessStatusCode();
         
-        var result = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
+        var result = await response.Content.ReadFromJsonAsync<JobSubmissionResult>(cancellationToken: ct);
         
-        // Use the Flink cluster job ID returned by Gateway
-        var jobId = result?.RootElement.GetProperty("jobId").GetString();
-        return jobId ?? throw new InvalidOperationException("Gateway did not return a job ID");
+        // Return the Flink job ID from the Gateway response
+        return result?.FlinkJobId ?? throw new InvalidOperationException("Gateway did not return a FlinkJobId");
     }
 
     private async Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
