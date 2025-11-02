@@ -352,13 +352,17 @@ public class ObservabilityTests : LocalTestingTestBase
         
         for (int i = 0; i < count; i++)
         {
+            // Check cancellation before each message
+            ct.ThrowIfCancellationRequested();
+            
             var message = new Confluent.Kafka.Message<string, string>
             {
                 Key = $"key-{i}",
                 Value = $"test message {i}"
             };
             
-            await producer.ProduceAsync(topic, message, ct);
+            // Don't pass ct to ProduceAsync - let it fail faster on connection issues
+            await producer.ProduceAsync(topic, message);
         }
         
         producer.Flush(TimeSpan.FromSeconds(10));
