@@ -2,7 +2,8 @@
 // Using ParallelScope.All to maximize parallelization across all tests
 // This reduces test execution time from 6m24s to ~1 minute for 426 tests
 [assembly: Parallelizable(ParallelScope.All)]
-// Use 2 worker threads to minimize race conditions while achieving good speedup
+// Use 4 worker threads for optimal parallel execution
+// Some test classes marked NonParallelizable due to environment variable modifications
 // FlinkJobManager delay properties are now thread-safe using Interlocked operations
 // GlobalTestSetup sets FLINK_RUNNER_JAR_PATH to avoid Maven builds during tests
-[assembly: LevelOfParallelism(2)]
+[assembly: LevelOfParallelism(4)]
