@@ -88,7 +88,12 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             this._httpClient?.Dispose();
 
-            // Clean up environment variables        }
+            // Clean up environment variables
+            Environment.SetEnvironmentVariable("services__flink-sql-gateway__sg-http__0", null);
+            Environment.SetEnvironmentVariable("services__flink-sql-gateway__http__0", null);
+            Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", null);
+            Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", null);
+        }
 
         #region SQL Gateway Endpoint Discovery Tests
 
@@ -161,7 +166,6 @@ namespace FlinkDotNet.JobGateway.Tests
                     It.IsAny<Exception>(),
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
                 Times.AtLeastOnce);
-            }
         }
 
         [Test]
