@@ -28,8 +28,10 @@ namespace SampleApp
         private static string KafkaBootstrapServers =>
             Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
 
-        private static string KafkaFlinkBootstrapServers =>
-            Environment.GetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS") ?? "kafka:9092";
+        // HARDCODED: Use kafka:9093 for container-to-container communication (PLAINTEXT_INTERNAL listener)
+        // This matches LocalTesting and LearningCourse Day 01 configuration
+        // Port 9092 is for host access, port 9093 is for container-to-container
+        private static string KafkaFlinkBootstrapServers => "kafka:9093";
 
         private static string FlinkJobGatewayUrl =>
             Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";

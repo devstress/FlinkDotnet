@@ -30,11 +30,12 @@ Console.WriteLine("   ✅ Full stack enabled: Kafka + Flink + Prometheus + Grafa
 // Using simple configuration like LocalTesting/ReleasePackagesTesting (NO KafkaUI)
 // KafkaUI adds extra listener configuration that causes advertised listener issues
 Console.WriteLine("[INFO] Configuring Kafka...");
-_ = builder.AddKafka("kafka")
+IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("[INFO] Kafka configured with Aspire default settings");
-Console.WriteLine("  - Will use Aspire's default listener configuration");
+Console.WriteLine("  - Port 9092: PLAINTEXT_HOST for host access");
+Console.WriteLine("  - Port 9093: PLAINTEXT_INTERNAL for container access");
 
 // Constants for Flink container configuration
 const string FlinkImage = "flink";
@@ -58,6 +59,7 @@ string jsonConnectorJar = Path.Combine(connectorsDir, "flink-json-2.1.0.jar");
 IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-jobmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8081, name: "jobmanager-http")
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // CRITICAL: Set hostname for RPC binding
     .WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties)  // Metrics configuration
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
@@ -83,6 +85,7 @@ _ = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("taskmanager")  // Use standard Flink Docker entrypoint
+    .WithReference(kafka)  // Matches LocalTesting pattern - ensures same network for Kafka connectivity
     .WaitFor(jobManager)
     .WithLifetime(ContainerLifetime.Persistent);
 
