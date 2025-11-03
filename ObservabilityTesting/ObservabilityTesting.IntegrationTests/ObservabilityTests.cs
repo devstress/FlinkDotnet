@@ -67,6 +67,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
 
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
+        Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", "kafka:9092");
         Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap);
         Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", GlobalTestInfrastructure.KafkaContainerIpForFlink);
 
