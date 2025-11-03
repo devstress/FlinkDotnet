@@ -34,7 +34,8 @@ IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("[INFO] Kafka configured with Aspire default settings");
-Console.WriteLine("  - Will use Aspire's default listener configuration");
+Console.WriteLine("  - Port 9092: PLAINTEXT_HOST for host access");
+Console.WriteLine("  - Port 9093: PLAINTEXT_INTERNAL for container access");
 
 // Constants for Flink container configuration
 const string FlinkImage = "flink";

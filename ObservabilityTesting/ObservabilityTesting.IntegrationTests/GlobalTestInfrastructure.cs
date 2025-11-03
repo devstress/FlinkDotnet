@@ -153,17 +153,19 @@ public class GlobalTestInfrastructure
             }
 
             // Store for use in tests (replaces hostname-based connection)
-            // For Flink jobs running in containers, use kafka:9092 (hostname, not IP)
+            // For Flink jobs running in containers, use kafka:9093 (PLAINTEXT_INTERNAL listener)
             // This allows Docker DNS resolution within the same network
-            // CRITICAL: ObservabilityTesting uses "kafka:9092" for Flink job definitions
-            // This matches LocalTesting pattern and allows Docker DNS resolution
-            KafkaContainerIpForFlink = "kafka:9092";
+            // CRITICAL: ObservabilityTesting uses "kafka:9093" for Flink job definitions
+            // Port 9092 is PLAINTEXT_HOST (for host access with localhost)
+            // Port 9093 is PLAINTEXT_INTERNAL (for container-to-container with kafka hostname)
+            KafkaContainerIpForFlink = "kafka:9093";
             
             // CRITICAL: Set KAFKA_FLINK_BOOTSTRAP_SERVERS environment variable for SampleApp
             // SampleApp uses this to configure Flink job's Kafka connection (container-to-container)
             // This is separate from KAFKA_BOOTSTRAP_SERVERS which is for host-to-container
-            Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", "kafka:9092");
-            Console.WriteLine($"✅ KAFKA_FLINK_BOOTSTRAP_SERVERS set to: kafka:9092");
+            // Use port 9093 (PLAINTEXT_INTERNAL) for container-to-container communication
+            Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", "kafka:9093");
+            Console.WriteLine($"✅ KAFKA_FLINK_BOOTSTRAP_SERVERS set to: kafka:9093");
 
             // CRITICAL: Use Aspire's configuration system to get Kafka connection string
             // This is the proper Aspire pattern instead of hardcoding or Docker inspection
