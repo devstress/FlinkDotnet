@@ -1373,7 +1373,7 @@ public abstract class LocalTestingTestBase
             }
 
             // Find TaskManager container
-            var tmName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var tmName = Array.Find(containers, name => name?.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase) == true)?.Trim();
 
             if (!string.IsNullOrWhiteSpace(tmName))
             {

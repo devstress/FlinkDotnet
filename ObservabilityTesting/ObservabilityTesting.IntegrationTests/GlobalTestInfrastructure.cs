@@ -241,10 +241,8 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"❌ Global infrastructure setup failed: {ex.Message}");
             Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
 
-            // Capture network diagnostics on failure
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("error-setup-failed");
 
-            // Capture container diagnostics and include in exception
             var diagnostics = await GetContainerDiagnosticsAsync();
 
             throw new InvalidOperationException(
@@ -722,7 +720,6 @@ public class GlobalTestInfrastructure
             var containerName = parts[0];
             var ports = parts[1];
 
-            // Exclude kafka-ui container - we only want the actual Kafka broker
             if (containerName.StartsWith("kafka-ui", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine($"🔍 Skipping kafka-ui container: {containerName}");

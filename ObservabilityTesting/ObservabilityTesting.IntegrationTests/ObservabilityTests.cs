@@ -336,7 +336,7 @@ public class ObservabilityTests : LocalTestingTestBase
         return result?.FlinkJobId ?? throw new InvalidOperationException("Gateway did not return a FlinkJobId");
     }
 
-    private async Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
+    private Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
     {
         var producerConfig = new Confluent.Kafka.ProducerConfig
         {
@@ -362,10 +362,11 @@ public class ObservabilityTests : LocalTestingTestBase
             };
             
             // Don't pass ct to ProduceAsync - let it fail faster on connection issues
-            await producer.ProduceAsync(topic, message);
+            producer.ProduceAsync(topic, message);
         }
         
         producer.Flush(TimeSpan.FromSeconds(10));
+        return Task.CompletedTask;
     }
 
     private Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
