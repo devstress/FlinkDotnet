@@ -155,7 +155,15 @@ public class GlobalTestInfrastructure
             // Store for use in tests (replaces hostname-based connection)
             // For Flink jobs running in containers, use kafka:9092 (hostname, not IP)
             // This allows Docker DNS resolution within the same network
+            // CRITICAL: ObservabilityTesting uses "kafka:9092" for Flink job definitions
+            // This matches LocalTesting pattern and allows Docker DNS resolution
             KafkaContainerIpForFlink = "kafka:9092";
+            
+            // CRITICAL: Set KAFKA_FLINK_BOOTSTRAP_SERVERS environment variable for SampleApp
+            // SampleApp uses this to configure Flink job's Kafka connection (container-to-container)
+            // This is separate from KAFKA_BOOTSTRAP_SERVERS which is for host-to-container
+            Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", "kafka:9092");
+            Console.WriteLine($"✅ KAFKA_FLINK_BOOTSTRAP_SERVERS set to: kafka:9092");
 
             // CRITICAL: Use Aspire's configuration system to get Kafka connection string
             // This is the proper Aspire pattern instead of hardcoding or Docker inspection
@@ -196,6 +204,11 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"   📡 From Docker discovery: {discoveredKafkaEndpoint}");
             Console.WriteLine($"   📡 Using for tests: {KafkaConnectionString}");
             Console.WriteLine($"   ℹ️  This address will be used by both test producers/consumers AND Flink jobs");
+            
+            // CRITICAL: Set KAFKA_BOOTSTRAP_SERVERS environment variable for SampleApp
+            // SampleApp uses this to produce/consume messages from host (host-to-container)
+            Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", KafkaConnectionString);
+            Console.WriteLine($"✅ KAFKA_BOOTSTRAP_SERVERS set to: {KafkaConnectionString}");
 
             // Get Flink endpoint and wait for readiness (don't require free slots initially - TaskManager registration takes time)
             var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();

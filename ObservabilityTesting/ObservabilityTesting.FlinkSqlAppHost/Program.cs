@@ -62,6 +62,7 @@ IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-job
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("jobmanager")  // Use standard Flink Docker entrypoint
+    .WaitFor(kafka)  // Wait for Kafka to be ready
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("[INFO] Mounted Kafka connector JARs to JobManager");
