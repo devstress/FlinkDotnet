@@ -17,47 +17,16 @@ namespace FlinkDotNet.JobGateway.Tests
     /// retry logic exhaustion, timeouts, Maven build failures, and edge cases.
     /// </summary>
     [TestFixture]
-    public class FlinkJobManagerCompleteBranchCoverageTests
+    public class FlinkJobManagerCompleteBranchCoverageTests : FlinkJobManagerTestBase
     {
-        private Mock<ILogger<FlinkJobManager>> _mockLogger = null!;
-        private Mock<IConfiguration> _mockConfiguration = null!;
-        private Mock<HttpMessageHandler> _mockHttpMessageHandler = null!;
-        private HttpClient _httpClient = null!;
-
         [SetUp]
-        public void Setup()
+        public override void Setup()
         {
-            // Set static delays to 1ms for fast test execution
-            FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
-            FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
-            FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
-
-            this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
-            this._mockConfiguration = new Mock<IConfiguration>();
-
-            // Setup default configuration values (returns null for any key by default)
+            base.Setup();
+            // Override default IConfiguration behavior - return null instead of environment variables
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
-
-            this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            
-            // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
-            _ = this._mockHttpMessageHandler
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>())
-                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-            
-            this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
-            {
-                BaseAddress = new Uri("http://localhost:8081"),
-                Timeout = TimeSpan.FromSeconds(1) // Short timeout for unmocked calls
-            };
         }
 
-        [TearDown]
-        public void TearDown() => this._httpClient?.Dispose();
 
         #region Helper Methods
 
@@ -604,57 +573,43 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public void Constructor_WithPartialPortInEnvironment_UsesFullEndpoint()
         {
-            // Arrange
-            try
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
-                // No port set, should use default
+            // Arrange - use IConfiguration mocking instead of environment variables
+            this._mockConfiguration.Setup(c => c["FLINK_CLUSTER_HOST"]).Returns("custom-host");
+            // No port set, should use default
 
-                // Act
-                _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+            // Act
+            _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
-                // Assert - Should log using environment variable
-                this._mockLogger.Verify(
-                    x => x.Log(
-                        LogLevel.Information,
-                        It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("environment variable")),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", null);
-            }
+            // Assert - Should log using environment variable
+            this._mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("environment variable")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
         }
 
         [Test]
         public void Constructor_WithOnlyPortInEnvironment_UsesDefaultHost()
         {
-            // Arrange
-            try
-            {
-                // Only port, no host
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
+            // Arrange - use IConfiguration mocking instead of environment variables
+            // Only port, no host
+            this._mockConfiguration.Setup(c => c["FLINK_CLUSTER_PORT"]).Returns("9999");
 
-                // Act
-                _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+            // Act
+            _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
-                // Assert - Should use default host with custom port
-                this._mockLogger.Verify(
-                    x => x.Log(
-                        It.IsAny<LogLevel>(),
-                        It.IsAny<EventId>(),
-                        It.IsAny<It.IsAnyType>(),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);
-            }
+            // Assert - Should use default host with custom port
+            this._mockLogger.Verify(
+                x => x.Log(
+                    It.IsAny<LogLevel>(),
+                    It.IsAny<EventId>(),
+                    It.IsAnyType>(),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
         }
 
         #endregion
@@ -1117,26 +1072,19 @@ namespace FlinkDotNet.JobGateway.Tests
                 Sink = new ConsoleSinkDefinition()
             };
 
-            // Mock SQL Gateway discovery
-            Environment.SetEnvironmentVariable("services__flink-sql-gateway__sg-http__0", "http://localhost:8083");
+            // Mock SQL Gateway discovery via IConfiguration instead of environment variable
+            this._mockConfiguration.Setup(c => c["services__flink-sql-gateway__sg-http__0"]).Returns("http://localhost:8083");
 
-            try
-            {
-                // Setup cluster health check to fail (should be skipped for SQL Gateway)
-                this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
+            // Setup cluster health check to fail (should be skipped for SQL Gateway)
+            this.SetupHttpResponse("/v1/overview", HttpStatusCode.NotFound, "");
 
-                var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
-                // Act
-                var result = await jobManager.SubmitJobAsync(jobDefinition);
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
 
-                // Assert - Should fail trying to create SQL Gateway session
-                Assert.That(result.Success, Is.False);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("services__flink-sql-gateway__sg-http__0", null);
-            }
+            // Assert - Should fail trying to create SQL Gateway session
+            Assert.That(result.Success, Is.False);
         }
 
         [Test]
@@ -1154,22 +1102,16 @@ namespace FlinkDotNet.JobGateway.Tests
                 Sink = new ConsoleSinkDefinition()
             };
 
-            Environment.SetEnvironmentVariable("services__flink-sql-gateway__sg-http__0", "http://localhost:8083");
+            // Mock SQL Gateway discovery via IConfiguration instead of environment variable
+            this._mockConfiguration.Setup(c => c["services__flink-sql-gateway__sg-http__0"]).Returns("http://localhost:8083");
 
-            try
-            {
-                var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
-                // Act
-                var result = await jobManager.SubmitJobAsync(jobDefinition);
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
 
-                // Assert
-                Assert.That(result.Success, Is.False);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("services__flink-sql-gateway__sg-http__0", null);
-            }
+            // Assert
+            Assert.That(result.Success, Is.False);
         }
 
         [Test]
@@ -1187,22 +1129,16 @@ namespace FlinkDotNet.JobGateway.Tests
                 Sink = new ConsoleSinkDefinition()
             };
 
-            Environment.SetEnvironmentVariable("services__flink-sql-gateway__sg-http__0", "http://localhost:8083");
+            // Mock SQL Gateway discovery via IConfiguration instead of environment variable
+            this._mockConfiguration.Setup(c => c["services__flink-sql-gateway__sg-http__0"]).Returns("http://localhost:8083");
 
-            try
-            {
-                var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+            var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
-                // Act
-                var result = await jobManager.SubmitJobAsync(jobDefinition);
+            // Act
+            var result = await jobManager.SubmitJobAsync(jobDefinition);
 
-                // Assert
-                Assert.That(result.Success, Is.False);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("services__flink-sql-gateway__sg-http__0", null);
-            }
+            // Assert
+            Assert.That(result.Success, Is.False);
         }
 
         #endregion
@@ -1619,59 +1555,45 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public void Constructor_WithEnvironmentOnly_UsesEnvEndpoint()
         {
-            // Arrange
-            try
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "env-flink");
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "8888");
+            // Arrange - use IConfiguration mocking instead of environment variables
+            this._mockConfiguration.Setup(c => c["FLINK_CLUSTER_HOST"]).Returns("env-flink");
+            this._mockConfiguration.Setup(c => c["FLINK_CLUSTER_PORT"]).Returns("8888");
 
-                // Act
-                _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+            // Act
+            _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
-                // Assert
-                this._mockLogger.Verify(
-                    x => x.Log(
-                        LogLevel.Information,
-                        It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("environment")),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", null);
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);
-            }
+            // Assert
+            this._mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("environment")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
         }
 
         [Test]
         public void Constructor_WithBothConfigAndEnv_PrefersConfig()
         {
-            // Arrange
-            try
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "env-flink");
-                _ = this._mockConfiguration.Setup(x => x["Flink:JobManager:BaseUrl"])
-                    .Returns("http://config-flink:8081");
+            // Arrange - Config should take precedence
+            // Mock both IConfiguration setting and environment variable setting
+            this._mockConfiguration.Setup(x => x["FLINK_CLUSTER_HOST"]).Returns("env-flink");
+            _ = this._mockConfiguration.Setup(x => x["Flink:JobManager:BaseUrl"])
+                .Returns("http://config-flink:8081");
 
-                // Act
-                _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+            // Act
+            _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
-                // Assert - Config should be logged, not env
-                this._mockLogger.Verify(
-                    x => x.Log(
-                        LogLevel.Information,
-                        It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("configuration")),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", null);
-            }
+            // Assert - Config BaseUrl should be logged, not individual host env
+            this._mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("configuration")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
         }
 
         #endregion
@@ -3478,5 +3400,11 @@ namespace FlinkDotNet.JobGateway.Tests
         }
 
         #endregion
+        [OneTimeTearDown]
+        public void OneTimeTearDown()
+        {
+            this._httpClient?.Dispose();
+        }
+
     }
 }

@@ -46,22 +46,42 @@ public partial class FlinkJobManager : IFlinkJobManager
     };
 
     /// <summary>
-    /// Gets or sets the delay between SQL Gateway retry attempts.
-    /// Static field for testability (can be set to 1ms in tests).
+    /// Thread-safe delay configuration using Interlocked operations on backing fields (stored as ticks)
+    /// These allow concurrent test execution and production job submissions without race conditions
     /// </summary>
-    public static TimeSpan SqlGatewayRetryDelay { get; set; } = TimeSpan.FromSeconds(1);
+    private static long s_sqlGatewayRetryDelayTicks = TimeSpan.FromSeconds(1).Ticks;
+    private static long s_jarRegistrationPollingDelayTicks = TimeSpan.FromSeconds(1).Ticks;
+    private static long s_jobRecoveryPollingDelayTicks = TimeSpan.FromSeconds(1).Ticks;
+
+    /// <summary>
+    /// Gets or sets the delay between SQL Gateway retry attempts.
+    /// Thread-safe for parallel test execution and production job submissions.
+    /// </summary>
+    public static TimeSpan SqlGatewayRetryDelay
+    {
+        get => TimeSpan.FromTicks(Interlocked.Read(ref s_sqlGatewayRetryDelayTicks));
+        set => Interlocked.Exchange(ref s_sqlGatewayRetryDelayTicks, value.Ticks);
+    }
 
     /// <summary>
     /// Gets or sets the delay between JAR registration polling attempts.
-    /// Static field for testability (can be set to 1ms in tests).
+    /// Thread-safe for parallel test execution and production job submissions.
     /// </summary>
-    public static TimeSpan JarRegistrationPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
+    public static TimeSpan JarRegistrationPollingDelay
+    {
+        get => TimeSpan.FromTicks(Interlocked.Read(ref s_jarRegistrationPollingDelayTicks));
+        set => Interlocked.Exchange(ref s_jarRegistrationPollingDelayTicks, value.Ticks);
+    }
 
     /// <summary>
     /// Gets or sets the delay between job recovery polling attempts.
-    /// Static field for testability (can be set to 1ms in tests).
+    /// Thread-safe for parallel test execution and production job submissions.
     /// </summary>
-    public static TimeSpan JobRecoveryPollingDelay { get; set; } = TimeSpan.FromSeconds(1);
+    public static TimeSpan JobRecoveryPollingDelay
+    {
+        get => TimeSpan.FromTicks(Interlocked.Read(ref s_jobRecoveryPollingDelayTicks));
+        set => Interlocked.Exchange(ref s_jobRecoveryPollingDelayTicks, value.Ticks);
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FlinkJobManager"/> class.
@@ -149,9 +169,10 @@ public partial class FlinkJobManager : IFlinkJobManager
             return configEndpoint;
         }
 
-        // Strategy 2: Explicit environment variables (generic, non-Aspire specific)
-        string? envHost = Environment.GetEnvironmentVariable(envHostKey);
-        string? envPort = Environment.GetEnvironmentVariable(envPortKey);
+        // Strategy 2: Explicit environment variables (via IConfiguration - no direct Environment access)
+        // IConfiguration automatically includes environment variables, so we read them through configuration
+        string? envHost = this._configuration[envHostKey];
+        string? envPort = this._configuration[envPortKey];
 
         if (!string.IsNullOrEmpty(envHost))
         {
@@ -174,14 +195,15 @@ public partial class FlinkJobManager : IFlinkJobManager
     }
 
     /// <summary>
-    /// Gets the protocol (http or https) from configuration or environment variable.
+    /// Gets the protocol (http or https) from configuration.
     /// Defaults to http for backward compatibility.
+    /// IConfiguration automatically includes environment variables.
     /// </summary>
     /// <returns>The protocol string ("http" or "https").</returns>
     private string GetProtocol()
     {
-        // Check environment variable first
-        string? envProtocol = Environment.GetEnvironmentVariable("FLINK_PROTOCOL");
+        // Check via IConfiguration (includes environment variables automatically)
+        string? envProtocol = this._configuration["FLINK_PROTOCOL"];
         if (!string.IsNullOrEmpty(envProtocol))
         {
             string protocol = envProtocol.Trim().ToUpperInvariant();
@@ -542,7 +564,7 @@ public partial class FlinkJobManager : IFlinkJobManager
     private async Task<string> EnsureRunnerJarPathAsync()
     {
         // First try to find existing jar in working directory or repo structure
-        string? jarPath = FindExistingRunnerJar();
+        string? jarPath = this.FindExistingRunnerJar();
         if (jarPath != null && File.Exists(jarPath))
         {
             this._logger.LogDebug("Found existing runner jar at {Path}", jarPath);

@@ -34,6 +34,21 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Setup default configuration values
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
+            
+            // Mock FLINK_RUNNER_JAR_PATH to avoid Maven builds during tests
+            string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
+            if (repoRoot != null)
+            {
+                string jarPath = Path.Combine(repoRoot, "FlinkIRRunner", "target", "flink-ir-runner-java17.jar");
+                if (!File.Exists(jarPath))
+                {
+                    jarPath = Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "flink-ir-runner-java17.jar");
+                }
+                if (File.Exists(jarPath))
+                {
+                    this._mockConfiguration.Setup(c => c["FLINK_RUNNER_JAR_PATH"]).Returns(jarPath);
+                }
+            }
 
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
             
@@ -51,6 +66,21 @@ namespace FlinkDotNet.JobGateway.Tests
                 BaseAddress = new Uri("http://localhost:8081"),
                 Timeout = TimeSpan.FromSeconds(1) // Short timeout for unmocked calls
             };
+        }
+
+        private static string? FindRepoRoot(string start)
+        {
+            DirectoryInfo? dir = new(start);
+            while (dir != null)
+            {
+                string globalJson = Path.Combine(dir.FullName, "global.json");
+                if (File.Exists(globalJson))
+                {
+                    return dir.FullName;
+                }
+                dir = dir.Parent;
+            }
+            return null;
         }
 
         [TearDown]
@@ -105,45 +135,37 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task SqlGateway_WithEnvironmentVariables_UsesEnvVars()
         {
-            // Arrange
-            Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", "env-sql-gateway");
-            Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", "9999");
+            // Arrange - Mock IConfiguration to simulate environment variables
+            this._mockConfiguration.Setup(c => c["FLINK_SQL_GATEWAY_HOST"]).Returns("env-sql-gateway");
+            this._mockConfiguration.Setup(c => c["FLINK_SQL_GATEWAY_PORT"]).Returns("9999");
 
-            try
+            var manager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+
+            var jobDef = new JobDefinition
             {
-                var manager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
-
-                var jobDef = new JobDefinition
+                Metadata = new JobMetadata { JobName = "SQL Test" },
+                Source = new SqlSourceDefinition
                 {
-                    Metadata = new JobMetadata { JobName = "SQL Test" },
-                    Source = new SqlSourceDefinition
-                    {
-                        Statements = new List<string> { "SELECT 1" },
-                        ExecutionMode = "gateway"
-                    },
-                    Sink = new ConsoleSinkDefinition()
-                };
+                    Statements = new List<string> { "SELECT 1" },
+                    ExecutionMode = "gateway"
+                },
+                Sink = new ConsoleSinkDefinition()
+            };
 
-                this.SetupSqlGatewayMockResponses();
+            this.SetupSqlGatewayMockResponses();
 
-                // Act
-                _ = await manager.SubmitJobAsync(jobDef);
+            // Act
+            _ = await manager.SubmitJobAsync(jobDef);
 
-                // Assert
-                this._mockLogger.Verify(
-                    x => x.Log(
-                        LogLevel.Information,
-                        It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Using environment variable for SQL Gateway")),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", null);
-                Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", null);
-            }
+            // Assert
+            this._mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("Using environment variable for SQL Gateway")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
         }
 
         [Test]
@@ -342,7 +364,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     Content = new StringContent("{\"taskmanagers\":1,\"slots-total\":4,\"slots-available\":4}")
                 });
 
-            // Mock JAR upload
+            // Mock JAR upload - Return proper JAR ID to avoid 30-second polling delay
             _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup<Task<HttpResponseMessage>>(
@@ -352,7 +374,7 @@ namespace FlinkDotNet.JobGateway.Tests
                 .ReturnsAsync(new HttpResponseMessage
                 {
                     StatusCode = HttpStatusCode.OK,
-                    Content = new StringContent("{\"filename\":\"/tmp/test-jar.jar\",\"status\":\"success\"}")
+                    Content = new StringContent("{\"filename\":\"flink-ir-runner-java17.jar\",\"status\":\"success\"}")
                 });
 
             // Mock JAR run

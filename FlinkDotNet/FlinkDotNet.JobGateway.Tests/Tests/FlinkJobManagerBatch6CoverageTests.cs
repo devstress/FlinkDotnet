@@ -175,7 +175,7 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupHttpResponse("/v1/jars/upload", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
-                    filename = "flink-ir-runner.jar"
+                    filename = "flink-ir-runner-java17.jar"
                 }), "POST");
 
             var jarsResponse = new
@@ -233,7 +233,7 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupHttpResponse("/v1/jars/upload", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
-                    filename = "flink-ir-runner.jar"
+                    filename = "flink-ir-runner-java17.jar"
                 }), "POST");
 
             var jarsResponse = new
