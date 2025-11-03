@@ -31,11 +31,63 @@ Console.WriteLine("   ✅ Full stack enabled: Kafka + Flink + Prometheus + Grafa
 // KafkaUI adds extra listener configuration that causes advertised listener issues
 Console.WriteLine("[INFO] Configuring Kafka...");
 IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
+    .WithEnvironment("KAFKA_JMX_ENABLED", "true")  // CRITICAL: Required for JMX exporter to work
+    .WithEnvironment("KAFKA_JMX_PORT", "9101")
+    .WithEnvironment("KAFKA_JMX_HOSTNAME", "kafka")
+    .WithEnvironment("KAFKA_JMX_OPTS",
+        "-Dcom.sun.management.jmxremote " +
+        "-Dcom.sun.management.jmxremote.authenticate=false " +
+        "-Dcom.sun.management.jmxremote.ssl=false " +
+        "-Djava.rmi.server.hostname=kafka " +
+        "-Dcom.sun.management.jmxremote.rmi.port=9101 " +
+        "-Dcom.sun.management.jmxremote.host=0.0.0.0 " +  // CRITICAL: Bind to all interfaces
+        "-Dcom.sun.management.jmxremote.local.only=false")
+    // CRITICAL: Confluent images also need KAFKA_OPTS for JMX
+    .WithEnvironment("KAFKA_OPTS",
+        "-Dcom.sun.management.jmxremote " +
+        "-Dcom.sun.management.jmxremote.authenticate=false " +
+        "-Dcom.sun.management.jmxremote.ssl=false " +
+        "-Djava.rmi.server.hostname=kafka " +
+        "-Dcom.sun.management.jmxremote.port=9101 " +
+        "-Dcom.sun.management.jmxremote.rmi.port=9101 " +
+        "-Dcom.sun.management.jmxremote.host=0.0.0.0 " +  // CRITICAL: Bind to all interfaces
+        "-Dcom.sun.management.jmxremote.local.only=false")
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("[INFO] Kafka configured with Aspire default settings");
 Console.WriteLine("  - Port 9092: PLAINTEXT_HOST for host access");
 Console.WriteLine("  - Port 9093: PLAINTEXT_INTERNAL for container access");
+Console.WriteLine("  - JMX Port 9101: For metrics export (JMX exporter)");
+Console.WriteLine("  [INFO] Using both KAFKA_JMX_OPTS and KAFKA_OPTS for Confluent compatibility");
+
+
+// 1.5. Kafka JMX Exporter - Exports Kafka JMX metrics to Prometheus format
+// CRITICAL: This container enables Prometheus to scrape Kafka metrics
+Console.WriteLine("[INFO] Configuring Kafka JMX Exporter...");
+string jmxConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "jmx-exporter-kafka-config.yml");
+
+IResourceBuilder<ContainerResource>? kafkaExporter = null;
+if (File.Exists(jmxConfigPath))
+{
+    kafkaExporter = builder.AddContainer("kafka-exporter", "bitnami/jmx-exporter", LatestTag)
+        .WithBindMount(jmxConfigPath, "/opt/bitnami/jmx-exporter/exporter.yml", isReadOnly: true)
+        .WithHttpEndpoint(targetPort: 5556, name: "kafka-metrics")
+        .WithReference(kafka)  // Keep reference for network connectivity
+        .WaitFor(kafka)  // CRITICAL: Wait for Kafka container to be started
+        .WithEntrypoint("/bin/sh")
+        .WithArgs("-c",
+            // CRITICAL: Add 10-second delay to allow Kafka JMX port to be fully initialized
+            // Kafka container starts quickly but JMX port takes time to become available
+            "sleep 10 && java -jar /opt/bitnami/jmx-exporter/jmx_prometheus_standalone.jar 5556 /opt/bitnami/jmx-exporter/exporter.yml")
+        .WithLifetime(ContainerLifetime.Persistent);
+
+    Console.WriteLine("   [INFO] Kafka JMX Exporter configured: kafka:9101 → :5556/metrics");
+    Console.WriteLine("   [INFO] JMX Exporter will wait 10s after Kafka starts for JMX port initialization");
+}
+else
+{
+    Console.WriteLine("   [WARNING] Kafka JMX Exporter config not found, skipping deployment");
+}
 
 // Constants for Flink container configuration
 const string FlinkImage = "flink";
@@ -131,12 +183,23 @@ Console.WriteLine("   [INFO] SQL Gateway configured on port 8083");
 Console.WriteLine("[INFO] Mounted Kafka connector JARs to SQL Gateway");
 
 // 5. Prometheus - Metrics collection
+// CRITICAL: Prometheus needs kafka-exporter dependency for Docker network DNS resolution
 Console.WriteLine("[INFO] Configuring Prometheus...");
 string prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
-IResourceBuilder<ContainerResource> prometheus = builder.AddContainer("prometheus", "prom/prometheus", LatestTag)
+IResourceBuilder<ContainerResource> prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus", LatestTag)
     .WithHttpEndpoint(targetPort: Ports.PrometheusHostPort, name: "prometheus-http")
     .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true)
     .WithLifetime(ContainerLifetime.Persistent);
+
+// Add kafka-exporter dependency if it was deployed
+// WaitFor() ensures Prometheus and kafka-exporter are on the same Docker network for DNS resolution
+if (kafkaExporter is not null)
+{
+    prometheusBuilder = prometheusBuilder.WaitFor(kafkaExporter);
+    Console.WriteLine("   [INFO] Prometheus configured with kafka-exporter network dependency");
+}
+
+IResourceBuilder<ContainerResource> prometheus = prometheusBuilder;
 
 // 6. Grafana - Metrics visualization
 Console.WriteLine("[INFO] Configuring Grafana...");
