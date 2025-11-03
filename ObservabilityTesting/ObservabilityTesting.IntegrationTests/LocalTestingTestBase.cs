@@ -27,13 +27,6 @@ public abstract class LocalTestingTestBase
     protected static string? KafkaConnectionString => GlobalTestInfrastructure.KafkaConnectionString;
 
     /// <summary>
-    /// Access to Kafka bootstrap servers for Flink jobs running in containers.
-    /// This address uses Docker internal network (kafka:9092) for container-to-container communication.
-    /// CRITICAL: Flink jobs cannot use localhost - they run in containers and need kafka:9092.
-    /// </summary>
-    protected static string? KafkaFlinkBootstrapServers => GlobalTestInfrastructure.KafkaFlinkBootstrapServers;
-
-    /// <summary>
     /// Access to discovered Temporal endpoint from GlobalTestInfrastructure.
     /// Aspire allocates dynamic ports during testing, so we must use the discovered endpoint.
     /// </summary>
@@ -1380,7 +1373,7 @@ public abstract class LocalTestingTestBase
             }
 
             // Find TaskManager container
-            var tmName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var tmName = Array.Find(containers, name => name?.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase) == true)?.Trim();
 
             if (!string.IsNullOrWhiteSpace(tmName))
             {

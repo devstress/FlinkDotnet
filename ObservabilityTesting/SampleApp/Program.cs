@@ -148,15 +148,15 @@ namespace SampleApp
                 throw new HttpRequestException($"Job submission failed: {response.StatusCode} - {errorContent}");
             }
 
-            JobSubmissionResponse? result = await response.Content.ReadFromJsonAsync<JobSubmissionResponse>();
+            JobSubmissionResult? result = await response.Content.ReadFromJsonAsync<JobSubmissionResult>();
 
-            if (result?.JobId == null)
+            if (result?.FlinkJobId == null)
             {
                 throw new InvalidOperationException("Job submission succeeded but no JobId returned");
             }
 
-            Console.WriteLine($"   [SUCCESS] Job submitted with ID: {result.JobId}");
-            return result.JobId;
+            Console.WriteLine($"   [SUCCESS] Job submitted with ID: {result.FlinkJobId}");
+            return result.FlinkJobId;
         }
 
         private static async Task ProduceMessagesAsync()
@@ -228,17 +228,5 @@ namespace SampleApp
     public class UppercaseMapper : IMapFunction<string, string>
     {
         public string Map(string value) => value.ToUpperInvariant();
-    }
-
-    public class JobSubmissionResponse
-    {
-        public string? JobId
-        {
-            get; set;
-        }
-        public string? Status
-        {
-            get; set;
-        }
     }
 }

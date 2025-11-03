@@ -30,11 +30,11 @@ Console.WriteLine("   ✅ Full stack enabled: Kafka + Flink + Prometheus + Grafa
 // Using simple configuration like LocalTesting/ReleasePackagesTesting (NO KafkaUI)
 // KafkaUI adds extra listener configuration that causes advertised listener issues
 Console.WriteLine("[INFO] Configuring Kafka...");
-IResourceBuilder<KafkaServerResource> _ = builder.AddKafka("kafka")
+_ = builder.AddKafka("kafka")
     .WithLifetime(ContainerLifetime.Persistent);
 
-// Flink configuration file with correct jobmanager.rpc.address
-string flinkConfigPath = Path.Combine(repoRoot, "ObservabilityTesting", "flink-config.yaml");
+Console.WriteLine("[INFO] Kafka configured with Aspire default settings");
+Console.WriteLine("  - Will use Aspire's default listener configuration");
 
 // Constants for Flink container configuration
 const string FlinkImage = "flink";
@@ -43,38 +43,50 @@ const string FlinkVersion = "2.1.0-java17";
 // 2. Flink JobManager with Prometheus metrics enabled
 Console.WriteLine("[INFO] Configuring Flink JobManager with Prometheus metrics...");
 
-string metricsJarPath = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "metrics", "flink-metrics-prometheus-2.1.0.jar");
+// Configure JobManager FLINK_PROPERTIES (metrics configuration)
+string jobManagerFlinkProperties =
+    "metrics.reporters: prom\n" +
+    "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
+    "metrics.reporter.prom.port: 9250\n" +
+    "metrics.reporter.prom.filterLabelValueCharacters: false\n";
+
+// Mount Kafka connector JARs - CRITICAL for Flink to read/write Kafka topics
+string connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
+string kafkaConnectorJar = Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar");
+string jsonConnectorJar = Path.Combine(connectorsDir, "flink-json-2.1.0.jar");
+
 IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-jobmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8081, name: "jobmanager-http")
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
-    .WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true)  // Mount proper config
-    .WithEntrypoint("/bin/bash")
-    .WithArgs("-c", "bin/jobmanager.sh start && tail -f /dev/null")
+    .WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties)  // Metrics configuration
+    .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
+    .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithArgs("jobmanager")  // Use standard Flink Docker entrypoint
     .WithLifetime(ContainerLifetime.Persistent);
 
-if (File.Exists(metricsJarPath))
-{
-    jobManager = jobManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
-    Console.WriteLine("   [INFO] Prometheus metrics JAR mounted for JobManager");
-}
+Console.WriteLine("[INFO] Mounted Kafka connector JARs to JobManager");
 
 // 3. Flink TaskManager with Prometheus metrics enabled  
 Console.WriteLine("[INFO] Configuring Flink TaskManager with Prometheus metrics...");
 
-IResourceBuilder<ContainerResource> taskManager = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
+// Configure TaskManager FLINK_PROPERTIES (memory and metrics)
+string taskManagerFlinkProperties =
+    "metrics.reporters: prom\n" +
+    "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
+    "metrics.reporter.prom.port: 9251\n" +
+    "metrics.reporter.prom.filterLabelValueCharacters: false\n";
+
+_ = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
-    .WithBindMount(flinkConfigPath, "/opt/flink/conf/config.yaml", isReadOnly: true)  // Mount proper config
-    .WithEnvironment("FLINK_PROPERTIES", "metrics.reporter.prom.port: 9251\n")  // Override metrics port for TaskManager
-    .WithEntrypoint("/bin/bash")
-    .WithArgs("-c", "bin/taskmanager.sh start && tail -f /dev/null")
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // Standard Flink environment variable  
+    .WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties)  // Metrics configuration only
+    .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
+    .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
+    .WithArgs("taskmanager")  // Use standard Flink Docker entrypoint
     .WaitFor(jobManager)
     .WithLifetime(ContainerLifetime.Persistent);
 
-if (File.Exists(metricsJarPath))
-{
-    _ = (IResourceBuilder<KafkaServerResource>) taskManager.WithBindMount(metricsJarPath, "/opt/flink/lib/flink-metrics-prometheus-2.1.0.jar", isReadOnly: true);
-    Console.WriteLine("   [INFO] Prometheus metrics JAR mounted for TaskManager");
-}
+Console.WriteLine("[INFO] Mounted Kafka connector JARs to TaskManager");
 
 // 4. Flink SQL Gateway - Required for FlinkDotNet JobGateway to communicate with Flink
 Console.WriteLine("[INFO] Configuring Flink SQL Gateway...");
@@ -106,11 +118,14 @@ IResourceBuilder<ContainerResource> sqlGateway = builder.AddContainer("flink-sql
     .WithHttpEndpoint(targetPort: 8083, name: "sg-http")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", baseSqlGatewayFlinkProperties)
+    .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
+    .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground")
     .WaitFor(jobManager)
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("   [INFO] SQL Gateway configured on port 8083");
+Console.WriteLine("[INFO] Mounted Kafka connector JARs to SQL Gateway");
 
 // 5. Prometheus - Metrics collection
 Console.WriteLine("[INFO] Configuring Prometheus...");

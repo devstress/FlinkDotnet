@@ -36,18 +36,6 @@ public class GlobalTestInfrastructure
     {
         get; private set;
     } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
-    public static string? KafkaFlinkBootstrapServers
-    {
-        get; private set;
-    } // Kafka bootstrap servers for Flink jobs (e.g., "kafka:9092")
-    public static string? KafkaEndpoint
-    {
-        get; private set;
-    } // Kafka endpoint for host connections (e.g., "localhost:32804")
-    public static string? KafkaContainerIp
-    {
-        get; private set;
-    } // Kafka container IP address (e.g., "172.17.0.2")
     public static string? TemporalEndpoint
     {
         get; private set;
@@ -165,8 +153,9 @@ public class GlobalTestInfrastructure
             }
 
             // Store for use in tests (replaces hostname-based connection)
-            KafkaContainerIpForFlink = kafkaContainerIp;
-            KafkaContainerIp = kafkaContainerIp; // Also store without suffix for backward compatibility
+            // For Flink jobs running in containers, use kafka:9092 (hostname, not IP)
+            // This allows Docker DNS resolution within the same network
+            KafkaContainerIpForFlink = "kafka:9092";
 
             // CRITICAL: Use Aspire's configuration system to get Kafka connection string
             // This is the proper Aspire pattern instead of hardcoding or Docker inspection
@@ -201,20 +190,12 @@ public class GlobalTestInfrastructure
             KafkaConnectionString = !string.IsNullOrEmpty(KafkaConnectionStringFromConfig)
                 ? KafkaConnectionStringFromConfig
                 : discoveredKafkaEndpoint;
-            
-            // Store discovered endpoint for tests that need it
-            KafkaEndpoint = discoveredKafkaEndpoint;
-
-            // CRITICAL: Flink jobs run in containers and need internal Docker network address
-            // Cannot use localhost - must use kafka:9092 for container-to-container communication
-            KafkaFlinkBootstrapServers = "kafka:9092";
 
             Console.WriteLine($"✅ Kafka connection strings:");
             Console.WriteLine($"   📡 From Aspire config: {KafkaConnectionStringFromConfig ?? "(not set)"}");
             Console.WriteLine($"   📡 From Docker discovery: {discoveredKafkaEndpoint}");
-            Console.WriteLine($"   📡 For test producers/consumers (host): {KafkaConnectionString}");
-            Console.WriteLine($"   📡 For Flink jobs (containers): {KafkaFlinkBootstrapServers}");
-            Console.WriteLine($"   ℹ️  Tests use localhost:port, Flink jobs use kafka:9092");
+            Console.WriteLine($"   📡 Using for tests: {KafkaConnectionString}");
+            Console.WriteLine($"   ℹ️  This address will be used by both test producers/consumers AND Flink jobs");
 
             // Get Flink endpoint and wait for readiness (don't require free slots initially - TaskManager registration takes time)
             var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
@@ -239,24 +220,6 @@ public class GlobalTestInfrastructure
             await RetryWaitForReadyAsync("Gateway", () => LocalTestingTestBase.WaitForGatewayReadyAsync($"{gatewayEndpoint}api/v1/health", DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Gateway is ready");
 
-//             // Wait for Temporal server resource with retry mechanism
-//             Console.WriteLine("⏳ Waiting for Temporal server resource to start...");
-//             await RetryHealthCheckAsync("temporal-server", app, 3, TimeSpan.FromSeconds(5));
-//             Console.WriteLine("✅ Temporal server resource reported healthy");
-// 
-//             // Then wait for Temporal to be fully initialized
-//             Console.WriteLine("⏳ Waiting for Temporal server to be fully ready...");
-//             Console.WriteLine("   ℹ️ Temporal with PostgreSQL requires initialization time...");
-// 
-//             // Give Temporal time to complete schema setup
-//             await Task.Delay(TimeSpan.FromSeconds(5)); // Optimized: Reduced from 10s to 5s
-// 
-//             // Discover actual Temporal endpoint from Docker (Aspire uses dynamic ports in testing)
-//             TemporalEndpoint = await GetTemporalEndpointAsync();
-//             Console.WriteLine($"🔍 Temporal endpoint: {TemporalEndpoint}");
-//             await RetryWaitForReadyAsync("Temporal", () => LocalTestingTestBase.WaitForTemporalReadyAsync(TemporalEndpoint, DefaultTimeout, default), 3, TimeSpan.FromSeconds(5));
-//             Console.WriteLine("✅ Temporal server is fully ready");
-
             // Log TaskManager status for debugging
             await LogTaskManagerStatusAsync();
 
@@ -278,10 +241,8 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"❌ Global infrastructure setup failed: {ex.Message}");
             Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
 
-            // Capture network diagnostics on failure
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("error-setup-failed");
 
-            // Capture container diagnostics and include in exception
             var diagnostics = await GetContainerDiagnosticsAsync();
 
             throw new InvalidOperationException(
@@ -718,33 +679,6 @@ public class GlobalTestInfrastructure
         }
     }
 
-//     private static async Task<string> GetTemporalEndpointAsync()
-//     {
-//         try
-//         {
-//             var temporalContainers = await RunDockerCommandAsync("ps --filter \"name=temporal-server\" --format \"{{.Ports}}\"");
-//             var lines = temporalContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-// 
-//             foreach (var line in lines)
-//             {
-//                 // Look for port mapping to 7233 (Temporal gRPC port)
-//                 if (line.Contains("->7233/tcp"))
-//                 {
-//                     var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->7233");
-//                     if (match.Success)
-//                     {
-//                         return $"localhost:{match.Groups[1].Value}";
-//                     }
-//                 }
-//             }
-// 
-//             throw new InvalidOperationException($"Could not determine Temporal endpoint from Docker ports: {temporalContainers}");
-//         }
-//         catch (Exception ex)
-//         {
-//             throw new InvalidOperationException($"Failed to get Temporal endpoint: {ex.Message}", ex);
-//         }
-
     /// <summary>
     /// Get the dynamically allocated Kafka endpoint from Aspire.
     /// Aspire DCP assigns random ports during testing, so we must query the actual endpoint.
@@ -786,7 +720,6 @@ public class GlobalTestInfrastructure
             var containerName = parts[0];
             var ports = parts[1];
 
-            // Exclude kafka-ui container - we only want the actual Kafka broker
             if (containerName.StartsWith("kafka-ui", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine($"🔍 Skipping kafka-ui container: {containerName}");
@@ -873,6 +806,8 @@ public class GlobalTestInfrastructure
             Console.WriteLine($"✅ Kafka container IP discovered: {ip}");
 
             // Return IP with PLAINTEXT_INTERNAL port (9093)
+            // Port 9093 is configured as PLAINTEXT_INTERNAL listener in Aspire's Kafka setup
+            // This is used by Flink jobs running in containers to connect to Kafka
             return $"{ip}:9093";
         }
         catch (Exception ex)

@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Flink.JobBuilder.Models;
 using ObservabilityTesting.FlinkSqlAppHost;
 using NUnit.Framework;
 
@@ -59,7 +60,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
 
         var gatewayEndpoint = await GetGatewayEndpointAsync();
-        var kafkaBootstrap = GlobalTestInfrastructure.KafkaEndpoint;
+        var kafkaBootstrap = GlobalTestInfrastructure.KafkaConnectionString;
 
         TestContext.WriteLine($"Gateway Endpoint: {gatewayEndpoint}");
         TestContext.WriteLine($"Kafka Bootstrap: {kafkaBootstrap}");
@@ -67,7 +68,7 @@ public class ObservabilityTests : LocalTestingTestBase
 
         Environment.SetEnvironmentVariable("FLINK_JOB_GATEWAY_URL", gatewayEndpoint);
         Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", kafkaBootstrap);
-        Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", GlobalTestInfrastructure.KafkaContainerIpForFlink);
+        Environment.SetEnvironmentVariable("KAFKA_FLINK_BOOTSTRAP_SERVERS", "kafka:9092");
 
         string? jobId = null;
 
@@ -161,7 +162,9 @@ public class ObservabilityTests : LocalTestingTestBase
                 try
                 {
                     using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-                    await httpClient.PostAsync($"{gatewayEndpoint}/api/v1/jobs/{jobId}/cancel", null);
+                    // Remove trailing slash to avoid double slashes
+                    var baseUrl = gatewayEndpoint.TrimEnd('/');
+                    await httpClient.PostAsync($"{baseUrl}/api/v1/jobs/{jobId}/cancel", null);
                     TestContext.WriteLine($"Cancelled job {jobId}");
                 }
                 catch { /* Ignore cleanup errors */ }
@@ -322,17 +325,18 @@ public class ObservabilityTests : LocalTestingTestBase
     private async Task<string> SubmitJobViaGatewayAsync(string gatewayEndpoint, object jobDefinition, CancellationToken ct)
     {
         var jsonContent = JsonContent.Create(jobDefinition);
-        var response = await _httpClient!.PostAsync($"{gatewayEndpoint}/api/v1/jobs", jsonContent, ct);
+        // Remove trailing slash from endpoint to avoid double slashes
+        var baseUrl = gatewayEndpoint.TrimEnd('/');
+        var response = await _httpClient!.PostAsync($"{baseUrl}/api/v1/jobs/submit", jsonContent, ct);
         response.EnsureSuccessStatusCode();
         
-        var result = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
+        var result = await response.Content.ReadFromJsonAsync<JobSubmissionResult>(cancellationToken: ct);
         
-        // Use the Flink cluster job ID returned by Gateway
-        var jobId = result?.RootElement.GetProperty("jobId").GetString();
-        return jobId ?? throw new InvalidOperationException("Gateway did not return a job ID");
+        // Return the Flink job ID from the Gateway response
+        return result?.FlinkJobId ?? throw new InvalidOperationException("Gateway did not return a FlinkJobId");
     }
 
-    private async Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
+    private Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
     {
         var producerConfig = new Confluent.Kafka.ProducerConfig
         {
@@ -348,19 +352,24 @@ public class ObservabilityTests : LocalTestingTestBase
         
         for (int i = 0; i < count; i++)
         {
+            // Check cancellation before each message
+            ct.ThrowIfCancellationRequested();
+            
             var message = new Confluent.Kafka.Message<string, string>
             {
                 Key = $"key-{i}",
                 Value = $"test message {i}"
             };
             
-            await producer.ProduceAsync(topic, message, ct);
+            // Don't pass ct to ProduceAsync - let it fail faster on connection issues
+            producer.ProduceAsync(topic, message);
         }
         
         producer.Flush(TimeSpan.FromSeconds(10));
+        return Task.CompletedTask;
     }
 
-    private async Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
+    private Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
     {
         var consumed = new List<string>();
         
@@ -394,12 +403,14 @@ public class ObservabilityTests : LocalTestingTestBase
             }
         }
 
-        return consumed;
+        return Task.FromResult(consumed);
     }
 
     private async Task<GatewayMetrics> QueryGatewayMetricsAsync(string gatewayEndpoint, string jobId, CancellationToken ct)
     {
-        var response = await _httpClient!.GetAsync($"{gatewayEndpoint}/api/v1/jobs/{jobId}/metrics", ct);
+        // Remove trailing slash to avoid double slashes
+        var baseUrl = gatewayEndpoint.TrimEnd('/');
+        var response = await _httpClient!.GetAsync($"{baseUrl}/api/v1/jobs/{jobId}/metrics", ct);
         response.EnsureSuccessStatusCode();
         
         var metricsJson = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
