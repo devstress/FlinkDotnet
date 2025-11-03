@@ -707,7 +707,10 @@ public partial class FlinkJobManager : IFlinkJobManager
         string sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
 
         // Flink 2.x: First get all available metrics to discover operator-specific metric names
-        HttpResponseMessage allMetricsResp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics");
+        string metricsUrl = $"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics";
+        this._logger.LogDebug("Fetching metrics from URL: {Url}", metricsUrl);
+        
+        HttpResponseMessage allMetricsResp = await this._httpClient.GetAsync(metricsUrl);
         if (!allMetricsResp.IsSuccessStatusCode)
         {
             this._logger.LogWarning("Failed to get metrics list for vertex {VertexId}: {StatusCode}", vertexId, allMetricsResp.StatusCode);
@@ -715,9 +718,16 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         string allMetricsJson = await allMetricsResp.Content.ReadAsStringAsync();
+        this._logger.LogDebug("Raw metrics JSON response length: {Length} chars", allMetricsJson.Length);
+        
         List<FlinkMetricEntry> allMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(allMetricsJson) ?? [];
 
         this._logger.LogDebug("Found {Count} total metrics for vertex {VertexId}", allMetrics.Count, vertexId);
+        
+        if (allMetrics.Count > 0)
+        {
+            this._logger.LogDebug("First few metric IDs: {Metrics}", string.Join(", ", allMetrics.Take(5).Select(m => m.Id)));
+        }
 
         // Find operator-specific metrics for Source (RecordsOut = data entering job) and Sink (RecordsIn = data leaving job)
         // Metrics are prefixed with subtask index (e.g., "0.Source__KafkaSource.numRecordsOut")
