@@ -701,9 +701,13 @@ public partial class FlinkJobManager : IFlinkJobManager
         // This avoids the empty response issue from /metrics endpoint for completed jobs
         bool metricsExtracted = this.TryExtractVertexMetricsFromJobDetails(vertex, metrics);
 
+        // ALTERNATIVE SOURCE: Query Prometheus for operator-level Kafka metrics
+        // Prometheus scrapes detailed operator metrics that may not be in job details API
+        await this.TryCollectMetricsFromPrometheusAsync(flinkJobId, metrics);
+
         if (!metricsExtracted)
         {
-            // Fallback to querying metrics endpoint if job details don't include metrics
+            // Final fallback: try the Flink metrics endpoint (though it may return empty for completed jobs)
             await this.CollectVertexNumericMetricsAsync(flinkJobId, vertexId, metrics);
         }
 
@@ -752,6 +756,119 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         return foundAnyMetrics;
+    }
+
+    private async Task<bool> TryCollectMetricsFromPrometheusAsync(string flinkJobId, JobMetricsBuilder metrics)
+    {
+        try
+        {
+            // Get Prometheus base URL from configuration
+            // In Aspire deployments, this is typically "http://prometheus:9090" (container-to-container DNS)
+            string? prometheusUrl = this._configuration["Flink:Prometheus:BaseUrl"];
+
+            if (string.IsNullOrEmpty(prometheusUrl))
+            {
+                this._logger.LogDebug("Prometheus URL not configured, skipping Prometheus metrics query");
+                return false;
+            }
+
+            this._logger.LogInformation("Querying Prometheus at {Url} for Flink job {JobId} operator metrics", prometheusUrl, flinkJobId);
+
+            // Query for Kafka source operator numRecordsOut (= RecordsIn to the job)
+            // Metric pattern: flink_taskmanager_job_task_operator_KafkaSource_numRecordsOut or similar
+            // Use sum() to aggregate across all subtasks
+            string sourceQuery = $"sum(flink_taskmanager_job_task_operator_numRecordsOut{{job_id=\"{flinkJobId}\",operator_name=~\".*Source.*\"}})";
+            long? recordsIn = await this.QueryPrometheusMetricAsync(prometheusUrl, sourceQuery);
+
+            // Query for Kafka sink operator numRecordsIn (= RecordsOut from the job)
+            string sinkQuery = $"sum(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{flinkJobId}\",operator_name=~\".*Sink.*\"}})";
+            long? recordsOut = await this.QueryPrometheusMetricAsync(prometheusUrl, sinkQuery);
+
+            bool foundMetrics = false;
+
+            if (recordsIn.HasValue && recordsIn.Value > 0)
+            {
+                this._logger.LogInformation("Found RecordsIn from Prometheus: {Value}", recordsIn.Value);
+                metrics.AddRecordsIn(recordsIn.Value);
+                foundMetrics = true;
+            }
+
+            if (recordsOut.HasValue && recordsOut.Value > 0)
+            {
+                this._logger.LogInformation("Found RecordsOut from Prometheus: {Value}", recordsOut.Value);
+                metrics.AddRecordsOut(recordsOut.Value);
+                foundMetrics = true;
+            }
+
+            return foundMetrics;
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogWarning(ex, "Failed to query Prometheus for metrics");
+            return false;
+        }
+    }
+
+    private async Task<long?> QueryPrometheusMetricAsync(string prometheusUrl, string query)
+    {
+        try
+        {
+            // Prometheus HTTP API: /api/v1/query?query={promql}
+            string encodedQuery = Uri.EscapeDataString(query);
+            string url = $"{prometheusUrl}/api/v1/query?query={encodedQuery}";
+
+            this._logger.LogDebug("Querying Prometheus: {Query}", query);
+
+            using HttpClient promClient = new()
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+            HttpResponseMessage response = await promClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                this._logger.LogWarning("Prometheus query failed with status {Status}", response.StatusCode);
+                return null;
+            }
+
+            string json = await response.Content.ReadAsStringAsync();
+            using JsonDocument doc = JsonDocument.Parse(json);
+
+            // Prometheus response format: { "status": "success", "data": { "resultType": "vector", "result": [{ "value": [timestamp, "value"] }] } }
+            if (!doc.RootElement.TryGetProperty("status", out JsonElement statusEl) ||
+                statusEl.GetString() != "success")
+            {
+                this._logger.LogWarning("Prometheus query returned non-success status");
+                return null;
+            }
+
+            if (!doc.RootElement.TryGetProperty("data", out JsonElement dataEl) ||
+                !dataEl.TryGetProperty("result", out JsonElement resultEl) ||
+                resultEl.GetArrayLength() == 0)
+            {
+                this._logger.LogDebug("Prometheus query returned no results");
+                return null;
+            }
+
+            // Get the first result's value [timestamp, "value"]
+            JsonElement firstResult = resultEl[0];
+            if (firstResult.TryGetProperty("value", out JsonElement valueArray) &&
+                valueArray.GetArrayLength() >= 2)
+            {
+                string valueStr = valueArray[1].GetString() ?? "0";
+                if (long.TryParse(valueStr, out long value))
+                {
+                    return value;
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogWarning(ex, "Error querying Prometheus metric: {Query}", query);
+            return null;
+        }
     }
 
     private async Task CollectVertexNumericMetricsAsync(string flinkJobId, string vertexId, JobMetricsBuilder metrics)
