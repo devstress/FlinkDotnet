@@ -50,12 +50,21 @@ string jobManagerFlinkProperties =
     "metrics.reporter.prom.port: 9250\n" +
     "metrics.reporter.prom.filterLabelValueCharacters: false\n";
 
+// Mount Kafka connector JARs - CRITICAL for Flink to read/write Kafka topics
+string connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
+string kafkaConnectorJar = Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar");
+string jsonConnectorJar = Path.Combine(connectorsDir, "flink-json-2.1.0.jar");
+
 IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-jobmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8081, name: "jobmanager-http")
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
     .WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties)  // Metrics configuration
+    .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
+    .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("jobmanager")  // Use standard Flink Docker entrypoint
     .WithLifetime(ContainerLifetime.Persistent);
+
+Console.WriteLine("[INFO] Mounted Kafka connector JARs to JobManager");
 
 // 3. Flink TaskManager with Prometheus metrics enabled  
 Console.WriteLine("[INFO] Configuring Flink TaskManager with Prometheus metrics...");
@@ -71,9 +80,13 @@ _ = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // Standard Flink environment variable  
     .WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties)  // Metrics configuration only
+    .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
+    .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("taskmanager")  // Use standard Flink Docker entrypoint
     .WaitFor(jobManager)
     .WithLifetime(ContainerLifetime.Persistent);
+
+Console.WriteLine("[INFO] Mounted Kafka connector JARs to TaskManager");
 
 // 4. Flink SQL Gateway - Required for FlinkDotNet JobGateway to communicate with Flink
 Console.WriteLine("[INFO] Configuring Flink SQL Gateway...");
@@ -105,11 +118,14 @@ IResourceBuilder<ContainerResource> sqlGateway = builder.AddContainer("flink-sql
     .WithHttpEndpoint(targetPort: 8083, name: "sg-http")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
     .WithEnvironment("FLINK_PROPERTIES", baseSqlGatewayFlinkProperties)
+    .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
+    .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground")
     .WaitFor(jobManager)
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("   [INFO] SQL Gateway configured on port 8083");
+Console.WriteLine("[INFO] Mounted Kafka connector JARs to SQL Gateway");
 
 // 5. Prometheus - Metrics collection
 Console.WriteLine("[INFO] Configuring Prometheus...");
