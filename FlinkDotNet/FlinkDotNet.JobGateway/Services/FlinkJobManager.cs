@@ -888,7 +888,6 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         string allMetricsJson = await allMetricsResp.Content.ReadAsStringAsync();
-        this._logger.LogDebug("Raw metrics JSON (first 500 chars): {Json}", allMetricsJson.Length > 500 ? allMetricsJson.Substring(0, 500) : allMetricsJson);
         List<FlinkMetricEntry> allMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(allMetricsJson, s_caseInsensitiveDeserializerOptions) ?? [];
 
         this._logger.LogDebug("Found {Count} total metrics for vertex {VertexId}", allMetrics.Count, vertexId);
