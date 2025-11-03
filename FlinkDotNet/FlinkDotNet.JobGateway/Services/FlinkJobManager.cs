@@ -662,16 +662,18 @@ public partial class FlinkJobManager : IFlinkJobManager
     private async Task CollectVertexMetricsAsync(string flinkJobId, JobMetricsBuilder metrics)
     {
         string sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
-        HttpResponseMessage verticesResp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices");
-        if (!verticesResp.IsSuccessStatusCode)
+
+        // Flink 2.x: Get vertices from job details endpoint, not from /vertices (which doesn't exist)
+        HttpResponseMessage jobResp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}");
+        if (!jobResp.IsSuccessStatusCode)
         {
             return;
         }
 
-        string verticesJson = await verticesResp.Content.ReadAsStringAsync();
-        using JsonDocument vdoc = JsonDocument.Parse(verticesJson);
+        string jobJson = await jobResp.Content.ReadAsStringAsync();
+        using JsonDocument jdoc = JsonDocument.Parse(jobJson);
 
-        if (!vdoc.RootElement.TryGetProperty("vertices", out JsonElement vertsEl) || vertsEl.ValueKind != JsonValueKind.Array)
+        if (!jdoc.RootElement.TryGetProperty("vertices", out JsonElement vertsEl) || vertsEl.ValueKind != JsonValueKind.Array)
         {
             return;
         }
@@ -703,29 +705,104 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         string sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
         string sanitizedVertexId = ValidateAndSanitizePathSegment(vertexId);
-        HttpResponseMessage mresp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
-        if (!mresp.IsSuccessStatusCode)
+
+        // Flink 2.x: First get all available metrics to discover operator-specific metric names
+        HttpResponseMessage allMetricsResp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics");
+        if (!allMetricsResp.IsSuccessStatusCode)
         {
+            this._logger.LogWarning("Failed to get metrics list for vertex {VertexId}: {StatusCode}", vertexId, allMetricsResp.StatusCode);
             return;
         }
 
-        List<FlinkMetricEntry> metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync())
-            ?? [];
+        string allMetricsJson = await allMetricsResp.Content.ReadAsStringAsync();
+        List<FlinkMetricEntry> allMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(allMetricsJson) ?? [];
 
+        this._logger.LogDebug("Found {Count} total metrics for vertex {VertexId}", allMetrics.Count, vertexId);
+
+        // Find operator-specific metrics for Source (RecordsOut = data entering job) and Sink (RecordsIn = data leaving job)
+        // Metrics are prefixed with subtask index (e.g., "0.Source__KafkaSource.numRecordsOut")
+        List<string> sourceMetrics = [.. allMetrics.Where(m => m.Id.Contains("Source") && m.Id.Contains("numRecordsOut")).Select(m => m.Id)];
+        List<string> sinkMetrics = [.. allMetrics.Where(m => m.Id.Contains("Sink") && m.Id.Contains("numRecordsIn")).Select(m => m.Id)];
+        List<string> parallelismMetrics = [.. allMetrics.Where(m => m.Id.Contains("parallelism")).Select(m => m.Id)];
+
+        this._logger.LogDebug("Found {SourceCount} Source metrics, {SinkCount} Sink metrics, {ParallelismCount} parallelism metrics",
+            sourceMetrics.Count, sinkMetrics.Count, parallelismMetrics.Count);
+
+        // Build query string for operator-specific metrics
+        List<string> metricsToQuery = new();
+        metricsToQuery.AddRange(sourceMetrics);
+        metricsToQuery.AddRange(sinkMetrics);
+        metricsToQuery.AddRange(parallelismMetrics);
+
+        if (metricsToQuery.Count == 0)
+        {
+            // Fallback: try generic metrics (may not work in Flink 2.x)
+            this._logger.LogWarning("No operator-specific metrics found for vertex {VertexId}, trying generic metrics", vertexId);
+            HttpResponseMessage fallbackResp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics?get=numRecordsIn,numRecordsOut,parallelism");
+            if (!fallbackResp.IsSuccessStatusCode)
+            {
+                this._logger.LogWarning("Fallback metrics query failed for vertex {VertexId}: {StatusCode}", vertexId, fallbackResp.StatusCode);
+                return;
+            }
+
+            List<FlinkMetricEntry> fallbackMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await fallbackResp.Content.ReadAsStringAsync()) ?? [];
+            this._logger.LogDebug("Fallback returned {Count} metrics", fallbackMetrics.Count);
+            this.ProcessMetricValues(fallbackMetrics, metrics);
+            return;
+        }
+
+        // Query the specific metrics we found
+        string metricsQuery = string.Join(",", metricsToQuery);
+        this._logger.LogDebug("Querying {Count} metrics: {Metrics}", metricsToQuery.Count, metricsQuery);
+
+        HttpResponseMessage mresp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics?get={metricsQuery}");
+        if (!mresp.IsSuccessStatusCode)
+        {
+            this._logger.LogWarning("Metrics query failed for vertex {VertexId}: {StatusCode}", vertexId, mresp.StatusCode);
+            return;
+        }
+
+        List<FlinkMetricEntry> metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync()) ?? [];
+        this._logger.LogDebug("Retrieved {Count} metric values for vertex {VertexId}", metricsList.Count, vertexId);
+        this.ProcessMetricValues(metricsList, metrics);
+    }
+
+    private void ProcessMetricValues(List<FlinkMetricEntry> metricsList, JobMetricsBuilder metrics)
+    {
         foreach (FlinkMetricEntry m in metricsList)
         {
+            this._logger.LogDebug("Processing metric: {Id} = {Value}", m.Id, m.Value);
+
+            // Source operator's numRecordsOut = records entering the job (RecordsIn)
+            if (m.Id.Contains("Source") && m.Id.Contains("numRecordsOut") && long.TryParse(m.Value, out long sourceOut))
+            {
+                this._logger.LogInformation("Found Source.numRecordsOut: {Value}", sourceOut);
+                metrics.AddRecordsIn(sourceOut);
+            }
+
+            // Sink operator's numRecordsIn = records leaving the job (RecordsOut)
+            if (m.Id.Contains("Sink") && m.Id.Contains("numRecordsIn") && long.TryParse(m.Value, out long sinkIn))
+            {
+                this._logger.LogInformation("Found Sink.numRecordsIn: {Value}", sinkIn);
+                metrics.AddRecordsOut(sinkIn);
+            }
+
+            // Fallback for generic metrics (backward compatibility)
             if (m.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out long vi))
             {
+                this._logger.LogInformation("Found generic numRecordsIn: {Value}", vi);
                 metrics.AddRecordsIn(vi);
             }
 
             if (m.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out long vo))
             {
+                this._logger.LogInformation("Found generic numRecordsOut: {Value}", vo);
                 metrics.AddRecordsOut(vo);
             }
 
-            if (m.Id.Equals("parallelism", StringComparison.OrdinalIgnoreCase) && int.TryParse(m.Value, out int p))
+            if (m.Id.Contains("parallelism") && int.TryParse(m.Value, out int p))
             {
+                this._logger.LogDebug("Found parallelism: {Value}", p);
                 metrics.UpdateMaxParallelism(p);
             }
         }
