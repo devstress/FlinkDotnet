@@ -718,16 +718,9 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         string allMetricsJson = await allMetricsResp.Content.ReadAsStringAsync();
-        this._logger.LogDebug("Raw metrics JSON response length: {Length} chars", allMetricsJson.Length);
-
         List<FlinkMetricEntry> allMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(allMetricsJson) ?? [];
 
         this._logger.LogDebug("Found {Count} total metrics for vertex {VertexId}", allMetrics.Count, vertexId);
-
-        if (allMetrics.Count > 0)
-        {
-            this._logger.LogDebug("First few metric IDs: {Metrics}", string.Join(", ", allMetrics.Take(5).Select(m => m.Id)));
-        }
 
         // Find operator-specific metrics for Source (RecordsOut = data entering job) and Sink (RecordsIn = data leaving job)
         // Metrics are prefixed with subtask index (e.g., "0.Source__KafkaSource.numRecordsOut")
@@ -756,14 +749,13 @@ public partial class FlinkJobManager : IFlinkJobManager
             }
 
             List<FlinkMetricEntry> fallbackMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await fallbackResp.Content.ReadAsStringAsync()) ?? [];
-            this._logger.LogDebug("Fallback returned {Count} metrics", fallbackMetrics.Count);
             this.ProcessMetricValues(fallbackMetrics, metrics);
             return;
         }
 
         // Query the specific metrics we found
         string metricsQuery = string.Join(",", metricsToQuery);
-        this._logger.LogDebug("Querying {Count} metrics: {Metrics}", metricsToQuery.Count, metricsQuery);
+        this._logger.LogDebug("Querying {Count} metrics for vertex {VertexId}", metricsToQuery.Count, vertexId);
 
         HttpResponseMessage mresp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}/vertices/{sanitizedVertexId}/metrics?get={metricsQuery}");
         if (!mresp.IsSuccessStatusCode)
@@ -773,7 +765,6 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         List<FlinkMetricEntry> metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync()) ?? [];
-        this._logger.LogDebug("Retrieved {Count} metric values for vertex {VertexId}", metricsList.Count, vertexId);
         this.ProcessMetricValues(metricsList, metrics);
     }
 
@@ -781,8 +772,6 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         foreach (FlinkMetricEntry m in metricsList)
         {
-            this._logger.LogDebug("Processing metric: {Id} = {Value}", m.Id, m.Value);
-
             this.ProcessSourceMetrics(m, metrics);
             this.ProcessSinkMetrics(m, metrics);
             this.ProcessGenericMetrics(m, metrics);
