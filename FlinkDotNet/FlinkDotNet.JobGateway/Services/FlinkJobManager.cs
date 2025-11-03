@@ -783,38 +783,55 @@ public partial class FlinkJobManager : IFlinkJobManager
         {
             this._logger.LogDebug("Processing metric: {Id} = {Value}", m.Id, m.Value);
 
-            // Source operator's numRecordsOut = records entering the job (RecordsIn)
-            if (m.Id.Contains("Source") && m.Id.Contains("numRecordsOut") && long.TryParse(m.Value, out long sourceOut))
-            {
-                this._logger.LogInformation("Found Source.numRecordsOut: {Value}", sourceOut);
-                metrics.AddRecordsIn(sourceOut);
-            }
+            this.ProcessSourceMetrics(m, metrics);
+            this.ProcessSinkMetrics(m, metrics);
+            this.ProcessGenericMetrics(m, metrics);
+            this.ProcessParallelismMetric(m, metrics);
+        }
+    }
 
-            // Sink operator's numRecordsIn = records leaving the job (RecordsOut)
-            if (m.Id.Contains("Sink") && m.Id.Contains("numRecordsIn") && long.TryParse(m.Value, out long sinkIn))
-            {
-                this._logger.LogInformation("Found Sink.numRecordsIn: {Value}", sinkIn);
-                metrics.AddRecordsOut(sinkIn);
-            }
+    private void ProcessSourceMetrics(FlinkMetricEntry metric, JobMetricsBuilder metrics)
+    {
+        // Source operator's numRecordsOut = records entering the job (RecordsIn)
+        if (metric.Id.Contains("Source") && metric.Id.Contains("numRecordsOut") && long.TryParse(metric.Value, out long sourceOut))
+        {
+            this._logger.LogInformation("Found Source.numRecordsOut: {Value}", sourceOut);
+            metrics.AddRecordsIn(sourceOut);
+        }
+    }
 
-            // Fallback for generic metrics (backward compatibility)
-            if (m.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out long vi))
-            {
-                this._logger.LogInformation("Found generic numRecordsIn: {Value}", vi);
-                metrics.AddRecordsIn(vi);
-            }
+    private void ProcessSinkMetrics(FlinkMetricEntry metric, JobMetricsBuilder metrics)
+    {
+        // Sink operator's numRecordsIn = records leaving the job (RecordsOut)
+        if (metric.Id.Contains("Sink") && metric.Id.Contains("numRecordsIn") && long.TryParse(metric.Value, out long sinkIn))
+        {
+            this._logger.LogInformation("Found Sink.numRecordsIn: {Value}", sinkIn);
+            metrics.AddRecordsOut(sinkIn);
+        }
+    }
 
-            if (m.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(m.Value, out long vo))
-            {
-                this._logger.LogInformation("Found generic numRecordsOut: {Value}", vo);
-                metrics.AddRecordsOut(vo);
-            }
+    private void ProcessGenericMetrics(FlinkMetricEntry metric, JobMetricsBuilder metrics)
+    {
+        // Fallback for generic metrics (backward compatibility)
+        if (metric.Id.Equals("numRecordsIn", StringComparison.OrdinalIgnoreCase) && long.TryParse(metric.Value, out long vi))
+        {
+            this._logger.LogInformation("Found generic numRecordsIn: {Value}", vi);
+            metrics.AddRecordsIn(vi);
+        }
 
-            if (m.Id.Contains("parallelism") && int.TryParse(m.Value, out int p))
-            {
-                this._logger.LogDebug("Found parallelism: {Value}", p);
-                metrics.UpdateMaxParallelism(p);
-            }
+        if (metric.Id.Equals("numRecordsOut", StringComparison.OrdinalIgnoreCase) && long.TryParse(metric.Value, out long vo))
+        {
+            this._logger.LogInformation("Found generic numRecordsOut: {Value}", vo);
+            metrics.AddRecordsOut(vo);
+        }
+    }
+
+    private void ProcessParallelismMetric(FlinkMetricEntry metric, JobMetricsBuilder metrics)
+    {
+        if (metric.Id.Contains("parallelism") && int.TryParse(metric.Value, out int p))
+        {
+            this._logger.LogDebug("Found parallelism: {Value}", p);
+            metrics.UpdateMaxParallelism(p);
         }
     }
 
