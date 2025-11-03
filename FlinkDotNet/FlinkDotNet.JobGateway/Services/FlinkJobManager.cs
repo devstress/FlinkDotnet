@@ -46,12 +46,14 @@ public partial class FlinkJobManager : IFlinkJobManager
     };
 
     /// <summary>
-    /// Thread-safe delay configuration using Interlocked operations on backing fields (stored as ticks)
+    /// Thread-safe delay and timeout configuration using Interlocked operations on backing fields (stored as ticks)
     /// These allow concurrent test execution and production job submissions without race conditions
     /// </summary>
     private static long s_sqlGatewayRetryDelayTicks = TimeSpan.FromSeconds(1).Ticks;
     private static long s_jarRegistrationPollingDelayTicks = TimeSpan.FromSeconds(1).Ticks;
     private static long s_jobRecoveryPollingDelayTicks = TimeSpan.FromSeconds(1).Ticks;
+    private static long s_jarRegistrationTimeoutTicks = TimeSpan.FromSeconds(30).Ticks;
+    private static long s_jobRecoveryTimeoutTicks = TimeSpan.FromSeconds(30).Ticks;
 
     /// <summary>
     /// Gets or sets the delay between SQL Gateway retry attempts.
@@ -81,6 +83,28 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         get => TimeSpan.FromTicks(Interlocked.Read(ref s_jobRecoveryPollingDelayTicks));
         set => Interlocked.Exchange(ref s_jobRecoveryPollingDelayTicks, value.Ticks);
+    }
+
+    /// <summary>
+    /// Gets or sets the timeout for JAR registration waiting.
+    /// Thread-safe for parallel test execution and production job submissions.
+    /// Default: 30 seconds. Set to 1ms in tests for fast failure.
+    /// </summary>
+    public static TimeSpan JarRegistrationTimeout
+    {
+        get => TimeSpan.FromTicks(Interlocked.Read(ref s_jarRegistrationTimeoutTicks));
+        set => Interlocked.Exchange(ref s_jarRegistrationTimeoutTicks, value.Ticks);
+    }
+
+    /// <summary>
+    /// Gets or sets the timeout for job recovery attempts.
+    /// Thread-safe for parallel test execution and production job submissions.
+    /// Default: 30 seconds. Set to 1ms in tests for fast failure.
+    /// </summary>
+    public static TimeSpan JobRecoveryTimeout
+    {
+        get => TimeSpan.FromTicks(Interlocked.Read(ref s_jobRecoveryTimeoutTicks));
+        set => Interlocked.Exchange(ref s_jobRecoveryTimeoutTicks, value.Ticks);
     }
 
     /// <summary>

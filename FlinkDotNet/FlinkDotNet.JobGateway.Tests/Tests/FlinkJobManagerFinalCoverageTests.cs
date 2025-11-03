@@ -22,10 +22,12 @@ public class FlinkJobManagerFinalCoverageTests
     [SetUp]
     public void SetUp()
     {
-        // Set static delays to 1ms for fast test execution
+        // Set static delays and timeouts to 1ms for fast test execution
         FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
         FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
         FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
+        FlinkJobManager.JarRegistrationTimeout = TimeSpan.FromMilliseconds(1);
+        FlinkJobManager.JobRecoveryTimeout = TimeSpan.FromMilliseconds(1);
 
         this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
         this._mockConfiguration = new Mock<IConfiguration>();
@@ -52,10 +54,12 @@ public class FlinkJobManagerFinalCoverageTests
     [TearDown]
     public void TearDown()
     {
-        // Restore default delays
+        // Restore default delays and timeouts
         FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromSeconds(1);
         FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromSeconds(1);
         FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromSeconds(1);
+        FlinkJobManager.JarRegistrationTimeout = TimeSpan.FromSeconds(30);
+        FlinkJobManager.JobRecoveryTimeout = TimeSpan.FromSeconds(30);
 
         this._httpClient?.Dispose();
     }

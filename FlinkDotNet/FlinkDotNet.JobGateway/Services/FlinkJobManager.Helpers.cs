@@ -142,7 +142,7 @@ public partial class FlinkJobManager
         {
             this._logger.LogWarning("⚠️ JobId not in response, attempting recovery...");
             string targetName = jobDefinition.Metadata.JobName ?? "Unnamed Job";
-            jobId = await this.TryRecoverFlinkJobIdAsync(targetName, TimeSpan.FromSeconds(30));
+            jobId = await this.TryRecoverFlinkJobIdAsync(targetName, JobRecoveryTimeout);
         }
 
         if (string.IsNullOrEmpty(jobId))
@@ -488,7 +488,7 @@ public partial class FlinkJobManager
 
     private async Task<string> WaitForJarRegistrationAsync(string fileName, TimeSpan? timeout = null)
     {
-        TimeSpan waitFor = timeout ?? TimeSpan.FromSeconds(30);
+        TimeSpan waitFor = timeout ?? JarRegistrationTimeout;
         DateTime deadline = DateTime.UtcNow + waitFor;
         List<string> lastKnownJars = [];
 

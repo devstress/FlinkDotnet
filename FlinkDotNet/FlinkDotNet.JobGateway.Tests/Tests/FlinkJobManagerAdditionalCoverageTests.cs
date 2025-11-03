@@ -24,10 +24,12 @@ namespace FlinkDotNet.JobGateway.Tests
         [SetUp]
         public void Setup()
         {
-            // Set static delays to 1ms for fast test execution
+            // Set static delays and timeouts to 1ms for fast test execution
             FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
             FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.JarRegistrationTimeout = TimeSpan.FromMilliseconds(1);
+            FlinkJobManager.JobRecoveryTimeout = TimeSpan.FromMilliseconds(1);
 
             this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
             this._mockConfiguration = new Mock<IConfiguration>();
