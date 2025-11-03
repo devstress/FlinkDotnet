@@ -153,7 +153,9 @@ public class GlobalTestInfrastructure
             }
 
             // Store for use in tests (replaces hostname-based connection)
-            KafkaContainerIpForFlink = kafkaContainerIp;
+            // For Flink jobs running in containers, use kafka:9092 (hostname, not IP)
+            // This allows Docker DNS resolution within the same network
+            KafkaContainerIpForFlink = "kafka:9092";
 
             // CRITICAL: Use Aspire's configuration system to get Kafka connection string
             // This is the proper Aspire pattern instead of hardcoding or Docker inspection
