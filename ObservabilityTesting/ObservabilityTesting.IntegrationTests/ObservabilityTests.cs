@@ -229,6 +229,25 @@ public class ObservabilityTests : LocalTestingTestBase
         var consumedMessages = await ConsumeMessagesAsync(outputTopic, expectedMessageCount, consumeTimeout, cts.Token);
         TestContext.WriteLine($"✅ Consumed {consumedMessages.Count} messages from output topic");
         
+        // PROOF: Display sample messages to show Flink transformation worked
+        if (consumedMessages.Count > 0)
+        {
+            TestContext.WriteLine();
+            TestContext.WriteLine("📝 Sample transformed messages (proving Flink processed data):");
+            for (int i = 0; i < Math.Min(5, consumedMessages.Count); i++)
+            {
+                TestContext.WriteLine($"   [{i + 1}] {consumedMessages[i]}");
+            }
+            
+            // Verify all messages were transformed to uppercase (proving Flink worked)
+            int uppercaseCount = consumedMessages.Count(msg => msg == msg.ToUpperInvariant() && msg.Any(char.IsLetter));
+            TestContext.WriteLine();
+            TestContext.WriteLine($"🔍 Transformation verification: {uppercaseCount}/{consumedMessages.Count} messages are uppercase");
+            Assert.That(uppercaseCount, Is.EqualTo(consumedMessages.Count), 
+                "All messages should be uppercase (proves Flink transformation worked)");
+            TestContext.WriteLine("✅ All messages correctly transformed to uppercase by Flink");
+        }
+        
         Assert.That(consumedMessages.Count, Is.EqualTo(expectedMessageCount), 
             $"CRITICAL: Should consume exactly {expectedMessageCount} messages (Kafka metrics validation)");
         
@@ -238,6 +257,8 @@ public class ObservabilityTests : LocalTestingTestBase
         // STEP 4: Query and validate Gateway metrics (especially Kafka message metrics)
         TestContext.WriteLine();
         TestContext.WriteLine("═══ Gateway Metrics Validation ═══");
+        TestContext.WriteLine("NOTE: Flink is proven working (messages consumed and transformed).");
+        TestContext.WriteLine("      This section validates if Gateway metrics API correctly reports Flink stats.");
         var metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
         
         TestContext.WriteLine($"📊 Gateway Metrics:");
@@ -249,6 +270,9 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
         
         // PRIMARY VALIDATION: Kafka message metrics
+        // NOTE: If this fails but messages were consumed above, it means:
+        //   ✅ Flink IS working (messages were transformed and output to Kafka)
+        //   ❌ Gateway metrics collection from Flink has issues
         AssertMetricWithinTolerance(metrics.RecordsIn, expectedMessageCount, "RecordsIn (CRITICAL Kafka metric)");
         AssertMetricWithinTolerance(metrics.RecordsOut, expectedMessageCount, "RecordsOut (CRITICAL Kafka metric)");
         Assert.That(metrics.Parallelism, Is.EqualTo(1), "Job parallelism should be 1");
