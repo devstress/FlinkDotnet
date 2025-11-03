@@ -155,7 +155,9 @@ namespace FlinkDotNet.DataStream
         }
 
         /// <summary>
-        /// Expression-based map (Flink-compatible when T is string). Supported expressions: "upper", "lower", "identity".
+        /// Expression-based map (Flink-compatible when T is string).
+        /// Supported expressions: "upper", "lower", "trim", "ltrim", "rtrim", "identity"
+        /// Composite expressions: "trim,upper", "lower,trim"
         /// </summary>
         public DataStream<string> Map(string expression)
         {
