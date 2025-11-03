@@ -16,6 +16,7 @@
 
 using System.Collections.Generic;
 using System.IO.Abstractions;
+using System.Linq;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.Common.Logging;
 
@@ -232,33 +233,58 @@ namespace FlinkDotNet.DataStream
 
         private static void TranslateMapOperation(JobDefinition jobDef, CapturedOperation operation)
         {
-            if (operation.OperationType == "upper")
+            // Handle lambda-derived expressions (from LambdaExpressionAnalyzer)
+            if (!string.IsNullOrEmpty(operation.OperationType))
             {
-                jobDef.Operations.Add(new MapOperationDefinition { Expression = "upper" });
+                string operationType = operation.OperationType;
+
+                // Direct expression mappings
+                if (IsKnownFlinkExpression(operationType))
+                {
+                    _logger.Information("[OperationCapture.TranslateMapOperation] Using lambda-derived expression: {Expression}", operationType);
+                    jobDef.Operations.Add(new MapOperationDefinition { Expression = operationType });
+                    return;
+                }
             }
-            else if (operation.OperationType == "lower")
-            {
-                jobDef.Operations.Add(new MapOperationDefinition { Expression = "lower" });
-            }
-            else if (operation.Function != null)
+
+            // Handle IMapFunction implementations
+            if (operation.Function != null)
             {
                 // Check if the function is a known IMapFunction implementation
                 string functionTypeName = operation.Function.GetType().Name;
                 string functionFullName = operation.Function.GetType().FullName ?? "";
 
-                // Map WordsCapitalizer and other uppercase functions to "upper"
+                // Map uppercase functions to "upper"
                 if (functionTypeName.Contains("Capitalizer", System.StringComparison.OrdinalIgnoreCase) ||
                     functionTypeName.Contains("Upper", System.StringComparison.OrdinalIgnoreCase) ||
-                    functionFullName.Contains("WordsCapitalizer"))
+                    functionFullName.Contains("WordsCapitalizer") ||
+                    functionTypeName == "ToUpperInvariantMapFunction")
                 {
                     _logger.Information("[OperationCapture.TranslateMapOperation] Translating {FunctionType} to 'upper' expression", functionTypeName);
                     jobDef.Operations.Add(new MapOperationDefinition { Expression = "upper" });
                 }
                 // Map lowercase functions to "lower"
-                else if (functionTypeName.Contains("Lower", System.StringComparison.OrdinalIgnoreCase))
+                else if (functionTypeName.Contains("Lower", System.StringComparison.OrdinalIgnoreCase) ||
+                         functionTypeName == "ToLowerInvariantMapFunction")
                 {
                     _logger.Information("[OperationCapture.TranslateMapOperation] Translating {FunctionType} to 'lower' expression", functionTypeName);
                     jobDef.Operations.Add(new MapOperationDefinition { Expression = "lower" });
+                }
+                // Map trim functions
+                else if (functionTypeName == "TrimMapFunction")
+                {
+                    _logger.Information("[OperationCapture.TranslateMapOperation] Translating {FunctionType} to 'trim' expression", functionTypeName);
+                    jobDef.Operations.Add(new MapOperationDefinition { Expression = "trim" });
+                }
+                else if (functionTypeName == "TrimStartMapFunction")
+                {
+                    _logger.Information("[OperationCapture.TranslateMapOperation] Translating {FunctionType} to 'ltrim' expression", functionTypeName);
+                    jobDef.Operations.Add(new MapOperationDefinition { Expression = "ltrim" });
+                }
+                else if (functionTypeName == "TrimEndMapFunction")
+                {
+                    _logger.Information("[OperationCapture.TranslateMapOperation] Translating {FunctionType} to 'rtrim' expression", functionTypeName);
+                    jobDef.Operations.Add(new MapOperationDefinition { Expression = "rtrim" });
                 }
                 else
                 {
@@ -271,6 +297,46 @@ namespace FlinkDotNet.DataStream
                     });
                 }
             }
+        }
+
+        /// <summary>
+        /// Checks if the given expression is a known Flink IR expression.
+        /// Supports simple expressions, composite expressions (comma-separated), and arithmetic operations.
+        /// </summary>
+        private static bool IsKnownFlinkExpression(string expression)
+        {
+            if (string.IsNullOrEmpty(expression))
+            {
+                return false;
+            }
+
+            // Simple expressions
+            string[] simpleExpressions = ["upper", "lower", "trim", "ltrim", "rtrim", "identity"];
+            if (simpleExpressions.Contains(expression))
+            {
+                return true;
+            }
+
+            // Composite expressions (e.g., "trim,upper" or "lower,trim")
+            if (expression.Contains(','))
+            {
+                string[] parts = expression.Split(',');
+                return parts.All(part => simpleExpressions.Contains(part.Trim()));
+            }
+
+            // Arithmetic operations (e.g., "multiply:$input:2" or "add:$input:10")
+            if (expression.Contains(':'))
+            {
+                string[] parts = expression.Split(':');
+                if (parts.Length >= 1)
+                {
+                    string operation = parts[0];
+                    string[] arithmeticOps = ["multiply", "add", "subtract", "divide", "modulo", "negate"];
+                    return arithmeticOps.Contains(operation);
+                }
+            }
+
+            return false;
         }
 
         private static void TranslateFilterOperation(JobDefinition jobDef, CapturedOperation operation)
