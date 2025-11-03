@@ -58,6 +58,7 @@ string jsonConnectorJar = Path.Combine(connectorsDir, "flink-json-2.1.0.jar");
 IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-jobmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8081, name: "jobmanager-http")
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // CRITICAL: Set hostname for RPC binding
     .WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties)  // Metrics configuration
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
