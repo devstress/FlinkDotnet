@@ -248,6 +248,76 @@ namespace Flink.JobBuilder.Tests
 
         #endregion
 
+        #region ModelDefinition Tests
+
+        [Test]
+        public void ModelDefinition_Type_ReturnsModel()
+        {
+            // Arrange & Act
+            var modelDef = new ModelDefinition();
+
+            // Assert
+            Assert.That(modelDef.Type, Is.EqualTo("model"));
+        }
+
+        #endregion
+
+        #region PaimonTableDefinition Tests
+
+        [Test]
+        public void PaimonTableDefinition_Type_ReturnsPaimonTable()
+        {
+            // Arrange & Act
+            var paimonTable = new PaimonTableDefinition();
+
+            // Assert
+            Assert.That(paimonTable.Type, Is.EqualTo("paimon_table"));
+        }
+
+        #endregion
+
+        #region ProcessTableFunctionDefinition Tests
+
+        [Test]
+        public void ProcessTableFunctionDefinition_Type_ReturnsProcessTableFunction()
+        {
+            // Arrange & Act
+            var ptfDef = new ProcessTableFunctionDefinition();
+
+            // Assert
+            Assert.That(ptfDef.Type, Is.EqualTo("processTableFunction"));
+        }
+
+        #endregion
+
+        #region TableOperationDefinition Tests
+
+        [Test]
+        public void TableOperationDefinition_Type_ReturnsTable()
+        {
+            // Arrange & Act
+            var tableDef = new TableOperationDefinition();
+
+            // Assert
+            Assert.That(tableDef.Type, Is.EqualTo("table"));
+        }
+
+        #endregion
+
+        #region WindowTvfOperationDefinition Tests
+
+        [Test]
+        public void WindowTvfOperationDefinition_Type_ReturnsWindowTvf()
+        {
+            // Arrange & Act
+            var windowTvfDef = new WindowTvfOperationDefinition();
+
+            // Assert
+            Assert.That(windowTvfDef.Type, Is.EqualTo("windowTvf"));
+        }
+
+        #endregion
+
         #region TableSourceDefinition Tests
 
         [Test]
