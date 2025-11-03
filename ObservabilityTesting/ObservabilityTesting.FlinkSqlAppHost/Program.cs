@@ -63,7 +63,6 @@ IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-job
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("jobmanager")  // Use standard Flink Docker entrypoint
-    .WithReference(kafka)  // Ensure same network as Kafka for connectivity
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("[INFO] Mounted Kafka connector JARs to JobManager");
@@ -85,7 +84,7 @@ _ = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("taskmanager")  // Use standard Flink Docker entrypoint
-    .WithReference(kafka)  // Ensure same network as Kafka for connectivity
+    .WithReference(kafka)  // Matches LocalTesting pattern - ensures same network for Kafka connectivity
     .WaitFor(jobManager)
     .WithLifetime(ContainerLifetime.Persistent);
 
@@ -124,7 +123,6 @@ IResourceBuilder<ContainerResource> sqlGateway = builder.AddContainer("flink-sql
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground")
-    .WithReference(kafka)  // Ensure same network as Kafka for connectivity
     .WaitFor(jobManager)
     .WithLifetime(ContainerLifetime.Persistent);
 
