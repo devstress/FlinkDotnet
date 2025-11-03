@@ -130,6 +130,13 @@ public class StateDescriptorAndOutputTagConstructorTests
         Assert.Throws<ArgumentNullException>(() => new ReducingStateDescriptor<int>(null!, reduceFunc));
     }
 
+    [Test]
+    public void ReducingStateDescriptor_WithNullReduceFunction_ThrowsArgumentNullException()
+    {
+        // Arrange, Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new ReducingStateDescriptor<int>("reducing-state", null!));
+    }
+
     #endregion
 
     #region AggregatingStateDescriptor Constructor Tests
@@ -158,6 +165,14 @@ public class StateDescriptorAndOutputTagConstructorTests
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
             new AggregatingStateDescriptor<int, int, int>(null!, aggregateFunc));
+    }
+
+    [Test]
+    public void AggregatingStateDescriptor_WithNullAggregateFunction_ThrowsArgumentNullException()
+    {
+        // Arrange, Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            new AggregatingStateDescriptor<int, int, int>("aggregating-state", null!));
     }
 
     #endregion
