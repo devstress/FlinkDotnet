@@ -87,12 +87,6 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TearDown()
         {
             this._httpClient?.Dispose();
-
-            // Clean up environment variables
-            Environment.SetEnvironmentVariable("services__flink-sql-gateway__sg-http__0", null);
-            Environment.SetEnvironmentVariable("services__flink-sql-gateway__http__0", null);
-            Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_HOST", null);
-            Environment.SetEnvironmentVariable("FLINK_SQL_GATEWAY_PORT", null);
         }
 
         #region SQL Gateway Endpoint Discovery Tests

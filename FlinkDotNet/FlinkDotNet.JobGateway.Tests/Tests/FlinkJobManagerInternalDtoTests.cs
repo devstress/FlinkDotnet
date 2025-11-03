@@ -57,9 +57,6 @@ namespace FlinkDotNet.JobGateway.Tests
         public void TearDown()
         {
             this._httpClient?.Dispose();
-
-            // Clean up environment variables
-            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", null);
         }
 
         #region FindExistingRunnerJar Tests
@@ -67,39 +64,32 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public async Task SubmitJob_WithEnvironmentVariable_AttemptsToUseJarFromEnvVar()
         {
-            // Arrange
+            // Arrange - use IConfiguration mocking instead of environment variables
             var testJarPath = "/tmp/nonexistent-runner.jar";
-            Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", testJarPath);
+            this._mockConfiguration.Setup(c => c["FLINK_RUNNER_JAR_PATH"]).Returns(testJarPath);
 
-            try
+            var manager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+
+            var jobDef = new JobDefinition
             {
-                var manager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
-
-                var jobDef = new JobDefinition
+                Metadata = new JobMetadata { JobName = "JAR Env Test" },
+                Source = new KafkaSourceDefinition
                 {
-                    Metadata = new JobMetadata { JobName = "JAR Env Test" },
-                    Source = new KafkaSourceDefinition
-                    {
-                        BootstrapServers = "localhost:9092",
-                        Topic = "test",
-                        GroupId = "test-group"
-                    },
-                    Sink = new ConsoleSinkDefinition()
-                };
+                    BootstrapServers = "localhost:9092",
+                    Topic = "test",
+                    GroupId = "test-group"
+                },
+                Sink = new ConsoleSinkDefinition()
+            };
 
-                this.SetupClusterHealthAndJarMockResponses();
+            this.SetupClusterHealthAndJarMockResponses();
 
-                // Act
-                var result = await manager.SubmitJobAsync(jobDef);
+            // Act
+            var result = await manager.SubmitJobAsync(jobDef);
 
-                // Assert - Should attempt to use JAR path from environment variable
-                // The JAR won't be found, but the code path should be exercised
-                Assert.That(result, Is.Not.Null);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FLINK_RUNNER_JAR_PATH", null);
-            }
+            // Assert - Should attempt to use JAR path from environment variable
+            // The JAR won't be found, but the code path should be exercised
+            Assert.That(result, Is.Not.Null);
         }
 
         [Test]
