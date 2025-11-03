@@ -136,6 +136,8 @@ NativeKafkaBridge/libnativekafkabridge.so
 FlinkDotNet/Flink.JobGateway/flink-ir-runner.jar
 LocalTesting/NativeFlinkJob/target/
 LocalTesting/NativeFlinkJob/dependency-reduced-pom.xml
+ReleasePackagesTesting/NativeFlinkJob/target/
+ReleasePackagesTesting/NativeFlinkJob/dependency-reduced-pom.xml
 *.jar
 test-coverage*/
 test-results*/
