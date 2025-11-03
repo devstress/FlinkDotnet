@@ -59,6 +59,11 @@ namespace FlinkDotNet.JobGateway.Tests
             this._httpClient?.Dispose();
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             
+            // Setup Dispose method to avoid MockException in TearDown
+            _ = this._mockHttpMessageHandler
+                .Protected()
+                .Setup("Dispose", ItExpr.IsAny<bool>());
+            
             // Setup default handler for unmocked HTTP requests to fail fast
             _ = this._mockHttpMessageHandler
                 .Protected()
