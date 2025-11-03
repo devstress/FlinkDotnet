@@ -30,7 +30,7 @@ Console.WriteLine("   ✅ Full stack enabled: Kafka + Flink + Prometheus + Grafa
 // Using simple configuration like LocalTesting/ReleasePackagesTesting (NO KafkaUI)
 // KafkaUI adds extra listener configuration that causes advertised listener issues
 Console.WriteLine("[INFO] Configuring Kafka...");
-_ = builder.AddKafka("kafka")
+IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("[INFO] Kafka configured with Aspire default settings");
@@ -85,6 +85,7 @@ _ = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
     .WithArgs("taskmanager")  // Use standard Flink Docker entrypoint
     .WaitFor(jobManager)
+    .WaitFor(kafka)  // Wait for Kafka to be ready before processing jobs
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine("[INFO] Mounted Kafka connector JARs to TaskManager");
