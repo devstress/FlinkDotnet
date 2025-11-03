@@ -622,30 +622,22 @@ namespace FlinkDotNet.JobGateway.Tests
         [Test]
         public void Constructor_WithEnvironmentVariables_UsesEnvVars()
         {
-            // Arrange
-            try
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", "custom-host");
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", "9999");
+            // Arrange - use IConfiguration mocking instead of environment variables
+            this._mockConfiguration.Setup(c => c["FLINK_CLUSTER_HOST"]).Returns("custom-host");
+            this._mockConfiguration.Setup(c => c["FLINK_CLUSTER_PORT"]).Returns("9999");
 
-                // Act
-                _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+            // Act
+            _ = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
-                // Assert - Constructor logs environment variable usage
-                this._mockLogger.Verify(
-                    x => x.Log(
-                        LogLevel.Information,
-                        It.IsAny<EventId>(),
-                        It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("environment variable")),
-                        It.IsAny<Exception>(),
-                        It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
-                    Times.AtLeastOnce);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_HOST", null);
-                Environment.SetEnvironmentVariable("FLINK_CLUSTER_PORT", null);
-            }
+            // Assert - Constructor logs environment variable usage
+            this._mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("environment variable")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce);
         }
 
         [Test]
