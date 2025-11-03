@@ -236,6 +236,7 @@ builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("Flink__JobManager__BaseUrl", "http://flink-jobmanager:8081")
     .WithEnvironment("Flink__SqlGateway__BaseUrl", "http://flink-sql-gateway:8083")
+    .WithEnvironment("Flink__Prometheus__BaseUrl", "http://prometheus:9090")  // Inject Prometheus URL via Aspire
     .WithEnvironment("FLINK_CONNECTOR_PATH", "/app")  // Path to connector JARs (matches Gateway search logic)
     .WithEnvironment("Metrics__Prometheus__Enabled", "true")  // Enable Prometheus metrics
     .WithEnvironment("Metrics__Prometheus__Port", "9253")     // Metrics on port 9253
