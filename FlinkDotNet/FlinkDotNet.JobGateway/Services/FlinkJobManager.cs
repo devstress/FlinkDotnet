@@ -697,8 +697,61 @@ public partial class FlinkJobManager : IFlinkJobManager
             return;
         }
 
-        await this.CollectVertexNumericMetricsAsync(flinkJobId, vertexId, metrics);
+        // OPTIMIZATION: Try to extract metrics from vertex object first (Flink 2.x job details include aggregated metrics)
+        // This avoids the empty response issue from /metrics endpoint for completed jobs
+        bool metricsExtracted = this.TryExtractVertexMetricsFromJobDetails(vertex, metrics);
+
+        if (!metricsExtracted)
+        {
+            // Fallback to querying metrics endpoint if job details don't include metrics
+            await this.CollectVertexNumericMetricsAsync(flinkJobId, vertexId, metrics);
+        }
+
         await this.CollectVertexBackpressureAsync(flinkJobId, vertexId, metrics);
+    }
+
+    private bool TryExtractVertexMetricsFromJobDetails(JsonElement vertex, JobMetricsBuilder metrics)
+    {
+        // Flink 2.x job details endpoint includes aggregated metrics for each vertex
+        // Format: { "vertices": [{ "id": "...", "metrics": { "read-records": 100, "write-records": 100, ... } }] }
+        if (!vertex.TryGetProperty("metrics", out JsonElement metricsEl))
+        {
+            return false;
+        }
+
+        bool foundAnyMetrics = false;
+
+        // Extract read-records (input to vertex = RecordsIn for source)
+        if (metricsEl.TryGetProperty("read-records", out JsonElement readRecordsEl) &&
+            readRecordsEl.ValueKind == JsonValueKind.Number)
+        {
+            long readRecords = readRecordsEl.GetInt64();
+            this._logger.LogInformation("Found vertex read-records (RecordsIn): {Value}", readRecords);
+            metrics.AddRecordsIn(readRecords);
+            foundAnyMetrics = true;
+        }
+
+        // Extract write-records (output from vertex = RecordsOut for sink)
+        if (metricsEl.TryGetProperty("write-records", out JsonElement writeRecordsEl) &&
+            writeRecordsEl.ValueKind == JsonValueKind.Number)
+        {
+            long writeRecords = writeRecordsEl.GetInt64();
+            this._logger.LogInformation("Found vertex write-records (RecordsOut): {Value}", writeRecords);
+            metrics.AddRecordsOut(writeRecords);
+            foundAnyMetrics = true;
+        }
+
+        // Extract parallelism
+        if (vertex.TryGetProperty("parallelism", out JsonElement parallelismEl) &&
+            parallelismEl.ValueKind == JsonValueKind.Number)
+        {
+            int parallelism = parallelismEl.GetInt32();
+            this._logger.LogInformation("Found vertex parallelism: {Value}", parallelism);
+            metrics.UpdateMaxParallelism(parallelism);
+            foundAnyMetrics = true;
+        }
+
+        return foundAnyMetrics;
     }
 
     private async Task CollectVertexNumericMetricsAsync(string flinkJobId, string vertexId, JobMetricsBuilder metrics)

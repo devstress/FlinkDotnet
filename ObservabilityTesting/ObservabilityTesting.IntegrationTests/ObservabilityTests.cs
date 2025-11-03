@@ -231,19 +231,21 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine($"✅ Job submitted: {jobId}");
             await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
             
-            // STEP 2: Produce messages (using localhost port for test code)
-            await ProduceMessagesAsync(inputTopic, expectedMessageCount, cts.Token);
-            TestContext.WriteLine($"✅ Produced {expectedMessageCount} messages to input topic");
+            // STEP 2: Produce messages in batches to keep job actively processing
+            // Produce first batch to start the job processing
+            const int batchSize = 200;
+            await ProduceMessagesInBatchAsync(inputTopic, batchSize, 0, cts.Token);
+            TestContext.WriteLine($"✅ Produced first batch of {batchSize} messages to input topic");
             
-            // STEP 2.5: Query metrics IMMEDIATELY while job is actively processing
+            // Wait a moment for processing to start
+            await Task.Delay(TimeSpan.FromSeconds(2), cts.Token);
+            
+            // STEP 2.5: Query metrics WHILE job is actively processing (after first batch, before all messages complete)
             // This is critical because Flink only exposes detailed operator metrics while the job is running
             TestContext.WriteLine();
             TestContext.WriteLine("═══ Gateway Metrics Validation (During Active Processing) ═══");
-            TestContext.WriteLine("NOTE: Querying metrics while Flink is actively processing messages");
+            TestContext.WriteLine("NOTE: Querying metrics while Flink is actively processing first batch");
             TestContext.WriteLine("      for accurate RecordsIn/Out counters.");
-            
-            // Wait a moment for Flink to start processing
-            await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
             
             var metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
             
@@ -254,6 +256,14 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine($"   Checkpoints: {metrics.Checkpoints}");
             TestContext.WriteLine($"   BackpressureLevel: {metrics.BackpressureLevel}");
             TestContext.WriteLine();
+            
+            // Produce remaining messages
+            for (int batch = 1; batch < (expectedMessageCount / batchSize); batch++)
+            {
+                await ProduceMessagesInBatchAsync(inputTopic, batchSize, batch * batchSize, cts.Token);
+                await Task.Delay(TimeSpan.FromMilliseconds(500), cts.Token); // Small delay between batches
+            }
+            TestContext.WriteLine($"✅ Produced all {expectedMessageCount} messages to input topic in batches");
             
             // STEP 3: CRITICAL - Verify messages consumed from output topic AFTER checking metrics
             TestContext.WriteLine("═══ KAFKA MESSAGE METRICS VALIDATION (PRIMARY FOCUS) ═══");
@@ -425,6 +435,37 @@ public class ObservabilityTests : LocalTestingTestBase
             };
             
             // Don't pass ct to ProduceAsync - let it fail faster on connection issues
+            producer.ProduceAsync(topic, message);
+        }
+        
+        producer.Flush(TimeSpan.FromSeconds(10));
+        return Task.CompletedTask;
+    }
+
+    private Task ProduceMessagesInBatchAsync(string topic, int count, int startIndex, CancellationToken ct)
+    {
+        var producerConfig = new Confluent.Kafka.ProducerConfig
+        {
+            BootstrapServers = GlobalTestInfrastructure.KafkaConnectionString,
+            Acks = Confluent.Kafka.Acks.All,
+            EnableIdempotence = true,
+            LingerMs = 5,
+            BrokerAddressFamily = Confluent.Kafka.BrokerAddressFamily.V4,
+            SecurityProtocol = Confluent.Kafka.SecurityProtocol.Plaintext
+        };
+
+        using var producer = new Confluent.Kafka.ProducerBuilder<string, string>(producerConfig).Build();
+        
+        for (int i = 0; i < count; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            
+            var message = new Confluent.Kafka.Message<string, string>
+            {
+                Key = $"key-{startIndex + i}",
+                Value = $"test message {startIndex + i}"
+            };
+            
             producer.ProduceAsync(topic, message);
         }
         
