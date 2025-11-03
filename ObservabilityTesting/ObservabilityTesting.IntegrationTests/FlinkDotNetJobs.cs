@@ -17,15 +17,12 @@ namespace ObservabilityTesting.IntegrationTests;
 public static class FlinkDotNetJobs
 {
     /// <summary>
-    /// Generates a Flink-compatible job ID.
-    /// Flink job IDs are 16 bytes (128-bit) shown as 32 lowercase hexadecimal characters without dashes.
-    /// This matches the format used by Flink's JobID.generate() and expected by the REST API.
+    /// Mapper function that converts strings to uppercase.
+    /// Using IMapFunction instead of lambda for proper serialization.
     /// </summary>
-    /// <returns>32 lowercase hexadecimal characters (e.g., "6511c409ff584d1e93b3638f56d14e01")</returns>
-    private static string GenerateFlinkJobId()
+    public class UppercaseMapper : IMapFunction<string, string>
     {
-        // Generate a GUID and convert to Flink format (32 hex chars, lowercase, no dashes)
-        return Guid.NewGuid().ToString("N").ToLowerInvariant();
+        public string Map(string value) => value.ToUpperInvariant();
     }
 
     /// <summary>
@@ -41,7 +38,7 @@ public static class FlinkDotNetJobs
         var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         environment.FromKafka(inputTopic, kafka, groupId: "uppercase-job", startingOffsets: "earliest")
-            .Map(s => s.ToUpperInvariant())
+            .Map(new UppercaseMapper())
             .SinkToKafka(outputTopic, kafka);
 
         var jobClient = await environment.ExecuteAsync(jobName, ct);
@@ -66,7 +63,7 @@ public static class FlinkDotNetJobs
         var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         environment.FromKafka(inputTopic, kafka, groupId: "uppercase-job", startingOffsets: "earliest")
-            .Map(s => s.ToUpperInvariant())
+            .Map(new UppercaseMapper())
             .SinkToKafka(outputTopic, kafka);
 
         // Get the JobDefinition without executing

@@ -17,24 +17,32 @@ namespace SampleApp
     /// </summary>
     public static class Program
     {
-        private const string InputTopic = "sample_input";
-        private const string OutputTopic = "sample_output";
+        private const string DefaultInputTopic = "sample_input";
+        private const string DefaultOutputTopic = "sample_output";
         private const string ConsumerGroup = "sample-app";
         private const string Separator = "================================================================================";
 
         /// <summary>
-        /// Environment variables for service discovery
+        /// Environment variables for service discovery and topic configuration
         /// </summary>
         private static string KafkaBootstrapServers =>
             Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS") ?? "localhost:9093";
 
-        // HARDCODED: Use kafka:9093 for container-to-container communication (PLAINTEXT_INTERNAL listener)
-        // This matches LocalTesting and LearningCourse Day 01 configuration
-        // Port 9092 is for host access, port 9093 is for container-to-container
+        /// <summary>
+        /// Use kafka:9093 for container-to-container communication (PLAINTEXT_INTERNAL listener).
+        /// This matches LocalTesting and LearningCourse Day 01 configuration.
+        /// Port 9092 is for host access, port 9093 is for container-to-container.
+        /// </summary>
         private static string KafkaFlinkBootstrapServers => "kafka:9093";
 
         private static string FlinkJobGatewayUrl =>
             Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
+        
+        private static string InputTopic =>
+            Environment.GetEnvironmentVariable("SAMPLE_APP_INPUT_TOPIC") ?? DefaultInputTopic;
+        
+        private static string OutputTopic =>
+            Environment.GetEnvironmentVariable("SAMPLE_APP_OUTPUT_TOPIC") ?? DefaultOutputTopic;
 
         public static async Task Main()
         {
@@ -49,6 +57,8 @@ namespace SampleApp
             Console.WriteLine();
             Console.WriteLine($"  FlinkDotNet JobGateway URL: {FlinkJobGatewayUrl}");
             Console.WriteLine($"  Kafka Bootstrap Servers: {KafkaBootstrapServers}");
+            Console.WriteLine($"  Input Topic: {InputTopic}");
+            Console.WriteLine($"  Output Topic: {OutputTopic}");
             Console.WriteLine();
             Console.WriteLine(Separator);
             Console.WriteLine();
@@ -73,9 +83,10 @@ namespace SampleApp
         }
 
         /// <summary>
-        /// Public method for integration tests to run SampleApp and get the job ID
+        /// Public method for integration tests to run SampleApp and get the job ID.
+        /// Accepts optional topic names for test isolation.
         /// </summary>
-        public static async Task<string> RunAsync()
+        public static async Task<string> RunAsync(string? inputTopic = null, string? outputTopic = null)
         {
             // Configure Serilog
             Log.Logger = new LoggerConfiguration()
@@ -84,6 +95,16 @@ namespace SampleApp
 
             try
             {
+                // Override environment variables if topics are provided
+                if (inputTopic != null)
+                {
+                    Environment.SetEnvironmentVariable("SAMPLE_APP_INPUT_TOPIC", inputTopic);
+                }
+                if (outputTopic != null)
+                {
+                    Environment.SetEnvironmentVariable("SAMPLE_APP_OUTPUT_TOPIC", outputTopic);
+                }
+                
                 return await RunSampleJobAsync();
             }
             finally

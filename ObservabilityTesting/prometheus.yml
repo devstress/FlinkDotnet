@@ -1,0 +1,65 @@
+# Prometheus configuration for ObservabilityTesting (Aspire internal networks only)
+# All targets use Aspire container service names for internal DNS resolution
+# No external host.docker.internal references - pure Aspire container-to-container
+
+global:
+  scrape_interval: 1s
+  evaluation_interval: 1s
+  external_labels:
+    monitor: 'observability-testing-monitor'
+    environment: 'testing'
+
+scrape_configs:
+  # Flink JobManager metrics (Prometheus reporter on port 9250)
+  # Aspire internal network: flink-jobmanager:9250
+  - job_name: 'flink-jobmanager'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flink-jobmanager:9250']
+        labels:
+          component: 'flink'
+          role: 'jobmanager'
+
+  # Flink TaskManager metrics (Prometheus reporter on port 9251)
+  # Aspire internal network: flink-taskmanager:9251
+  - job_name: 'flink-taskmanager'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flink-taskmanager:9251']
+        labels:
+          component: 'flink'
+          role: 'taskmanager'
+
+  # Kafka JMX metrics via JMX Exporter
+  # Aspire internal network: kafka-exporter:5556
+  # JMX exporter connects to kafka:9101 and exposes metrics on port 5556
+  # Increased scrape_interval/timeout for JMX collection performance
+  - job_name: 'kafka'
+    scrape_interval: 10s
+    scrape_timeout: 8s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['kafka-exporter:5556']
+        labels:
+          component: 'kafka'
+          role: 'broker'
+
+  # FlinkDotNet JobGateway metrics
+  # Aspire internal network: flinkdotnet-jobgateway:9253
+  # Gateway exposes Prometheus metrics for job submission tracking
+  - job_name: 'flinkdotnet-jobgateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flinkdotnet-jobgateway:9253']
+        labels:
+          component: 'flinkdotnet'
+          role: 'jobgateway'
+
+  # Prometheus self-monitoring
+  # Uses localhost since Prometheus scrapes itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          component: 'prometheus'
+          role: 'server'
