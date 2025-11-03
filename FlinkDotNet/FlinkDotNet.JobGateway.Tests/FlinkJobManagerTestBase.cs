@@ -54,8 +54,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 }
             }
             
-            // Create new HttpClient for each test to avoid BaseAddress modification errors
-            this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+            // Create FRESH HttpClient for each test to avoid BaseAddress modification errors
+            // Must dispose any existing HttpClient first to ensure clean state
+            this._httpClient?.Dispose();
+            this._mockHttpMessageHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
             
             // Setup default handler for unmocked HTTP requests to fail fast
             _ = this._mockHttpMessageHandler
