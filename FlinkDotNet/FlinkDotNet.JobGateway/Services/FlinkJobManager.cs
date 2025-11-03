@@ -718,7 +718,8 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         string allMetricsJson = await allMetricsResp.Content.ReadAsStringAsync();
-        List<FlinkMetricEntry> allMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(allMetricsJson) ?? [];
+        this._logger.LogDebug("Raw metrics JSON (first 500 chars): {Json}", allMetricsJson.Length > 500 ? allMetricsJson.Substring(0, 500) : allMetricsJson);
+        List<FlinkMetricEntry> allMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(allMetricsJson, s_caseInsensitiveDeserializerOptions) ?? [];
 
         this._logger.LogDebug("Found {Count} total metrics for vertex {VertexId}", allMetrics.Count, vertexId);
 
@@ -748,7 +749,7 @@ public partial class FlinkJobManager : IFlinkJobManager
                 return;
             }
 
-            List<FlinkMetricEntry> fallbackMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await fallbackResp.Content.ReadAsStringAsync()) ?? [];
+            List<FlinkMetricEntry> fallbackMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await fallbackResp.Content.ReadAsStringAsync(), s_caseInsensitiveDeserializerOptions) ?? [];
             this.ProcessMetricValues(fallbackMetrics, metrics);
             return;
         }
@@ -764,7 +765,7 @@ public partial class FlinkJobManager : IFlinkJobManager
             return;
         }
 
-        List<FlinkMetricEntry> metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync()) ?? [];
+        List<FlinkMetricEntry> metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync(), s_caseInsensitiveDeserializerOptions) ?? [];
         this.ProcessMetricValues(metricsList, metrics);
     }
 

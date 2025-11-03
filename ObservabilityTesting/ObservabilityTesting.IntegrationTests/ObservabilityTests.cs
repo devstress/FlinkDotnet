@@ -207,7 +207,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
         
         var cts = new CancellationTokenSource(TestTimeout);
-        const int expectedMessageCount = 100;
+        const int expectedMessageCount = 1000; // Increased from 100 to allow live monitoring during test execution
         
         // Setup: Create unique topics
         var inputTopic = $"comprehensive-input-{Guid.NewGuid():N}";
@@ -235,8 +235,27 @@ public class ObservabilityTests : LocalTestingTestBase
             await ProduceMessagesAsync(inputTopic, expectedMessageCount, cts.Token);
             TestContext.WriteLine($"✅ Produced {expectedMessageCount} messages to input topic");
             
-            // STEP 3: CRITICAL - Verify messages consumed from output topic BEFORE checking metrics
+            // STEP 2.5: Query metrics IMMEDIATELY while job is actively processing
+            // This is critical because Flink only exposes detailed operator metrics while the job is running
             TestContext.WriteLine();
+            TestContext.WriteLine("═══ Gateway Metrics Validation (During Active Processing) ═══");
+            TestContext.WriteLine("NOTE: Querying metrics while Flink is actively processing messages");
+            TestContext.WriteLine("      for accurate RecordsIn/Out counters.");
+            
+            // Wait a moment for Flink to start processing
+            await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
+            
+            var metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
+            
+            TestContext.WriteLine($"📊 Gateway Metrics (during processing):");
+            TestContext.WriteLine($"   RecordsIn: {metrics.RecordsIn}");
+            TestContext.WriteLine($"   RecordsOut: {metrics.RecordsOut}");
+            TestContext.WriteLine($"   Parallelism: {metrics.Parallelism}");
+            TestContext.WriteLine($"   Checkpoints: {metrics.Checkpoints}");
+            TestContext.WriteLine($"   BackpressureLevel: {metrics.BackpressureLevel}");
+            TestContext.WriteLine();
+            
+            // STEP 3: CRITICAL - Verify messages consumed from output topic AFTER checking metrics
             TestContext.WriteLine("═══ KAFKA MESSAGE METRICS VALIDATION (PRIMARY FOCUS) ═══");
             var consumeTimeout = TimeSpan.FromSeconds(60);
             var consumedMessages = await ConsumeMessagesAsync(outputTopic, expectedMessageCount, consumeTimeout, cts.Token);
@@ -264,22 +283,13 @@ public class ObservabilityTests : LocalTestingTestBase
             Assert.That(consumedMessages.Count, Is.EqualTo(expectedMessageCount), 
                 $"CRITICAL: Should consume exactly {expectedMessageCount} messages (Kafka metrics validation)");
             
-            // Wait for metrics stabilization after confirming messages processed
-            await Task.Delay(TimeSpan.FromSeconds(15), cts.Token);
-            
-            // STEP 4: Query and validate Gateway metrics (especially Kafka message metrics)
+            // STEP 4: Validate Gateway metrics collected during active processing
             TestContext.WriteLine();
-            TestContext.WriteLine("═══ Gateway Metrics Validation ═══");
-            TestContext.WriteLine("NOTE: Flink is proven working (messages consumed and transformed).");
-            TestContext.WriteLine("      This section validates if Gateway metrics API correctly reports Flink stats.");
-            var metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
-            
-            TestContext.WriteLine($"📊 Gateway Metrics:");
-            TestContext.WriteLine($"   RecordsIn: {metrics.RecordsIn}");
-            TestContext.WriteLine($"   RecordsOut: {metrics.RecordsOut}");
-            TestContext.WriteLine($"   Parallelism: {metrics.Parallelism}");
-            TestContext.WriteLine($"   Checkpoints: {metrics.Checkpoints}");
-            TestContext.WriteLine($"   BackpressureLevel: {metrics.BackpressureLevel}");
+            TestContext.WriteLine("═══ Final Metrics Validation ═══");
+            TestContext.WriteLine("Validating metrics collected during active processing:");
+            TestContext.WriteLine($"   RecordsIn: {metrics.RecordsIn} (expected: ~{expectedMessageCount})");
+            TestContext.WriteLine($"   RecordsOut: {metrics.RecordsOut} (expected: ~{expectedMessageCount})");
+            TestContext.WriteLine($"   Parallelism: {metrics.Parallelism} (expected: 1)");
             TestContext.WriteLine();
             
             // PRIMARY VALIDATION: Kafka message metrics
