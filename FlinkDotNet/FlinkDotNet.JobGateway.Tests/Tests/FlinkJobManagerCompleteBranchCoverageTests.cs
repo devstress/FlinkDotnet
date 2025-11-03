@@ -102,7 +102,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpException($"/v1/jobs/{flinkJobId}/vertices", new HttpRequestException("Connection refused"));
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}", new HttpRequestException("Connection refused"));
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -117,7 +117,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpException($"/v1/jobs/{flinkJobId}/vertices", new TaskCanceledException("Network timeout"));
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}", new TaskCanceledException("Network timeout"));
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -742,7 +742,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.NotFound, "");
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.NotFound, "");
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -756,7 +756,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.InternalServerError, "");
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.InternalServerError, "");
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -770,7 +770,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.ServiceUnavailable, "");
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.ServiceUnavailable, "");
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -784,7 +784,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK, "{ malformed json }");
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK, "{ malformed json }");
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -1292,7 +1292,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
@@ -1311,7 +1311,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
@@ -1330,7 +1330,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
@@ -1749,7 +1749,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.BadRequest, "Bad Request");
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.BadRequest, "Bad Request");
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -1763,7 +1763,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.GatewayTimeout, "Gateway Timeout");
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.GatewayTimeout, "Gateway Timeout");
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -2805,7 +2805,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new object[0]
@@ -2832,7 +2832,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = (object?) null
@@ -2859,7 +2859,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[]
@@ -2894,7 +2894,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
@@ -2917,7 +2917,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
@@ -2936,7 +2936,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices = new[] { new { id = "vertex1" } }
@@ -3160,7 +3160,7 @@ namespace FlinkDotNet.JobGateway.Tests
         {
             // Arrange
             var flinkJobId = "test-job-id";
-            this.SetupHttpException($"/v1/jobs/{flinkJobId}/vertices", new OperationCanceledException("Operation was canceled"));
+            this.SetupHttpException($"/v1/jobs/{flinkJobId}", new OperationCanceledException("Operation was canceled"));
             var jobManager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
 
             // Act & Assert
@@ -3355,7 +3355,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     name = $"Operator{i}"
                 });
             }
-            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices", HttpStatusCode.OK,
+            this.SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new
                 {
                     vertices
