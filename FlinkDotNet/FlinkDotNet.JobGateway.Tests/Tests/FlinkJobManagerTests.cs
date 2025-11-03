@@ -11,44 +11,13 @@ using Moq.Protected;
 namespace FlinkDotNet.JobGateway.Tests
 {
     [TestFixture]
-    public class FlinkJobManagerTests
+    public class FlinkJobManagerTests : FlinkJobManagerTestBase
     {
-        private Mock<ILogger<FlinkJobManager>> _mockLogger = null!;
-        private Mock<IConfiguration> _mockConfiguration = null!;
-        private Mock<HttpMessageHandler> _mockHttpMessageHandler = null!;
-        private HttpClient _httpClient = null!;        [OneTimeSetUp]
-        public void OneTimeSetup()
-        {
-            this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            
-            this._mockHttpMessageHandler
-                .Protected()
-                .Setup<Task<HttpResponseMessage>>(
-                    "SendAsync",
-                    ItExpr.IsAny<HttpRequestMessage>(),
-                    ItExpr.IsAny<CancellationToken>())
-                .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-            
-            this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
-            {
-                Timeout = TimeSpan.FromSeconds(1)
-            };
-        }
-
-
-
         [SetUp]
-        public void Setup()
+        public override void Setup()
         {
-            // Set static delays to 1ms for fast test execution
-            FlinkJobManager.SqlGatewayRetryDelay = TimeSpan.FromMilliseconds(1);
-            FlinkJobManager.JarRegistrationPollingDelay = TimeSpan.FromMilliseconds(1);
-            FlinkJobManager.JobRecoveryPollingDelay = TimeSpan.FromMilliseconds(1);
-
-            this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
-            this._mockConfiguration = new Mock<IConfiguration>();
-
-            // Setup default configuration values (returns null for any key by default)
+            base.Setup();
+            // Override default IConfiguration behavior - return null instead of environment variables
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
         }
 
