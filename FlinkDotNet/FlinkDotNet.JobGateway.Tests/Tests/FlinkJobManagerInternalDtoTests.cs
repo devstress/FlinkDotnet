@@ -61,12 +61,17 @@ namespace FlinkDotNet.JobGateway.Tests
             this._httpClient?.Dispose();
         }
 
-        #region FindExistingRunnerJar Tests
+        #region FindExistingRunnerJar Tests - Combined for Performance
 
         [Test]
-        public async Task SubmitJob_WithEnvironmentVariable_AttemptsToUseJarFromEnvVar()
+        public async Task SubmitJob_JarDiscovery_EnvVarAndMultiplePaths()
         {
-            // Arrange - use IConfiguration mocking instead of environment variables
+            // This comprehensive test covers 3 scenarios in one to reduce test execution time:
+            // 1. Environment variable JAR path (FLINK_RUNNER_JAR_PATH)
+            // 2. JAR discovery without environment variable
+            // 3. Multiple path search (current directory, FlinkIRRunner/target)
+            
+            // Arrange - Test with environment variable first
             var testJarPath = "/tmp/nonexistent-runner.jar";
             this._mockConfiguration.Setup(c => c["FLINK_RUNNER_JAR_PATH"]).Returns(testJarPath);
 
@@ -74,7 +79,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             var jobDef = new JobDefinition
             {
-                Metadata = new JobMetadata { JobName = "JAR Env Test" },
+                Metadata = new JobMetadata { JobName = "JAR Discovery Test" },
                 Source = new KafkaSourceDefinition
                 {
                     BootstrapServers = "localhost:9092",
@@ -86,66 +91,35 @@ namespace FlinkDotNet.JobGateway.Tests
 
             this.SetupClusterHealthAndJarMockResponses();
 
-            // Act
-            var result = await manager.SubmitJobAsync(jobDef);
+            // Act - Submit with env var configured
+            var resultWithEnvVar = await manager.SubmitJobAsync(jobDef);
 
             // Assert - Should attempt to use JAR path from environment variable
-            // The JAR won't be found, but the code path should be exercised
-            Assert.That(result, Is.Not.Null);
-        }
+            Assert.That(resultWithEnvVar, Is.Not.Null);
+            
+            // Verify logger was called with JAR path information
+            this._mockLogger.Verify(
+                x => x.Log(
+                    It.IsAny<LogLevel>(),
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((v, t) => v.ToString()!.Contains("jar") || v.ToString()!.Contains("JAR")),
+                    It.IsAny<Exception>(),
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.AtLeastOnce,
+                "Should log JAR-related operations");
 
-        [Test]
-        public async Task SubmitJob_WithoutEnvironmentVariable_SearchesForJar()
-        {
-            // Arrange - No FLINK_RUNNER_JAR_PATH set
-            var manager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
+            // Test scenario 2: without environment variable - it will search multiple paths
+            // This verifies JAR discovery and multiple path search logic
+            this._mockConfiguration.Setup(c => c["FLINK_RUNNER_JAR_PATH"]).Returns((string?)null);
+            
+            // Use the same manager instance which already has HttpClient configured
+            jobDef.Metadata.JobName = "JAR Search Test";
+            
+            // Act - Submit without env var (will search multiple paths)
+            var resultWithoutEnvVar = await manager.SubmitJobAsync(jobDef);
 
-            var jobDef = new JobDefinition
-            {
-                Metadata = new JobMetadata { JobName = "JAR Search Test" },
-                Source = new KafkaSourceDefinition
-                {
-                    BootstrapServers = "localhost:9092",
-                    Topic = "test",
-                    GroupId = "test-group"
-                },
-                Sink = new ConsoleSinkDefinition()
-            };
-
-            this.SetupClusterHealthAndJarMockResponses();
-
-            // Act
-            var result = await manager.SubmitJobAsync(jobDef);
-
-            // Assert - Should search for JAR in standard locations
-            Assert.That(result, Is.Not.Null);
-        }
-
-        [Test]
-        public async Task SubmitJob_SearchesMultiplePaths_ForRunnerJar()
-        {
-            // Arrange
-            var manager = new FlinkJobManager(this._mockLogger.Object, this._mockConfiguration.Object, this._httpClient);
-
-            var jobDef = new JobDefinition
-            {
-                Metadata = new JobMetadata { JobName = "JAR Multi Path Test" },
-                Source = new KafkaSourceDefinition
-                {
-                    BootstrapServers = "localhost:9092",
-                    Topic = "test",
-                    GroupId = "test-group"
-                },
-                Sink = new ConsoleSinkDefinition()
-            };
-
-            this.SetupClusterHealthAndJarMockResponses();
-
-            // Act
-            var result = await manager.SubmitJobAsync(jobDef);
-
-            // Assert - Should search in current directory and FlinkIRRunner/target
-            Assert.That(result, Is.Not.Null);
+            // Assert - Should search for JAR in standard locations and succeed
+            Assert.That(resultWithoutEnvVar, Is.Not.Null);
         }
 
         #endregion
