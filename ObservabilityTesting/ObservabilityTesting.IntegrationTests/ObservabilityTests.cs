@@ -59,6 +59,15 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine("  • End-to-end data pipeline works (Kafka → Flink → Kafka)");
         TestContext.WriteLine();
 
+        // Create unique topics for Test1 to avoid conflicts with Test2
+        var inputTopic = $"test1-input-{Guid.NewGuid():N}";
+        var outputTopic = $"test1-output-{Guid.NewGuid():N}";
+        
+        TestContext.WriteLine($"📋 Test configuration:");
+        TestContext.WriteLine($"   Input topic: {inputTopic}");
+        TestContext.WriteLine($"   Output topic: {outputTopic}");
+        TestContext.WriteLine();
+
         var gatewayEndpoint = await GetGatewayEndpointAsync();
         var kafkaBootstrap = GlobalTestInfrastructure.KafkaConnectionString;
 
@@ -77,7 +86,7 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine("Running SampleApp.RunAsync()...");
             TestContext.WriteLine();
 
-            Task<string> sampleAppTask = SampleApp.Program.RunAsync();
+            Task<string> sampleAppTask = SampleApp.Program.RunAsync(inputTopic, outputTopic);
             Task completedTask = await Task.WhenAny(sampleAppTask, Task.Delay(TimeSpan.FromMinutes(2)));
 
             if (completedTask != sampleAppTask)
@@ -108,7 +117,7 @@ public class ObservabilityTests : LocalTestingTestBase
 
             using (var consumer = new Confluent.Kafka.ConsumerBuilder<string, string>(consumerConfig).Build())
             {
-                consumer.Subscribe("sample_output");
+                consumer.Subscribe(outputTopic);
 
                 var stopwatch = Stopwatch.StartNew();
                 var timeout = TimeSpan.FromSeconds(30);

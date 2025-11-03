@@ -130,7 +130,7 @@ string taskManagerFlinkProperties =
     "metrics.reporter.prom.port: 9251\n" +
     "metrics.reporter.prom.filterLabelValueCharacters: false\n";
 
-_ = builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
+builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
     .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // Standard Flink environment variable  
     .WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties)  // Metrics configuration only
@@ -183,16 +183,20 @@ Console.WriteLine("   [INFO] SQL Gateway configured on port 8083");
 Console.WriteLine("[INFO] Mounted Kafka connector JARs to SQL Gateway");
 
 // 5. Prometheus - Metrics collection
-// CRITICAL: Prometheus needs kafka-exporter dependency for Docker network DNS resolution
+// CRITICAL: Use ObservabilityTesting-specific prometheus.yml with Aspire internal networks
 Console.WriteLine("[INFO] Configuring Prometheus...");
-string prometheusConfig = Path.Combine(repoRoot, "LocalTesting", "prometheus.yml");
+string prometheusConfig = Path.Combine(repoRoot, "ObservabilityTesting", "prometheus.yml");
 IResourceBuilder<ContainerResource> prometheusBuilder = builder.AddContainer("prometheus", "prom/prometheus", LatestTag)
     .WithHttpEndpoint(targetPort: Ports.PrometheusHostPort, name: "prometheus-http")
     .WithBindMount(prometheusConfig, "/etc/prometheus/prometheus.yml", isReadOnly: true)
     .WithLifetime(ContainerLifetime.Persistent);
 
+// Ensure Prometheus can reach all metrics endpoints via Aspire network
+// Using WaitFor to establish network connectivity for DNS resolution
+prometheusBuilder = prometheusBuilder
+    .WaitFor(jobManager);
+
 // Add kafka-exporter dependency if it was deployed
-// WaitFor() ensures Prometheus and kafka-exporter are on the same Docker network for DNS resolution
 if (kafkaExporter is not null)
 {
     prometheusBuilder = prometheusBuilder.WaitFor(kafkaExporter);
@@ -232,6 +236,7 @@ builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WithEnvironment("Metrics__Prometheus__Path", "/metrics") // Metrics path
     .WaitFor(jobManager)
     .WaitFor(sqlGateway)
+    .WaitFor(prometheus)  // Ensure Prometheus is ready to scrape Gateway metrics
     .WithLifetime(ContainerLifetime.Persistent);
 
 Console.WriteLine($"   [INFO] FlinkDotNet JobGateway will use pre-built Docker image: {gatewayImageTag}");
