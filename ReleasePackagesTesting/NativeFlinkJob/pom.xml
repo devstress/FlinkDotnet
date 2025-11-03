@@ -19,6 +19,15 @@
     <flink.version>2.1.0</flink.version>
     <kafka.version>3.7.0</kafka.version>
     <slf4j.version>1.7.36</slf4j.version>
+    
+    <!-- HTTP Wagon configuration for reliable artifact downloads -->
+    <!-- Addresses transient network failures during dependency resolution -->
+    <maven.wagon.http.connectionTimeout>30000</maven.wagon.http.connectionTimeout>
+    <maven.wagon.http.readTimeout>60000</maven.wagon.http.readTimeout>
+    <maven.wagon.httpconnectionManager.ttlSeconds>120</maven.wagon.httpconnectionManager.ttlSeconds>
+    <maven.wagon.http.retryHandler.count>3</maven.wagon.http.retryHandler.count>
+    <maven.wagon.http.retryHandler.requestSentEnabled>true</maven.wagon.http.retryHandler.requestSentEnabled>
+    <maven.wagon.http.pool>true</maven.wagon.http.pool>
   </properties>
 
   <dependencies>
@@ -62,6 +71,15 @@
   </dependencies>
 
   <build>
+    <!-- HTTP Wagon extension for reliable artifact downloads with retry logic -->
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-http</artifactId>
+        <version>3.5.3</version>
+      </extension>
+    </extensions>
+    
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
