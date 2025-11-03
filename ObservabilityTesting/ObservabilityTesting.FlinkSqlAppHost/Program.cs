@@ -101,7 +101,10 @@ string jobManagerFlinkProperties =
     "metrics.reporters: prom\n" +
     "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
     "metrics.reporter.prom.port: 9250\n" +
-    "metrics.reporter.prom.filterLabelValueCharacters: false\n";
+    "metrics.reporter.prom.filterLabelValueCharacters: false\n" +
+    "metrics.scope.operator: <host>.taskmanager.<tm_id>.<job_name>.<operator_name>.<subtask_index>\n" +
+    "metrics.latency.interval: 1000\n" +
+    "metrics.latency.granularity: operator\n";
 
 // Mount Kafka connector JARs - CRITICAL for Flink to read/write Kafka topics
 string connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
@@ -128,7 +131,10 @@ string taskManagerFlinkProperties =
     "metrics.reporters: prom\n" +
     "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
     "metrics.reporter.prom.port: 9251\n" +
-    "metrics.reporter.prom.filterLabelValueCharacters: false\n";
+    "metrics.reporter.prom.filterLabelValueCharacters: false\n" +
+    "metrics.scope.operator: <host>.taskmanager.<tm_id>.<job_name>.<operator_name>.<subtask_index>\n" +
+    "metrics.latency.interval: 1000\n" +
+    "metrics.latency.granularity: operator\n";
 
 builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
