@@ -1,7 +1,5 @@
 using Flink.JobBuilder.Models;
 using FlinkDotNet.DataStream;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ObservabilityTesting.IntegrationTests;
 
