@@ -42,7 +42,7 @@ public class ObservabilityTests : LocalTestingTestBase
     /// Validates that external applications can discover FlinkDotNet JobGateway and submit jobs successfully.
     /// </summary>
     [Test, Order(1)]
-    [Timeout(180000)] // 3 minutes
+    [CancelAfter(180000)] // 3 minutes
     [Category("integration")]
     [Category("gateway")]
     public async Task Test1_SampleApp_EndToEndIntegration()
@@ -379,7 +379,7 @@ public class ObservabilityTests : LocalTestingTestBase
             
             // Validate Kafka metrics are available in Prometheus
             var kafkaMetricsQuery = "flink_taskmanager_job_task_operator_records_out_rate";
-            var queryResponse = await _httpClient.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/query?query={kafkaMetricsQuery}", cts.Token);
+            var queryResponse = await _httpClient!.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/query?query={kafkaMetricsQuery}", cts.Token);
             var resultType = queryResponse?.RootElement.GetProperty("data").GetProperty("resultType").GetString();
             
             Assert.That(resultType, Is.EqualTo("vector"), "Kafka metrics query should return vector results");
