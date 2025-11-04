@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Json;
 using System.Threading;
@@ -504,9 +505,11 @@ public class UnifiedSinkV2ConsolidatedTests
         public List<string> WrittenElements => _writtenElements;
         public List<string> CommittedElements => _committedElements;
 
+        // SonarQube S1006: Analyzer can't resolve that 'default' for int matches 'default!' for generic TWriterState in interface
+        [SuppressMessage("SonarQube", "S1006:Method overrides should not change parameter defaults", Justification = "Default value matches interface - SonarQube limitation with generic type resolution")]
         public Task<ISinkWriter<string, string, int>> CreateWriterAsync(
             SinkWriterContext context,
-            int restoredState = default!,
+            int restoredState = default,
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult<ISinkWriter<string, string, int>>(
