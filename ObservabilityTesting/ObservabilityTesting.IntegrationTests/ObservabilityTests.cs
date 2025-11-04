@@ -323,12 +323,17 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine("Validating JobManager, TaskManager, and Kafka metrics...");
             TestContext.WriteLine();
             
+            // STEP 4.1.1: Diagnostic - Verify Prometheus is accessible and has targets
+            TestContext.WriteLine("🔍 DIAGNOSTIC: Verifying Prometheus Configuration");
+            await VerifyPrometheusHealthAsync(prometheusEndpoint, cts.Token);
+            TestContext.WriteLine();
+            
             // CRITICAL: Wait and retry to ensure Prometheus has scraped ALL metrics
             // ALL metrics MUST be > 0 to prove metrics collection works
             TestContext.WriteLine("Waiting for Prometheus to scrape all metrics...");
             int retryCount = 0;
-            const int maxRetries = 15;
-            const int retryDelayMs = 3000;
+            const int maxRetries = 10;
+            const int retryDelayMs = 2000; // 2 seconds is enough for Prometheus scraping
             
             string[] requiredNonZeroMetrics = new[]
             {
@@ -341,14 +346,16 @@ public class ObservabilityTests : LocalTestingTestBase
             while (retryCount < maxRetries)
             {
                 bool allMetricsValid = true;
+                var missingMetrics = new List<string>();
+                var zeroMetrics = new List<string>();
                 
                 foreach (var metricKey in requiredNonZeroMetrics)
                 {
                     if (!metrics.CustomMetrics.TryGetValue(metricKey, out var metricValue))
                     {
                         allMetricsValid = false;
-                        TestContext.WriteLine($"⏳ Missing metric: {metricKey}");
-                        break;
+                        missingMetrics.Add(metricKey);
+                        continue;
                     }
                     
                     long value = metricValue switch
@@ -362,8 +369,19 @@ public class ObservabilityTests : LocalTestingTestBase
                     if (value <= 0)
                     {
                         allMetricsValid = false;
-                        TestContext.WriteLine($"⏳ Metric {metricKey} is 0, waiting for Prometheus scrape...");
-                        break;
+                        zeroMetrics.Add(metricKey);
+                    }
+                }
+                
+                if (!allMetricsValid)
+                {
+                    if (missingMetrics.Count > 0)
+                    {
+                        TestContext.WriteLine($"⏳ Missing metrics: {string.Join(", ", missingMetrics)}");
+                    }
+                    if (zeroMetrics.Count > 0)
+                    {
+                        TestContext.WriteLine($"⏳ Zero-value metrics: {string.Join(", ", zeroMetrics)}");
                     }
                 }
                 
@@ -761,6 +779,138 @@ public class ObservabilityTests : LocalTestingTestBase
             Assert.Fail($"{metricName} (key: {metricKey}) was not found in CustomMetrics. " +
                        $"Expected all comprehensive metrics to be collected. " +
                        $"Available metrics: {string.Join(", ", metrics.CustomMetrics.Keys)}");
+        }
+    }
+
+    /// <summary>
+    /// Verifies Prometheus health and configuration to distinguish between config errors and scraping issues
+    /// </summary>
+    private async Task VerifyPrometheusHealthAsync(string prometheusEndpoint, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Check 1: Verify Prometheus is accessible
+            TestContext.WriteLine($"   1️⃣ Checking Prometheus accessibility at {prometheusEndpoint}...");
+            var healthResponse = await _httpClient!.GetAsync($"{prometheusEndpoint}/-/healthy", cancellationToken);
+            if (!healthResponse.IsSuccessStatusCode)
+            {
+                TestContext.WriteLine($"   ❌ CONFIGURATION ERROR: Prometheus health check failed with status {healthResponse.StatusCode}");
+                TestContext.WriteLine($"      → This indicates Prometheus is not running or not accessible");
+                return;
+            }
+            TestContext.WriteLine($"   ✅ Prometheus is accessible and healthy");
+
+            // Check 2: Verify Prometheus targets (Flink JobManager, TaskManager, Kafka exporters)
+            TestContext.WriteLine($"   2️⃣ Checking Prometheus targets configuration...");
+            var targetsResponse = await _httpClient.GetFromJsonAsync<JsonDocument>(
+                $"{prometheusEndpoint}/api/v1/targets", cancellationToken);
+            
+            if (targetsResponse != null && 
+                targetsResponse.RootElement.TryGetProperty("data", out var dataEl) &&
+                dataEl.TryGetProperty("activeTargets", out var targetsEl))
+            {
+                var activeTargets = targetsEl.EnumerateArray().ToList();
+                TestContext.WriteLine($"   📊 Active Prometheus targets: {activeTargets.Count}");
+                
+                var targetsByJob = new Dictionary<string, int>();
+                var upTargets = 0;
+                var downTargets = 0;
+                
+                foreach (var target in activeTargets)
+                {
+                    if (target.TryGetProperty("labels", out var labels) &&
+                        labels.TryGetProperty("job", out var jobLabel))
+                    {
+                        string jobName = jobLabel.GetString() ?? "unknown";
+                        targetsByJob.TryGetValue(jobName, out var count);
+                        targetsByJob[jobName] = count + 1;
+                    }
+                    
+                    if (target.TryGetProperty("health", out var health))
+                    {
+                        string healthStatus = health.GetString() ?? "unknown";
+                        if (healthStatus == "up")
+                            upTargets++;
+                        else
+                            downTargets++;
+                    }
+                }
+                
+                TestContext.WriteLine($"   📈 Target health: {upTargets} up, {downTargets} down");
+                
+                foreach (var (job, count) in targetsByJob.OrderBy(kv => kv.Key))
+                {
+                    TestContext.WriteLine($"      - {job}: {count} target(s)");
+                }
+                
+                // Check for expected targets
+                string[] expectedJobs = { "flink-jobmanager", "flink-taskmanager", "kafka-topics" };
+                var missingJobs = new List<string>();
+                
+                foreach (var expectedJob in expectedJobs)
+                {
+                    if (!targetsByJob.ContainsKey(expectedJob))
+                    {
+                        missingJobs.Add(expectedJob);
+                    }
+                }
+                
+                if (missingJobs.Count > 0)
+                {
+                    TestContext.WriteLine($"   ⚠️  CONFIGURATION WARNING: Missing expected Prometheus targets: {string.Join(", ", missingJobs)}");
+                    TestContext.WriteLine($"      → Check prometheus.yml scrape_configs");
+                }
+                
+                if (downTargets > 0)
+                {
+                    TestContext.WriteLine($"   ⚠️  SCRAPING WARNING: {downTargets} target(s) are down");
+                    TestContext.WriteLine($"      → Prometheus cannot scrape metrics from these targets");
+                }
+                
+                if (upTargets == 0)
+                {
+                    TestContext.WriteLine($"   ❌ CONFIGURATION ERROR: No Prometheus targets are up");
+                    TestContext.WriteLine($"      → Check that Flink and exporters are running and accessible");
+                }
+            }
+            else
+            {
+                TestContext.WriteLine($"   ⚠️  Could not retrieve Prometheus targets (API response format unexpected)");
+            }
+
+            // Check 3: Verify we can query a basic Flink metric
+            TestContext.WriteLine($"   3️⃣ Testing Prometheus query for Flink metrics...");
+            string testQuery = Uri.EscapeDataString("flink_jobmanager_Status_JVM_Memory_Heap_Used");
+            var queryResponse = await _httpClient.GetFromJsonAsync<JsonDocument>(
+                $"{prometheusEndpoint}/api/v1/query?query={testQuery}", cancellationToken);
+            
+            if (queryResponse != null &&
+                queryResponse.RootElement.TryGetProperty("status", out var statusEl) &&
+                statusEl.GetString() == "success" &&
+                queryResponse.RootElement.TryGetProperty("data", out var queryDataEl) &&
+                queryDataEl.TryGetProperty("result", out var resultEl))
+            {
+                int resultCount = resultEl.GetArrayLength();
+                if (resultCount > 0)
+                {
+                    TestContext.WriteLine($"   ✅ Successfully queried Flink JobManager metrics ({resultCount} result(s))");
+                }
+                else
+                {
+                    TestContext.WriteLine($"   ⚠️  SCRAPING WARNING: Query succeeded but returned no results");
+                    TestContext.WriteLine($"      → Prometheus may not have scraped Flink metrics yet");
+                    TestContext.WriteLine($"      → Or Flink metrics reporter is not exposing metrics");
+                }
+            }
+            else
+            {
+                TestContext.WriteLine($"   ⚠️  Failed to query Flink metrics from Prometheus");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"   ❌ DIAGNOSTIC ERROR: {ex.Message}");
+            TestContext.WriteLine($"      → This may indicate network issues or Prometheus configuration problems");
         }
     }
 
