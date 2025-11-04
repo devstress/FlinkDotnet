@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using Confluent.Kafka;
-using Confluent.Kafka.Admin;
 using NUnit.Framework;
 
 namespace ObservabilityTesting.IntegrationTests;

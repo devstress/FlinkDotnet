@@ -1133,15 +1133,30 @@ public class ObservabilityTests : LocalTestingTestBase
         if (recordsOut.HasValue)
             metrics["RecordsOut"] = recordsOut.Value;
 
-        // Try Source operator bytes first, fallback to all operators if Source doesn't match
+        // BytesRead: Try multiple queries to find the right metric
+        // According to Flink docs, numBytesIn is bytes received by operator (from source)
         var bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\",operator_name=~\".*Source.*\"}})", cancellationToken);
+            $"sum(flink_taskmanager_job_task_operator_numBytesInPerSecond{{job_id=\"{jobId}\"}})", cancellationToken);
         
         if (!bytesRead.HasValue || bytesRead.Value == 0)
         {
-            // Fallback: try without operator_name filter
+            // Try cumulative counter instead of rate
             bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
-                $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\"}})", cancellationToken);
+                $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\"}})", cancellationToken);
+        }
+        
+        if (!bytesRead.HasValue || bytesRead.Value == 0)
+        {
+            // Try with Source operator filter
+            bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
+                $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ource.*\"}})", cancellationToken);
+        }
+        
+        if (!bytesRead.HasValue || bytesRead.Value == 0)
+        {
+            // Try numBytesOut from Source (bytes leaving source operator)
+            bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
+                $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ource.*\"}})", cancellationToken);
         }
         
         if (bytesRead.HasValue)
@@ -1150,15 +1165,29 @@ public class ObservabilityTests : LocalTestingTestBase
             metrics["Operator.BytesRead"] = bytesRead.Value;
         }
 
-        // Try Sink operator bytes first, fallback to all operators if Sink doesn't match
+        // BytesWritten: Try multiple queries
         var bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\",operator_name=~\".*Sink.*\"}})", cancellationToken);
+            $"sum(flink_taskmanager_job_task_operator_numBytesOutPerSecond{{job_id=\"{jobId}\"}})", cancellationToken);
         
         if (!bytesWritten.HasValue || bytesWritten.Value == 0)
         {
-            // Fallback: try without operator_name filter
+            // Try cumulative counter
             bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
-                $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\"}})", cancellationToken);
+                $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\"}})", cancellationToken);
+        }
+        
+        if (!bytesWritten.HasValue || bytesWritten.Value == 0)
+        {
+            // Try with Sink operator filter  
+            bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
+                $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ink.*\"}})", cancellationToken);
+        }
+        
+        if (!bytesWritten.HasValue || bytesWritten.Value == 0)
+        {
+            // Try numBytesIn to Sink (bytes entering sink operator)
+            bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
+                $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ink.*\"}})", cancellationToken);
         }
         
         if (bytesWritten.HasValue)

@@ -87,7 +87,7 @@ public abstract class LocalTestingTestBase
     /// <summary>
     /// Create Kafka topic. Delegates to KafkaHelpers.
     /// </summary>
-    protected Task CreateTopicAsync(string topicName, int partitions = 1, short replicationFactor = 1) =>
+    protected static Task CreateTopicAsync(string topicName, int partitions = 1, short replicationFactor = 1) =>
         KafkaHelpers.CreateTopicAsync(KafkaConnectionString!, topicName, partitions, replicationFactor);
 
     /// <summary>
