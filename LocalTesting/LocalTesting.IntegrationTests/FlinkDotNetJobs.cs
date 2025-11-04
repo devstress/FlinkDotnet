@@ -16,17 +16,6 @@ namespace LocalTesting.IntegrationTests;
 /// </summary>
 public static class FlinkDotNetJobs
 {
-    /// <summary>
-    /// Generates a Flink-compatible job ID.
-    /// Flink job IDs are 16 bytes (128-bit) shown as 32 lowercase hexadecimal characters without dashes.
-    /// This matches the format used by Flink's JobID.generate() and expected by the REST API.
-    /// </summary>
-    /// <returns>32 lowercase hexadecimal characters (e.g., "6511c409ff584d1e93b3638f56d14e01")</returns>
-    private static string GenerateFlinkJobId()
-    {
-        // Generate a GUID and convert to Flink format (32 hex chars, lowercase, no dashes)
-        return Guid.NewGuid().ToString("N").ToLowerInvariant();
-    }
 
     /// <summary>
     /// Creates a simple DataStream job that converts input strings to uppercase

@@ -8,7 +8,7 @@ using NUnit.Framework;
 namespace LocalTesting.IntegrationTests;
 
 /// <summary>
-/// Consolidated integration tests for Table API & SQL features (Flink 2.1+).
+/// Consolidated integration tests for Table API &amp; SQL features (Flink 2.1+).
 /// Tests validate VARIANT type, JSON functions, and Native Table API.
 /// Maximum 5 tests per Flink version as per project guidelines.
 /// </summary>
@@ -82,11 +82,11 @@ public class TableApiTests
 
         // Assert - Source structure
         Assert.That(deserialized, Is.Not.Null);
-        Assert.That(deserialized.Source, Is.InstanceOf<TableSourceDefinition>());
+        Assert.That(deserialized!.Source, Is.InstanceOf<TableSourceDefinition>());
 
         var tableSource = deserialized.Source as TableSourceDefinition;
         Assert.That(tableSource, Is.Not.Null);
-        Assert.That(tableSource.Type, Is.EqualTo("table"));
+        Assert.That(tableSource!.Type, Is.EqualTo("table"));
         Assert.That(tableSource.TableName, Is.EqualTo("events"));
         Assert.That(tableSource.Schema["event_data"], Is.EqualTo("VARIANT"));
 
@@ -95,18 +95,18 @@ public class TableApiTests
 
         var parseOp = deserialized.Operations[0] as ParseJsonOperationDefinition;
         Assert.That(parseOp, Is.Not.Null);
-        Assert.That(parseOp.Type, Is.EqualTo("parseJson"));
+        Assert.That(parseOp!.Type, Is.EqualTo("parseJson"));
         Assert.That(parseOp.FunctionType, Is.EqualTo("TRY_PARSE_JSON"));
         Assert.That(parseOp.JsonPath, Is.EqualTo("$.user.name"));
 
         var selectOp = deserialized.Operations[1] as TableOperationDefinition;
         Assert.That(selectOp, Is.Not.Null);
-        Assert.That(selectOp.OperationType, Is.EqualTo("select"));
+        Assert.That(selectOp!.OperationType, Is.EqualTo("select"));
         Assert.That(selectOp.Columns, Has.Count.EqualTo(3));
 
         var whereOp = deserialized.Operations[2] as TableOperationDefinition;
         Assert.That(whereOp, Is.Not.Null);
-        Assert.That(whereOp.OperationType, Is.EqualTo("where"));
+        Assert.That(whereOp!.OperationType, Is.EqualTo("where"));
     }
 
     #endregion
@@ -245,7 +245,7 @@ public class TableApiTests
         Assert.That(aggregatedTable.Operations, Has.Count.EqualTo(1));
         var aggOp = aggregatedTable.Operations[0] as TableOperationDefinition;
         Assert.That(aggOp, Is.Not.Null);
-        Assert.That(aggOp.OperationType, Is.EqualTo("aggregate"));
+        Assert.That(aggOp!.OperationType, Is.EqualTo("aggregate"));
         Assert.That(aggOp.GroupByKeys, Has.Count.EqualTo(1));
         Assert.That(aggOp.GroupByKeys[0], Is.EqualTo("customer_id"));
         Assert.That(aggOp.Aggregations, Has.Count.EqualTo(3));
@@ -356,11 +356,11 @@ public class TableApiTests
         var ptfDeserialized = JsonSerializer.Deserialize<JobDefinition>(ptfJson);
 
         Assert.That(ptfDeserialized, Is.Not.Null);
-        Assert.That(ptfDeserialized.Operations, Has.Count.EqualTo(1));
+        Assert.That(ptfDeserialized!.Operations, Has.Count.EqualTo(1));
 
         var ptfOp = ptfDeserialized.Operations[0] as ProcessTableFunctionDefinition;
         Assert.That(ptfOp, Is.Not.Null);
-        Assert.That(ptfOp.Type, Is.EqualTo("processTableFunction"));
+        Assert.That(ptfOp!.Type, Is.EqualTo("processTableFunction"));
         Assert.That(ptfOp.FunctionName, Is.EqualTo("analyze_session"));
         Assert.That(ptfOp.ClassName, Is.EqualTo("SessionAnalyzer"));
         Assert.That(ptfOp.InputColumns, Has.Count.EqualTo(3));

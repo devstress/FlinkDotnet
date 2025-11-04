@@ -81,8 +81,8 @@ public partial class FlinkJobManager
         private int _checkpoints;
         private DateTime? _lastCheckpoint;
         private string _backpressureLevel = "UNKNOWN";
-        private long _bytesRead;
-        private long _bytesWritten;
+        private readonly long _bytesRead;
+        private readonly long _bytesWritten;
         private readonly Dictionary<string, object> _customMetrics = new(StringComparer.OrdinalIgnoreCase);
 
         public void AddRecordsIn(long value) => this._recordsIn += value;

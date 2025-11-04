@@ -53,8 +53,8 @@ public class PerformanceFormatTests
                     },
                     ColumnFamilyOptions = new Dictionary<string, object>
                     {
-                        { "blockCacheSize", 268435456L }, // 256MB
-                        { "writeBufferSize", 67108864L }  // 64MB
+                        { "blockCacheSize", 268_435_456L }, // 256MB
+                        { "writeBufferSize", 67_108_864L }  // 64MB
                     }
                 }
             }
@@ -267,10 +267,10 @@ public class PerformanceFormatTests
 
     #endregion
 
-    #region Test 3: All 4 Performance & Format Features
+    #region Test 3: All 4 Performance &amp; Format Features
 
     /// <summary>
-    /// Test 3: Validates ALL 4 Performance & Format features including:
+    /// Test 3: Validates ALL 4 Performance &amp; Format features including:
     /// - Feature 1: Custom Async Sink Batching
     /// - Feature 2: Enhanced State Backend Configuration  
     /// - Feature 3: Smile Format for Compiled Plans
@@ -635,7 +635,7 @@ public class PerformanceFormatTests
                         { "bootstrapServers", "kafka:9092" },
                         { "compressionType", "snappy" },
                         { "lingerMs", 100 },
-                        { "batchSize", 1048576 } // 1MB
+                        { "batchSize", 1_048_576 } // 1MB
                     },
                     BatchingConfig = new BatchingConfig
                     {
