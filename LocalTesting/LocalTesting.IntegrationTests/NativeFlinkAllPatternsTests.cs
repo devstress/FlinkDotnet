@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Http.Json;
 using Confluent.Kafka;
 using NUnit.Framework;
@@ -38,6 +39,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 
     #region Test Infrastructure
 
+    [SuppressMessage("SonarQube", "S4040:Strings should be normalized to uppercase", Justification = "Kafka topic names must be lowercase")]
     private async Task RunNativeFlinkPattern(
         string patternName,
         string[] inputMessages,
@@ -45,6 +47,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         string description,
         bool allowLongerProcessing = false)
     {
+        // Kafka topic names must be lowercase, so ToLowerInvariant is correct here
         var inputTopic = $"lt.pattern.{patternName.ToLowerInvariant()}.input.{TestContext.CurrentContext.Test.ID}";
         var outputTopic = $"lt.pattern.{patternName.ToLowerInvariant()}.output.{TestContext.CurrentContext.Test.ID}";
 

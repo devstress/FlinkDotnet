@@ -2,7 +2,6 @@ using System.Diagnostics;
 using Aspire.Hosting;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
-using LocalTesting.FlinkSqlAppHost;
 using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
@@ -869,7 +868,7 @@ public abstract class LocalTestingTestBase
         }
         catch (CreateTopicsException ex)
         {
-            if (ex.Results?.Any(r => r.Error.Code == ErrorCode.TopicAlreadyExists) == true)
+            if (ex.Results?.Exists(r => r.Error.Code == ErrorCode.TopicAlreadyExists) == true)
             {
                 TestContext.WriteLine($"ℹ️ Topic '{topicName}' already exists");
             }
@@ -1133,7 +1132,11 @@ public abstract class LocalTestingTestBase
         return taskManagers;
     }
 
-    private static async Task<int> ProcessTaskManagersAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, System.Text.Json.JsonElement taskManagers, System.Text.StringBuilder logsBuilder)
+    private static async Task<int> ProcessTaskManagersAsync(
+        System.Net.Http.HttpClient httpClient,
+        string flinkEndpoint,
+        System.Text.Json.JsonElement taskManagers,
+        System.Text.StringBuilder logsBuilder)
     {
         int tmCount = 0;
         foreach (var tm in taskManagers.EnumerateArray())
@@ -1212,7 +1215,7 @@ public abstract class LocalTestingTestBase
             // Get all container names and filter in C# to handle Aspire's random suffixes
             var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
             var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            var containerName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var containerName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (string.IsNullOrEmpty(containerName))
             {
@@ -1370,7 +1373,7 @@ public abstract class LocalTestingTestBase
             TestContext.WriteLine($"🐳 Flink containers found: {string.Join(", ", flinkContainers)}");
 
             // Find JobManager container
-            var jmName = flinkContainers.FirstOrDefault(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var jmName = flinkContainers.Find(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(jmName))
             {
@@ -1385,7 +1388,7 @@ public abstract class LocalTestingTestBase
             }
 
             // Find TaskManager container
-            var tmName = flinkContainers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var tmName = flinkContainers.Find(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(tmName))
             {
@@ -1424,7 +1427,7 @@ public abstract class LocalTestingTestBase
             var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
             // Find JobManager container
-            var jmName = containers.FirstOrDefault(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var jmName = Array.Find(containers, name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(jmName))
             {
@@ -1435,7 +1438,7 @@ public abstract class LocalTestingTestBase
             }
 
             // Find TaskManager container
-            var tmName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var tmName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(tmName))
             {
@@ -1473,7 +1476,7 @@ public abstract class LocalTestingTestBase
             // Get all container names and filter in C# to handle Aspire's random suffixes
             var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
             var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            var tmName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var tmName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (string.IsNullOrWhiteSpace(tmName))
             {

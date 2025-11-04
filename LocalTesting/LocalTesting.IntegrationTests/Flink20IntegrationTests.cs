@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Text.Json;
 using Flink.JobBuilder.Models;
 using NUnit.Framework;
@@ -108,11 +107,11 @@ public class Flink20IntegrationTests
 
         // Assert: Verify configuration persists through serialization
         Assert.That(deserialized, Is.Not.Null);
-        Assert.That(deserialized!.Metadata.StateBackendConfig.Type, Is.EqualTo("disaggregated"));
-        Assert.That(deserialized.Metadata.StateBackendConfig.StorageType, Is.EqualTo("hdfs"));
-        Assert.That(deserialized.Metadata.StateBackendConfig.StoragePath, Does.Contain("hdfs://"));
-        Assert.That(deserialized.Metadata.StateBackendConfig.EnableCompression, Is.False);
-        Assert.That(deserialized.Metadata.StateBackendConfig.AsyncCompactionThreads, Is.EqualTo(4));
+        Assert.That(deserialized!.Metadata!.StateBackendConfig!.Type, Is.EqualTo("disaggregated"));
+        Assert.That(deserialized!.Metadata!.StateBackendConfig!.StorageType, Is.EqualTo("hdfs"));
+        Assert.That(deserialized!.Metadata!.StateBackendConfig!.StoragePath, Does.Contain("hdfs://"));
+        Assert.That(deserialized!.Metadata!.StateBackendConfig!.EnableCompression, Is.False);
+        Assert.That(deserialized!.Metadata!.StateBackendConfig!.AsyncCompactionThreads, Is.EqualTo(4));
     }
 
     #endregion
@@ -271,15 +270,15 @@ public class Flink20IntegrationTests
 
         // Assert: Verify legacy backend configuration
         Assert.That(deserializedLegacy, Is.Not.Null);
-        Assert.That(deserializedLegacy!.Metadata.StateBackendConfig.Type, Is.EqualTo("rocksdb"));
-        Assert.That(deserializedLegacy.Metadata.StateBackendConfig.PredefinedProfile, Is.Not.Null);
-        Assert.That(deserializedLegacy.Metadata.StateBackendConfig.CheckpointDir, Does.StartWith("file://"));
+        Assert.That(deserializedLegacy!.Metadata!.StateBackendConfig!.Type, Is.EqualTo("rocksdb"));
+        Assert.That(deserializedLegacy!.Metadata!.StateBackendConfig!.PredefinedProfile, Is.Not.Null);
+        Assert.That(deserializedLegacy!.Metadata!.StateBackendConfig!.CheckpointDir, Does.StartWith("file://"));
 
         // Assert: Verify disaggregated backend configuration
         Assert.That(deserializedModern, Is.Not.Null);
-        Assert.That(deserializedModern!.Metadata.StateBackendConfig.Type, Is.EqualTo("disaggregated"));
-        Assert.That(deserializedModern.Metadata.StateBackendConfig.StorageType, Is.EqualTo("s3"));
-        Assert.That(deserializedModern.Metadata.StateBackendConfig.EnableCompression, Is.True);
+        Assert.That(deserializedModern!.Metadata!.StateBackendConfig!.Type, Is.EqualTo("disaggregated"));
+        Assert.That(deserializedModern!.Metadata!.StateBackendConfig!.StorageType, Is.EqualTo("s3"));
+        Assert.That(deserializedModern!.Metadata!.StateBackendConfig!.EnableCompression, Is.True);
 
         // Assert: Verify both support incremental checkpoints
         Assert.That(deserializedLegacy.Metadata.StateBackendConfig.IncrementalCheckpoints, Is.True);
