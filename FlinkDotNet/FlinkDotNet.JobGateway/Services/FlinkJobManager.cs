@@ -1047,10 +1047,7 @@ public partial class FlinkJobManager : IFlinkJobManager
             sourceMetrics.Count, sinkMetrics.Count, parallelismMetrics.Count);
 
         // Build query string for operator-specific metrics
-        List<string> metricsToQuery = new();
-        metricsToQuery.AddRange(sourceMetrics);
-        metricsToQuery.AddRange(sinkMetrics);
-        metricsToQuery.AddRange(parallelismMetrics);
+        List<string> metricsToQuery = [..sourceMetrics, ..sinkMetrics, ..parallelismMetrics];
 
         if (metricsToQuery.Count == 0)
         {
