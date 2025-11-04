@@ -883,7 +883,7 @@ public partial class FlinkJobManager : IFlinkJobManager
                 foundMetrics = true;
             }
 
-            // ===== KAFKA CONSUMER METRICS (if available via kafka-exporter) =====
+            // ===== KAFKA TOPIC METRICS (if available via kafka-exporter) =====
             // Consumer lag - requires kafka-exporter or similar
             string kafkaLagQuery = $"sum(kafka_consumergroup_lag{{consumergroup=~\".*{flinkJobId.Substring(0, Math.Min(8, flinkJobId.Length))}.*\"}})";
             long? consumerLag = await this.QueryPrometheusMetricAsync(prometheusUrl, kafkaLagQuery);
@@ -891,6 +891,57 @@ public partial class FlinkJobManager : IFlinkJobManager
             {
                 metrics.AddCustomMetric("Kafka.Consumer.Lag", consumerLag.Value);
                 this._logger.LogInformation("Found Kafka Consumer Lag: {Value}", consumerLag.Value);
+                foundMetrics = true;
+            }
+
+            // Topic partition offsets (highest offset across all partitions)
+            // This shows total messages available in topics
+            string topicOffsetsQuery = "sum by (topic) (kafka_topic_partition_current_offset)";
+            long? topicOffsets = await this.QueryPrometheusMetricAsync(prometheusUrl, topicOffsetsQuery);
+            if (topicOffsets.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Topic.TotalOffsets", topicOffsets.Value);
+                this._logger.LogInformation("Found Kafka Topic Total Offsets: {Value}", topicOffsets.Value);
+                foundMetrics = true;
+            }
+
+            // Topic partition count (number of partitions across all topics being monitored)
+            string partitionCountQuery = "count(kafka_topic_partition_current_offset)";
+            long? partitionCount = await this.QueryPrometheusMetricAsync(prometheusUrl, partitionCountQuery);
+            if (partitionCount.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Topic.PartitionCount", partitionCount.Value);
+                this._logger.LogInformation("Found Kafka Topic Partition Count: {Value}", partitionCount.Value);
+                foundMetrics = true;
+            }
+
+            // Consumer group current offset (where consumers are reading from)
+            string consumerOffsetQuery = "sum by (consumergroup) (kafka_consumergroup_current_offset)";
+            long? consumerOffset = await this.QueryPrometheusMetricAsync(prometheusUrl, consumerOffsetQuery);
+            if (consumerOffset.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Consumer.CurrentOffset", consumerOffset.Value);
+                this._logger.LogInformation("Found Kafka Consumer Current Offset: {Value}", consumerOffset.Value);
+                foundMetrics = true;
+            }
+
+            // Messages in flight (difference between latest and committed offsets across all partitions)
+            string messagesInFlightQuery = "sum(kafka_topic_partition_current_offset - kafka_consumergroup_current_offset)";
+            long? messagesInFlight = await this.QueryPrometheusMetricAsync(prometheusUrl, messagesInFlightQuery);
+            if (messagesInFlight.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Topic.MessagesInFlight", messagesInFlight.Value);
+                this._logger.LogInformation("Found Kafka Messages In Flight: {Value}", messagesInFlight.Value);
+                foundMetrics = true;
+            }
+
+            // Topic message rate (messages produced per second)
+            string topicMessageRateQuery = "sum(rate(kafka_topic_partition_current_offset[1m]))";
+            long? topicMessageRate = await this.QueryPrometheusMetricAsync(prometheusUrl, topicMessageRateQuery);
+            if (topicMessageRate.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Topic.MessageRate", topicMessageRate.Value);
+                this._logger.LogInformation("Found Kafka Topic Message Rate: {Value} msg/sec", topicMessageRate.Value);
                 foundMetrics = true;
             }
 
