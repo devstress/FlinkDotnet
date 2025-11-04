@@ -420,23 +420,20 @@ public class ObservabilityTests : LocalTestingTestBase
             await VerifyPrometheusHealthAsync(prometheusEndpoint, cts.Token);
             TestContext.WriteLine();
 
-            // CRITICAL: Only query again if we don't have valid metrics from retry loop
-            // This prevents overwriting good metrics with potentially stale/empty data
+            // CRITICAL: Always query fresh metrics right before validation
+            // The retry loop may have timed out before Prometheus finished scraping all metrics
+            // Wait a bit more to ensure Prometheus has had time to complete scraping
             if (!allMetricsValid)
             {
-                TestContext.WriteLine("🔄 Retrying final metrics query (retry loop didn't get all metrics)...");
-                metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
-                TestContext.WriteLine($"   JobManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("JobManager.Memory.Heap.Used", 0)}");
-                TestContext.WriteLine($"   TaskManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("TaskManager.Memory.Heap.Used", 0)}");
-                TestContext.WriteLine();
+                TestContext.WriteLine("⏳ Retry loop didn't get all metrics, waiting 5 more seconds for Prometheus...");
+                await Task.Delay(5000, cts.Token);
             }
-            else
-            {
-                TestContext.WriteLine($"✅ Using metrics from retry loop (all metrics valid)");
-                TestContext.WriteLine($"   JobManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("JobManager.Memory.Heap.Used", 0)}");
-                TestContext.WriteLine($"   TaskManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("TaskManager.Memory.Heap.Used", 0)}");
-                TestContext.WriteLine();
-            }
+            
+            TestContext.WriteLine("🔄 Querying final metrics state before validation...");
+            metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
+            TestContext.WriteLine($"   JobManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("JobManager.Memory.Heap.Used", 0)}");
+            TestContext.WriteLine($"   TaskManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("TaskManager.Memory.Heap.Used", 0)}");
+            TestContext.WriteLine();
 
             // Validate JobManager metrics (already collected during active processing)
             TestContext.WriteLine("JobManager Metrics:");
