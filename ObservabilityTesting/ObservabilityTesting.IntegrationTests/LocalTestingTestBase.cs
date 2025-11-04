@@ -1280,7 +1280,7 @@ public abstract class LocalTestingTestBase
             TestContext.WriteLine($"🐳 Flink containers found: {string.Join(", ", flinkContainers)}");
 
             // Find JobManager container
-            var jmName = Array.Find(flinkContainers, name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var jmName = flinkContainers.Find(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(jmName))
             {
@@ -1295,7 +1295,7 @@ public abstract class LocalTestingTestBase
             }
 
             // Find TaskManager container
-            var tmName = Array.Find(flinkContainers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var tmName = flinkContainers.Find(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(tmName))
             {

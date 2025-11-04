@@ -543,7 +543,7 @@ public class ObservabilityTests : LocalTestingTestBase
 
     // ========== Helper Methods ==========
 
-    private async Task<string> SubmitJobViaGatewayAsync(string gatewayEndpoint, object jobDefinition, CancellationToken ct)
+    private static async Task<string> SubmitJobViaGatewayAsync(string gatewayEndpoint, object jobDefinition, CancellationToken ct)
     {
         var jsonContent = JsonContent.Create(jobDefinition);
         // Remove trailing slash from endpoint to avoid double slashes
@@ -674,18 +674,18 @@ public class ObservabilityTests : LocalTestingTestBase
         return metrics ?? throw new InvalidOperationException("Failed to deserialize metrics from Gateway");
     }
 
-    private async Task<string> GetGatewayEndpointAsync()
+    private static async Task<string> GetGatewayEndpointAsync()
     {
         // Use the existing GlobalTestInfrastructure method that discovers endpoint from Docker
         return await GlobalTestInfrastructure.GetGatewayEndpointAsync();
     }
 
-    private async Task<string> GetPrometheusEndpointAsync()
+    private static async Task<string> GetPrometheusEndpointAsync()
     {
         return await GetPrometheusEndpointFromDockerAsync();
     }
 
-    private async Task<string> GetGrafanaEndpointAsync()
+    private static async Task<string> GetGrafanaEndpointAsync()
     {
         return await GetGrafanaEndpointFromDockerAsync();
     }
@@ -789,7 +789,7 @@ public class ObservabilityTests : LocalTestingTestBase
     /// <summary>
     /// Verifies Prometheus health and configuration to distinguish between config errors and scraping issues
     /// </summary>
-    private async Task VerifyPrometheusHealthAsync(string prometheusEndpoint, CancellationToken cancellationToken)
+    private static async Task VerifyPrometheusHealthAsync(string prometheusEndpoint, CancellationToken cancellationToken)
     {
         try
         {

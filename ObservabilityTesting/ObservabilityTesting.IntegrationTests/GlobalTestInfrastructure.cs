@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
