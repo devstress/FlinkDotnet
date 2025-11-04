@@ -830,6 +830,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         {
             this._logger.LogInformation("Found BytesRead from Prometheus: {Value}", bytesRead.Value);
             metrics.AddBytesRead(bytesRead.Value);
+            metrics.AddCustomMetric("Operator.BytesRead", bytesRead.Value);
             foundMetrics = true;
         }
 
@@ -837,6 +838,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         {
             this._logger.LogInformation("Found BytesWritten from Prometheus: {Value}", bytesWritten.Value);
             metrics.AddBytesWritten(bytesWritten.Value);
+            metrics.AddCustomMetric("Operator.BytesWritten", bytesWritten.Value);
             foundMetrics = true;
         }
 
@@ -924,14 +926,19 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         bool foundMetrics = false;
 
-        // Consumer lag - requires kafka-exporter or similar
-        string kafkaLagQuery = $"sum(kafka_consumergroup_lag{{consumergroup=~\".*{flinkJobId.Substring(0, Math.Min(8, flinkJobId.Length))}.*\"}})";
+        // Consumer lag - total lag across all consumer groups
+        // Note: Filtering by job ID may not work if consumer group names don't contain job ID
+        string kafkaLagQuery = "sum(kafka_consumergroup_lag)";
         long? consumerLag = await this.QueryPrometheusMetricAsync(prometheusUrl, kafkaLagQuery);
         if (consumerLag.HasValue)
         {
             metrics.AddCustomMetric("Kafka.Consumer.Lag", consumerLag.Value);
             this._logger.LogInformation("Found Kafka Consumer Lag: {Value}", consumerLag.Value);
             foundMetrics = true;
+        }
+        else
+        {
+            this._logger.LogWarning("kafka_consumergroup_lag metric not available - ensure kafka-exporter is running and scraping consumer groups");
         }
 
         // Topic partition offsets (highest offset across all partitions)
@@ -965,14 +972,21 @@ public partial class FlinkJobManager : IFlinkJobManager
             foundMetrics = true;
         }
 
-        // Messages in flight (difference between latest and committed offsets across all partitions)
-        string messagesInFlightQuery = "sum(kafka_topic_partition_current_offset - kafka_consumergroup_current_offset)";
+        // Messages in flight (consumer lag - messages not yet consumed)
+        // This is the same as consumer lag, using kafka_consumergroup_lag metric
+        string messagesInFlightQuery = "sum(kafka_consumergroup_lag)";
         long? messagesInFlight = await this.QueryPrometheusMetricAsync(prometheusUrl, messagesInFlightQuery);
         if (messagesInFlight.HasValue)
         {
             metrics.AddCustomMetric("Kafka.Topic.MessagesInFlight", messagesInFlight.Value);
             this._logger.LogInformation("Found Kafka Messages In Flight: {Value}", messagesInFlight.Value);
             foundMetrics = true;
+        }
+        else
+        {
+            // Fallback: Try alternative calculation if kafka_consumergroup_lag not available
+            // Note: This requires both metrics to have matching labels
+            this._logger.LogWarning("kafka_consumergroup_lag not available, MessagesInFlight metric will not be collected");
         }
 
         // Topic message rate (messages produced per second)
