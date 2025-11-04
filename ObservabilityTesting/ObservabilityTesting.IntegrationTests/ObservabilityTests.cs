@@ -251,13 +251,14 @@ public class ObservabilityTests : LocalTestingTestBase
             const int maxRetries = 30; // Increased to allow more time for Prometheus scraping
             const int retryDelayMs = 2000; // 2 seconds between checks
             
-            // Only require stable system metrics (Memory)
-            // RunningJobs and ActiveTasks are ephemeral - they disappear when job finishes
-            // These operator-level metrics only exist while job is actively processing
+            // Require metrics that should exist during active processing
+            // These metrics prove Prometheus is scraping while job is running
             string[] requiredNonZeroMetrics = new[]
             {
                 "JobManager.Memory.Heap.Used",
-                "TaskManager.Memory.Heap.Used"
+                "TaskManager.Memory.Heap.Used",
+                "Operator.BytesRead",  // Must be captured during active processing
+                "Operator.BytesWritten"  // Must be captured during active processing
             };
             
             bool allMetricsValid = false;
@@ -483,16 +484,16 @@ public class ObservabilityTests : LocalTestingTestBase
             ValidateCustomMetric(metrics, "Kafka.Consumer.Lag", "Kafka Consumer Lag", requireNonZero: false); // Lag can be 0 if consumer caught up
             TestContext.WriteLine();
 
-            // Validate operator throughput metrics (ephemeral - exist only while job is running)
+            // Validate operator throughput metrics (captured during active processing in polling loop)
             TestContext.WriteLine("Operator Throughput Metrics:");
-            ValidateCustomMetric(metrics, "Operator.BytesRead", "Operator Bytes Read", requireNonZero: false); // Ephemeral - only exists during processing
-            ValidateCustomMetric(metrics, "Operator.BytesWritten", "Operator Bytes Written", requireNonZero: false); // Ephemeral - only exists during processing
+            ValidateCustomMetric(metrics, "Operator.BytesRead", "Operator Bytes Read", requireNonZero: true); // Must be > 0 since captured during active processing
+            ValidateCustomMetric(metrics, "Operator.BytesWritten", "Operator Bytes Written", requireNonZero: true); // Must be > 0 since captured during active processing
             
-            // Also validate the direct properties on JobMetrics (must be > 0)
+            // Also validate the direct properties on JobMetrics (must be > 0 since captured during processing)
             Assert.That(metrics.BytesRead, Is.GreaterThan(0), 
-                "BytesRead property should be > 0");
+                "BytesRead property should be > 0 (captured during active processing)");
             Assert.That(metrics.BytesWritten, Is.GreaterThan(0), 
-                "BytesWritten property should be > 0");
+                "BytesWritten property should be > 0 (captured during active processing)");
             TestContext.WriteLine($"   BytesRead (property): {metrics.BytesRead:N0} bytes");
             TestContext.WriteLine($"   BytesWritten (property): {metrics.BytesWritten:N0} bytes");
             TestContext.WriteLine();
