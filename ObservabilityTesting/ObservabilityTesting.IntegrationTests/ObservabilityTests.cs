@@ -286,7 +286,8 @@ public class ObservabilityTests : LocalTestingTestBase
                         long l => l,
                         int i => i,
                         double d => (long)d,
-                        JsonElement je when je.ValueKind == JsonValueKind.Number => je.GetInt64(),
+                        JsonElement je when je.ValueKind == JsonValueKind.Number => 
+                            je.TryGetInt64(out long l) ? l : (long)je.GetDouble(),
                         _ => 0
                     };
                     
@@ -805,7 +806,8 @@ public class ObservabilityTests : LocalTestingTestBase
                 long l => l,
                 int i => i,
                 double d => (long)d,
-                JsonElement je when je.ValueKind == JsonValueKind.Number => je.GetInt64(),
+                JsonElement je when je.ValueKind == JsonValueKind.Number => 
+                    je.TryGetInt64(out long l) ? l : (long)je.GetDouble(),
                 _ => 0
             };
 
