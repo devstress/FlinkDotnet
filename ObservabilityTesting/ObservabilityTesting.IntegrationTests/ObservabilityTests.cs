@@ -263,8 +263,25 @@ public class ObservabilityTests : LocalTestingTestBase
             bool allMetricsValid = false;
             while (retryCount < maxRetries && !allMetricsValid)
             {
-                // Query metrics from gateway
+                // Query basic job metrics from gateway (job status, etc.)
                 metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
+                
+                // Enhance with comprehensive metrics from Prometheus
+                var prometheusMetrics = await CollectPrometheusMetricsAsync(prometheusEndpoint, jobId, cts.Token);
+                foreach (var (key, value) in prometheusMetrics)
+                {
+                    metrics.CustomMetrics[key] = value;
+                }
+                
+                // Also update direct properties if available
+                if (prometheusMetrics.TryGetValue("BytesRead", out var bytesReadObj) && bytesReadObj is long bytesReadVal)
+                    metrics.BytesRead = bytesReadVal;
+                if (prometheusMetrics.TryGetValue("BytesWritten", out var bytesWrittenObj) && bytesWrittenObj is long bytesWrittenVal)
+                    metrics.BytesWritten = bytesWrittenVal;
+                if (prometheusMetrics.TryGetValue("RecordsIn", out var recordsInObj) && recordsInObj is long recordsInVal)
+                    metrics.RecordsIn = recordsInVal;
+                if (prometheusMetrics.TryGetValue("RecordsOut", out var recordsOutObj) && recordsOutObj is long recordsOutVal)
+                    metrics.RecordsOut = recordsOutVal;
                 
                 allMetricsValid = true;
                 var missingMetrics = new List<string>();
@@ -420,6 +437,24 @@ public class ObservabilityTests : LocalTestingTestBase
             
             TestContext.WriteLine("🔄 Querying final metrics state before validation...");
             metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
+            
+            // Enhance with comprehensive metrics from Prometheus
+            var finalPrometheusMetrics = await CollectPrometheusMetricsAsync(prometheusEndpoint, jobId, cts.Token);
+            foreach (var (key, value) in finalPrometheusMetrics)
+            {
+                metrics.CustomMetrics[key] = value;
+            }
+            
+            // Also update direct properties
+            if (finalPrometheusMetrics.TryGetValue("BytesRead", out var finalBytesReadObj) && finalBytesReadObj is long finalBytesReadVal)
+                metrics.BytesRead = finalBytesReadVal;
+            if (finalPrometheusMetrics.TryGetValue("BytesWritten", out var finalBytesWrittenObj) && finalBytesWrittenObj is long finalBytesWrittenVal)
+                metrics.BytesWritten = finalBytesWrittenVal;
+            if (finalPrometheusMetrics.TryGetValue("RecordsIn", out var finalRecordsInObj) && finalRecordsInObj is long finalRecordsInVal)
+                metrics.RecordsIn = finalRecordsInVal;
+            if (finalPrometheusMetrics.TryGetValue("RecordsOut", out var finalRecordsOutObj) && finalRecordsOutObj is long finalRecordsOutVal)
+                metrics.RecordsOut = finalRecordsOutVal;
+            
             TestContext.WriteLine($"   JobManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("JobManager.Memory.Heap.Used", 0)}");
             TestContext.WriteLine($"   TaskManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("TaskManager.Memory.Heap.Used", 0)}");
             TestContext.WriteLine();
@@ -995,6 +1030,152 @@ public class ObservabilityTests : LocalTestingTestBase
         else
         {
             TestContext.WriteLine($"   ⚠️  Failed to query Flink metrics from Prometheus");
+        }
+    }
+
+    /// <summary>
+    /// Collect comprehensive metrics from Prometheus directly (Flink, Kafka, etc.)
+    /// </summary>
+    private static async Task<Dictionary<string, object>> CollectPrometheusMetricsAsync(
+        string prometheusEndpoint, string jobId, CancellationToken cancellationToken)
+    {
+        var metrics = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+
+        // Flink TaskManager metrics
+        var tmCpuLoad = await QueryPrometheusMetricAsync(prometheusEndpoint, 
+            "avg(flink_taskmanager_Status_JVM_CPU_Load) * 100", cancellationToken);
+        if (tmCpuLoad.HasValue)
+            metrics["TaskManager.CPU.Load"] = tmCpuLoad.Value;
+
+        var tmHeapUsed = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum(flink_taskmanager_Status_JVM_Memory_Heap_Used)", cancellationToken);
+        if (tmHeapUsed.HasValue)
+            metrics["TaskManager.Memory.Heap.Used"] = tmHeapUsed.Value;
+
+        var activeTasks = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            $"count(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{jobId}\"}})", cancellationToken);
+        if (activeTasks.HasValue)
+            metrics["TaskManager.ActiveTasks"] = activeTasks.Value;
+
+        // Flink JobManager metrics
+        var jmCpuLoad = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "flink_jobmanager_Status_JVM_CPU_Load * 100", cancellationToken);
+        if (jmCpuLoad.HasValue)
+            metrics["JobManager.CPU.Load"] = jmCpuLoad.Value;
+
+        var jmHeapUsed = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "flink_jobmanager_Status_JVM_Memory_Heap_Used", cancellationToken);
+        if (jmHeapUsed.HasValue)
+            metrics["JobManager.Memory.Heap.Used"] = jmHeapUsed.Value;
+
+        var runningJobs = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "count(count by (job_id) (flink_taskmanager_job_task_operator_numRecordsIn))", cancellationToken);
+        if (runningJobs.HasValue)
+            metrics["JobManager.RunningJobs"] = runningJobs.Value;
+
+        // Kafka metrics from kafka-exporter
+        var topicOffsets = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum by (topic) (kafka_topic_partition_current_offset)", cancellationToken);
+        if (topicOffsets.HasValue)
+            metrics["Kafka.Topic.TotalOffsets"] = topicOffsets.Value;
+
+        var partitionCount = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "count(kafka_topic_partition_current_offset)", cancellationToken);
+        if (partitionCount.HasValue)
+            metrics["Kafka.Topic.PartitionCount"] = partitionCount.Value;
+
+        var consumerOffset = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum(kafka_consumergroup_current_offset)", cancellationToken);
+        if (consumerOffset.HasValue)
+            metrics["Kafka.Consumer.CurrentOffset"] = consumerOffset.Value;
+
+        var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum(kafka_consumergroup_lag)", cancellationToken);
+        if (consumerLag.HasValue)
+        {
+            metrics["Kafka.Consumer.Lag"] = consumerLag.Value;
+            // MessagesInFlight is same as consumer lag
+            metrics["Kafka.Topic.MessagesInFlight"] = consumerLag.Value;
+        }
+
+        var topicMessageRate = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum(rate(kafka_topic_partition_current_offset[1m]))", cancellationToken);
+        if (topicMessageRate.HasValue)
+            metrics["Kafka.Topic.MessageRate"] = topicMessageRate.Value;
+
+        // Operator metrics from Flink
+        var recordsIn = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            $"sum(flink_taskmanager_job_task_operator_numRecordsOut{{job_id=\"{jobId}\",operator_name=~\".*Source.*\"}})", cancellationToken);
+        if (recordsIn.HasValue)
+            metrics["RecordsIn"] = recordsIn.Value;
+
+        var recordsOut = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            $"sum(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{jobId}\",operator_name=~\".*Sink.*\"}})", cancellationToken);
+        if (recordsOut.HasValue)
+            metrics["RecordsOut"] = recordsOut.Value;
+
+        var bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\",operator_name=~\".*Source.*\"}})", cancellationToken);
+        if (bytesRead.HasValue)
+        {
+            metrics["BytesRead"] = bytesRead.Value;
+            metrics["Operator.BytesRead"] = bytesRead.Value;
+        }
+
+        var bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\",operator_name=~\".*Sink.*\"}})", cancellationToken);
+        if (bytesWritten.HasValue)
+        {
+            metrics["BytesWritten"] = bytesWritten.Value;
+            metrics["Operator.BytesWritten"] = bytesWritten.Value;
+        }
+
+        return metrics;
+    }
+
+    /// <summary>
+    /// Query Prometheus for a single metric value
+    /// </summary>
+    private static async Task<long?> QueryPrometheusMetricAsync(string prometheusEndpoint, string query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string encodedQuery = Uri.EscapeDataString(query);
+            string url = $"{prometheusEndpoint}/api/v1/query?query={encodedQuery}";
+
+            var httpClient = new HttpClient();
+            var response = await httpClient.GetFromJsonAsync<JsonDocument>(url, cancellationToken);
+
+            if (response == null)
+                return null;
+
+            var status = response.RootElement.GetProperty("status").GetString();
+            if (status != "success")
+                return null;
+
+            var data = response.RootElement.GetProperty("data");
+            var result = data.GetProperty("result");
+
+            if (result.GetArrayLength() == 0)
+                return null;
+
+            // Get first result's value [timestamp, "value"]
+            var firstResult = result[0];
+            var valueArray = firstResult.GetProperty("value");
+            var valueStr = valueArray[1].GetString();
+
+            if (double.TryParse(valueStr, System.Globalization.NumberStyles.Float, 
+                System.Globalization.CultureInfo.InvariantCulture, out double doubleValue))
+            {
+                return (long)doubleValue;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"   ⚠️  Error querying Prometheus metric: {ex.Message}");
+            return null;
         }
     }
 
