@@ -812,28 +812,28 @@ public partial class FlinkJobManager : IFlinkJobManager
         string sinkBytesQuery = $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{flinkJobId}\",operator_name=~\".*Sink.*\"}})";
         long? bytesWritten = await this.QueryPrometheusMetricAsync(prometheusUrl, sinkBytesQuery);
 
-        if (recordsIn.HasValue && recordsIn.Value > 0)
+        if (recordsIn > 0)
         {
             this._logger.LogInformation("Found RecordsIn from Prometheus: {Value}", recordsIn.Value);
             metrics.AddRecordsIn(recordsIn.Value);
             foundMetrics = true;
         }
 
-        if (recordsOut.HasValue && recordsOut.Value > 0)
+        if (recordsOut > 0)
         {
             this._logger.LogInformation("Found RecordsOut from Prometheus: {Value}", recordsOut.Value);
             metrics.AddRecordsOut(recordsOut.Value);
             foundMetrics = true;
         }
 
-        if (bytesRead.HasValue && bytesRead.Value > 0)
+        if (bytesRead > 0)
         {
             this._logger.LogInformation("Found BytesRead from Prometheus: {Value}", bytesRead.Value);
             metrics.AddBytesRead(bytesRead.Value);
             foundMetrics = true;
         }
 
-        if (bytesWritten.HasValue && bytesWritten.Value > 0)
+        if (bytesWritten > 0)
         {
             this._logger.LogInformation("Found BytesWritten from Prometheus: {Value}", bytesWritten.Value);
             metrics.AddBytesWritten(bytesWritten.Value);
@@ -848,7 +848,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         bool foundMetrics = false;
 
         // CPU Load - average across all TaskManagers (multiply by 100 to convert to percentage)
-        string tmCpuQuery = "avg(flink_taskmanager_Status_JVM_CPU_Load) * 100";
+        const string tmCpuQuery = "avg(flink_taskmanager_Status_JVM_CPU_Load) * 100";
         long? tmCpuLoad = await this.QueryPrometheusMetricAsync(prometheusUrl, tmCpuQuery);
         if (tmCpuLoad.HasValue)
         {
@@ -858,7 +858,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         // Heap Memory Used - sum across all TaskManagers
-        string tmHeapQuery = "sum(flink_taskmanager_Status_JVM_Memory_Heap_Used)";
+        const string tmHeapQuery = "sum(flink_taskmanager_Status_JVM_Memory_Heap_Used)";
         long? tmHeapUsed = await this.QueryPrometheusMetricAsync(prometheusUrl, tmHeapQuery);
         if (tmHeapUsed.HasValue)
         {
@@ -887,7 +887,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         bool foundMetrics = false;
 
         // CPU Load (multiply by 100 to convert from fraction to percentage)
-        string jmCpuQuery = "flink_jobmanager_Status_JVM_CPU_Load * 100";
+        const string jmCpuQuery = "flink_jobmanager_Status_JVM_CPU_Load * 100";
         long? jmCpuLoad = await this.QueryPrometheusMetricAsync(prometheusUrl, jmCpuQuery);
         if (jmCpuLoad.HasValue)
         {
@@ -897,7 +897,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         // Heap Memory Used
-        string jmHeapQuery = "flink_jobmanager_Status_JVM_Memory_Heap_Used";
+        const string jmHeapQuery = "flink_jobmanager_Status_JVM_Memory_Heap_Used";
         long? jmHeapUsed = await this.QueryPrometheusMetricAsync(prometheusUrl, jmHeapQuery);
         if (jmHeapUsed.HasValue)
         {
@@ -908,7 +908,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         // Number of running jobs - count by checking for job metrics existence
         // Note: In Flink 2.x, count jobs by their task metrics rather than a direct counter
-        string jmRunningJobsQuery = "count(count by (job_id) (flink_taskmanager_job_task_operator_numRecordsIn))";
+        const string jmRunningJobsQuery = "count(count by (job_id) (flink_taskmanager_job_task_operator_numRecordsIn))";
         long? runningJobs = await this.QueryPrometheusMetricAsync(prometheusUrl, jmRunningJobsQuery);
         if (runningJobs.HasValue)
         {
@@ -936,7 +936,7 @@ public partial class FlinkJobManager : IFlinkJobManager
 
         // Topic partition offsets (highest offset across all partitions)
         // This shows total messages available in topics
-        string topicOffsetsQuery = "sum by (topic) (kafka_topic_partition_current_offset)";
+        const string topicOffsetsQuery = "sum by (topic) (kafka_topic_partition_current_offset)";
         long? topicOffsets = await this.QueryPrometheusMetricAsync(prometheusUrl, topicOffsetsQuery);
         if (topicOffsets.HasValue)
         {
@@ -946,7 +946,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         // Topic partition count (number of partitions across all topics being monitored)
-        string partitionCountQuery = "count(kafka_topic_partition_current_offset)";
+        const string partitionCountQuery = "count(kafka_topic_partition_current_offset)";
         long? partitionCount = await this.QueryPrometheusMetricAsync(prometheusUrl, partitionCountQuery);
         if (partitionCount.HasValue)
         {
@@ -956,7 +956,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         // Consumer group current offset (where consumers are reading from)
-        string consumerOffsetQuery = "sum by (consumergroup) (kafka_consumergroup_current_offset)";
+        const string consumerOffsetQuery = "sum by (consumergroup) (kafka_consumergroup_current_offset)";
         long? consumerOffset = await this.QueryPrometheusMetricAsync(prometheusUrl, consumerOffsetQuery);
         if (consumerOffset.HasValue)
         {
@@ -966,7 +966,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         // Messages in flight (difference between latest and committed offsets across all partitions)
-        string messagesInFlightQuery = "sum(kafka_topic_partition_current_offset - kafka_consumergroup_current_offset)";
+        const string messagesInFlightQuery = "sum(kafka_topic_partition_current_offset - kafka_consumergroup_current_offset)";
         long? messagesInFlight = await this.QueryPrometheusMetricAsync(prometheusUrl, messagesInFlightQuery);
         if (messagesInFlight.HasValue)
         {
@@ -976,7 +976,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         // Topic message rate (messages produced per second)
-        string topicMessageRateQuery = "sum(rate(kafka_topic_partition_current_offset[1m]))";
+        const string topicMessageRateQuery = "sum(rate(kafka_topic_partition_current_offset[1m]))";
         long? topicMessageRate = await this.QueryPrometheusMetricAsync(prometheusUrl, topicMessageRateQuery);
         if (topicMessageRate.HasValue)
         {
