@@ -185,7 +185,6 @@ public class ObservabilityTests : LocalTestingTestBase
     /// Also validates: Gateway metrics API, Prometheus scraping, Grafana configuration, backpressure, checkpoints.
     /// </summary>
     [Test, Order(2)]
-    [Test, Order(2)]
     public async Task Test2_ComprehensiveObservability_KafkaMetricsAndMonitoring()
     {
         PrintTestHeader();
