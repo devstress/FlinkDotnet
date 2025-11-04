@@ -842,8 +842,8 @@ public partial class FlinkJobManager : IFlinkJobManager
                 foundMetrics = true;
             }
 
-            // Number of running tasks
-            string tmTasksQuery = $"sum(flink_taskmanager_job_task_numRecordsInPerSecond{{job_id=\"{flinkJobId}\"}}) > 0";
+            // Number of running tasks - count tasks with active operators
+            string tmTasksQuery = $"count(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{flinkJobId}\"}})";
             long? activeTasks = await this.QueryPrometheusMetricAsync(prometheusUrl, tmTasksQuery);
             if (activeTasks.HasValue)
             {
@@ -873,8 +873,8 @@ public partial class FlinkJobManager : IFlinkJobManager
                 foundMetrics = true;
             }
 
-            // Number of running jobs
-            string jmRunningJobsQuery = "flink_jobmanager_numRunningJobs";
+            // Number of running jobs - use job state filter for Flink 2.x compatibility
+            string jmRunningJobsQuery = "count(flink_jobmanager_job_uptime{job_state=\"RUNNING\"} > 0)";
             long? runningJobs = await this.QueryPrometheusMetricAsync(prometheusUrl, jmRunningJobsQuery);
             if (runningJobs.HasValue)
             {
