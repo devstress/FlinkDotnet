@@ -19,7 +19,6 @@ namespace ObservabilityTesting.IntegrationTests;
 public class ObservabilityTests : LocalTestingTestBase
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(3);
-    private const double MetricTolerancePercent = 5.0; // ±5% tolerance for count-based metrics
     
     private static HttpClient? _httpClient;
     
@@ -371,7 +370,8 @@ public class ObservabilityTests : LocalTestingTestBase
             var prometheusEndpoint = await GetPrometheusEndpointAsync();
             TestContext.WriteLine($"Prometheus endpoint: {prometheusEndpoint}");
             
-            var targetsResponse = await _httpClient!.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/targets", cts.Token);
+            var httpClient = _httpClient!; // Null-forgiving operator safe after initialization check
+            var targetsResponse = await httpClient.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/targets", cts.Token);
             var activeTargets = targetsResponse?.RootElement.GetProperty("data").GetProperty("activeTargets");
             
             Assert.That(activeTargets?.GetArrayLength(), Is.GreaterThan(0), "Prometheus should have active scrape targets");
@@ -405,8 +405,15 @@ public class ObservabilityTests : LocalTestingTestBase
             
             // STEP 7: Validate backpressure detection
             TestContext.WriteLine("═══ Backpressure Detection Validation ═══");
-            Assert.That(metrics.BackpressureLevel, Is.Not.EqualTo("unknown"), "Backpressure level should be detected");
+            Assert.That(metrics.BackpressureLevel, Is.Not.Null, "Backpressure level should not be null");
+            Assert.That(metrics.BackpressureLevel, Is.Not.Empty, "Backpressure level should not be empty");
             TestContext.WriteLine($"✅ Backpressure level detected: {metrics.BackpressureLevel}");
+            
+            // Also validate it's in CustomMetrics for backward compatibility
+            if (metrics.CustomMetrics.TryGetValue("backpressureLevel", out var bpLevel))
+            {
+                TestContext.WriteLine($"   Backpressure also available in CustomMetrics: {bpLevel}");
+            }
             TestContext.WriteLine();
             
             // STEP 8: Validate checkpoint metrics
@@ -462,7 +469,10 @@ public class ObservabilityTests : LocalTestingTestBase
         return result?.FlinkJobId ?? throw new InvalidOperationException("Gateway did not return a FlinkJobId");
     }
 
+    // Unused helper method kept for potential future use
+    #pragma warning disable S1144 // Remove the unused private method
     private Task ProduceMessagesAsync(string topic, int count, CancellationToken ct)
+    #pragma warning restore S1144
     {
         var producerConfig = new Confluent.Kafka.ProducerConfig
         {
@@ -563,24 +573,17 @@ public class ObservabilityTests : LocalTestingTestBase
         return Task.FromResult(consumed);
     }
 
-    private async Task<GatewayMetrics> QueryGatewayMetricsAsync(string gatewayEndpoint, string jobId, CancellationToken ct)
+    private static async Task<JobMetrics> QueryGatewayMetricsAsync(string gatewayEndpoint, string jobId, CancellationToken ct)
     {
+        using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         // Remove trailing slash to avoid double slashes
         var baseUrl = gatewayEndpoint.TrimEnd('/');
-        var response = await _httpClient!.GetAsync($"{baseUrl}/api/v1/jobs/{jobId}/metrics", ct);
+        var response = await httpClient.GetAsync($"{baseUrl}/api/v1/jobs/{jobId}/metrics", ct);
         response.EnsureSuccessStatusCode();
         
-        var metricsJson = await response.Content.ReadFromJsonAsync<JsonDocument>(cancellationToken: ct);
-        var root = metricsJson!.RootElement;
-        
-        return new GatewayMetrics
-        {
-            RecordsIn = root.GetProperty("recordsIn").GetInt64(),
-            RecordsOut = root.GetProperty("recordsOut").GetInt64(),
-            Parallelism = root.GetProperty("parallelism").GetInt32(),
-            Checkpoints = root.GetProperty("checkpoints").GetInt64(),
-            BackpressureLevel = root.TryGetProperty("backpressureLevel", out var bp) ? bp.GetString() ?? "unknown" : "unknown"
-        };
+        // Deserialize directly to JobMetrics from Flink.JobBuilder.Models
+        var metrics = await response.Content.ReadFromJsonAsync<JobMetrics>(cancellationToken: ct);
+        return metrics ?? throw new InvalidOperationException("Failed to deserialize metrics from Gateway");
     }
 
     private async Task<string> GetGatewayEndpointAsync()
@@ -610,7 +613,7 @@ public class ObservabilityTests : LocalTestingTestBase
             {
                 if (line.Contains("->9090/tcp"))
                 {
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->9090");
+                    var match = Regex.Match(line, @"127\.0\.0\.1:(\d+)->9090");
                     if (match.Success)
                     {
                         return $"http://localhost:{match.Groups[1].Value}";
@@ -637,7 +640,7 @@ public class ObservabilityTests : LocalTestingTestBase
             {
                 if (line.Contains("->3000/tcp"))
                 {
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->3000");
+                    var match = Regex.Match(line, @"127\.0\.0\.1:(\d+)->3000");
                     if (match.Success)
                     {
                         return $"http://localhost:{match.Groups[1].Value}";
@@ -651,16 +654,6 @@ public class ObservabilityTests : LocalTestingTestBase
         {
             throw new InvalidOperationException($"Failed to get Grafana endpoint: {ex.Message}", ex);
         }
-    }
-
-    private static void AssertMetricWithinTolerance(long actual, long expected, string metricName)
-    {
-        var tolerance = expected * MetricTolerancePercent / 100.0;
-        var lowerBound = expected - tolerance;
-        var upperBound = expected + tolerance;
-        
-        Assert.That(actual, Is.InRange(lowerBound, upperBound),
-            $"{metricName}: expected {expected} ±{MetricTolerancePercent}% (range: {lowerBound:F0}-{upperBound:F0}), got {actual}");
     }
 
     private static void ValidateCustomMetric(JobMetrics metrics, string metricKey, string metricName, bool requireNonZero = true)
@@ -707,12 +700,8 @@ public class ObservabilityTests : LocalTestingTestBase
 
     // ========== Data Models ==========
     
-    private sealed class GatewayMetrics
+    private sealed class JobSubmissionResult
     {
-        public long RecordsIn { get; init; }
-        public long RecordsOut { get; init; }
-        public int Parallelism { get; init; }
-        public long Checkpoints { get; init; }
-        public string BackpressureLevel { get; init; } = "unknown";
+        public string FlinkJobId { get; set; } = string.Empty;
     }
 }

@@ -160,6 +160,11 @@ namespace Flink.JobBuilder.Models
             get; set;
         }
         public Dictionary<string, object> CustomMetrics { get; init; } = [];
+
+        public string? BackpressureLevel
+        {
+            get; set;
+        }
     }
 
     /// <summary>

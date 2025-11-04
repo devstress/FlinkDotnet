@@ -37,10 +37,10 @@ namespace SampleApp
 
         private static string FlinkJobGatewayUrl =>
             Environment.GetEnvironmentVariable("FLINK_JOB_GATEWAY_URL") ?? "http://localhost:8086";
-        
+
         private static string InputTopic =>
             Environment.GetEnvironmentVariable("SAMPLE_APP_INPUT_TOPIC") ?? DefaultInputTopic;
-        
+
         private static string OutputTopic =>
             Environment.GetEnvironmentVariable("SAMPLE_APP_OUTPUT_TOPIC") ?? DefaultOutputTopic;
 
@@ -104,7 +104,7 @@ namespace SampleApp
                 {
                     Environment.SetEnvironmentVariable("SAMPLE_APP_OUTPUT_TOPIC", outputTopic);
                 }
-                
+
                 return await RunSampleJobAsync();
             }
             finally

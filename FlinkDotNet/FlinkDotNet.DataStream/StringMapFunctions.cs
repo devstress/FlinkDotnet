@@ -37,7 +37,9 @@ namespace FlinkDotNet.DataStream
         /// <summary>
         /// Converts the input string to lowercase using culture-invariant rules.
         /// </summary>
+#pragma warning disable S4040 // ToLowerInvariant is intentionally used for lowercase conversion
         public string Map(string value) => value?.ToLowerInvariant() ?? string.Empty;
+#pragma warning restore S4040
     }
 
     /// <summary>

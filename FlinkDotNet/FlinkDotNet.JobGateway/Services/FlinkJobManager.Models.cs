@@ -125,6 +125,7 @@ public partial class FlinkJobManager
                 Parallelism = this._parallelism,
                 Checkpoints = this._checkpoints,
                 LastCheckpoint = this._lastCheckpoint,
+                BackpressureLevel = this._backpressureLevel,
                 CustomMetrics = customMetrics
             };
         }
