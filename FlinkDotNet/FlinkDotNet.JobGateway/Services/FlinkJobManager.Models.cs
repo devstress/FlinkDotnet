@@ -81,8 +81,6 @@ public partial class FlinkJobManager
         private int _checkpoints;
         private DateTime? _lastCheckpoint;
         private string _backpressureLevel = "UNKNOWN";
-        private readonly long _bytesRead;
-        private readonly long _bytesWritten;
         private readonly Dictionary<string, object> _customMetrics = new(StringComparer.OrdinalIgnoreCase);
 
         public void AddRecordsIn(long value) => this._recordsIn += value;
@@ -117,8 +115,8 @@ public partial class FlinkJobManager
                 FlinkJobId = this._flinkJobId,
                 RecordsIn = this._recordsIn,
                 RecordsOut = this._recordsOut,
-                BytesRead = this._bytesRead,
-                BytesWritten = this._bytesWritten,
+                BytesRead = 0,  // Set by test querying Prometheus directly
+                BytesWritten = 0,  // Set by test querying Prometheus directly
                 Parallelism = this._parallelism,
                 Checkpoints = this._checkpoints,
                 LastCheckpoint = this._lastCheckpoint,

@@ -1122,6 +1122,7 @@ public class ObservabilityTests : LocalTestingTestBase
             metrics["Kafka.Topic.MessageRate"] = topicMessageRate.Value;
 
         // Operator metrics from Flink
+        // Try to get records and bytes from Source operators
         var recordsIn = await QueryPrometheusMetricAsync(prometheusEndpoint,
             $"sum(flink_taskmanager_job_task_operator_numRecordsOut{{job_id=\"{jobId}\",operator_name=~\".*Source.*\"}})", cancellationToken);
         if (recordsIn.HasValue)
@@ -1132,16 +1133,34 @@ public class ObservabilityTests : LocalTestingTestBase
         if (recordsOut.HasValue)
             metrics["RecordsOut"] = recordsOut.Value;
 
+        // Try Source operator bytes first, fallback to all operators if Source doesn't match
         var bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
             $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\",operator_name=~\".*Source.*\"}})", cancellationToken);
+        
+        if (!bytesRead.HasValue || bytesRead.Value == 0)
+        {
+            // Fallback: try without operator_name filter
+            bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
+                $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\"}})", cancellationToken);
+        }
+        
         if (bytesRead.HasValue)
         {
             metrics["BytesRead"] = bytesRead.Value;
             metrics["Operator.BytesRead"] = bytesRead.Value;
         }
 
+        // Try Sink operator bytes first, fallback to all operators if Sink doesn't match
         var bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
             $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\",operator_name=~\".*Sink.*\"}})", cancellationToken);
+        
+        if (!bytesWritten.HasValue || bytesWritten.Value == 0)
+        {
+            // Fallback: try without operator_name filter
+            bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
+                $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\"}})", cancellationToken);
+        }
+        
         if (bytesWritten.HasValue)
         {
             metrics["BytesWritten"] = bytesWritten.Value;
