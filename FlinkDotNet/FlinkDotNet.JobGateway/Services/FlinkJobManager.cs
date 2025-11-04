@@ -697,8 +697,323 @@ public partial class FlinkJobManager : IFlinkJobManager
             return;
         }
 
-        await this.CollectVertexNumericMetricsAsync(flinkJobId, vertexId, metrics);
+        // OPTIMIZATION: Try to extract metrics from vertex object first (Flink 2.x job details include aggregated metrics)
+        // This avoids the empty response issue from /metrics endpoint for completed jobs
+        bool metricsExtracted = this.TryExtractVertexMetricsFromJobDetails(vertex, metrics);
+
+        // ALTERNATIVE SOURCE: Query Prometheus for operator-level Kafka metrics
+        // Prometheus scrapes detailed operator metrics that may not be in job details API
+        await this.TryCollectMetricsFromPrometheusAsync(flinkJobId, metrics);
+
+        if (!metricsExtracted)
+        {
+            // Final fallback: try the Flink metrics endpoint (though it may return empty for completed jobs)
+            await this.CollectVertexNumericMetricsAsync(flinkJobId, vertexId, metrics);
+        }
+
         await this.CollectVertexBackpressureAsync(flinkJobId, vertexId, metrics);
+    }
+
+    private bool TryExtractVertexMetricsFromJobDetails(JsonElement vertex, JobMetricsBuilder metrics)
+    {
+        // Flink 2.x job details endpoint includes aggregated metrics for each vertex
+        // Format: { "vertices": [{ "id": "...", "metrics": { "read-records": 100, "write-records": 100, ... } }] }
+        if (!vertex.TryGetProperty("metrics", out JsonElement metricsEl))
+        {
+            return false;
+        }
+
+        bool foundAnyMetrics = false;
+
+        // Extract read-records (input to vertex = RecordsIn for source)
+        if (metricsEl.TryGetProperty("read-records", out JsonElement readRecordsEl) &&
+            readRecordsEl.ValueKind == JsonValueKind.Number)
+        {
+            long readRecords = readRecordsEl.GetInt64();
+            this._logger.LogInformation("Found vertex read-records (RecordsIn): {Value}", readRecords);
+            metrics.AddRecordsIn(readRecords);
+            foundAnyMetrics = true;
+        }
+
+        // Extract write-records (output from vertex = RecordsOut for sink)
+        if (metricsEl.TryGetProperty("write-records", out JsonElement writeRecordsEl) &&
+            writeRecordsEl.ValueKind == JsonValueKind.Number)
+        {
+            long writeRecords = writeRecordsEl.GetInt64();
+            this._logger.LogInformation("Found vertex write-records (RecordsOut): {Value}", writeRecords);
+            metrics.AddRecordsOut(writeRecords);
+            foundAnyMetrics = true;
+        }
+
+        // Extract parallelism
+        if (vertex.TryGetProperty("parallelism", out JsonElement parallelismEl) &&
+            parallelismEl.ValueKind == JsonValueKind.Number)
+        {
+            int parallelism = parallelismEl.GetInt32();
+            this._logger.LogInformation("Found vertex parallelism: {Value}", parallelism);
+            metrics.UpdateMaxParallelism(parallelism);
+            foundAnyMetrics = true;
+        }
+
+        return foundAnyMetrics;
+    }
+
+    private async Task<bool> TryCollectMetricsFromPrometheusAsync(string flinkJobId, JobMetricsBuilder metrics)
+    {
+        try
+        {
+            // Get Prometheus base URL from configuration
+            // In Aspire deployments, this is typically "http://prometheus:9090" (container-to-container DNS)
+            string? prometheusUrl = this._configuration["Flink:Prometheus:BaseUrl"];
+
+            if (string.IsNullOrEmpty(prometheusUrl))
+            {
+                this._logger.LogDebug("Prometheus URL not configured, skipping Prometheus metrics query");
+                return false;
+            }
+
+            this._logger.LogInformation("Querying Prometheus at {Url} for Flink job {JobId} comprehensive metrics", prometheusUrl, flinkJobId);
+
+            bool foundMetrics = false;
+
+            // ===== OPERATOR METRICS (Kafka Source/Sink) =====
+            // Query for Kafka source operator numRecordsOut (= RecordsIn to the job)
+            string sourceRecordsQuery = $"sum(flink_taskmanager_job_task_operator_numRecordsOut{{job_id=\"{flinkJobId}\",operator_name=~\".*Source.*\"}})";
+            long? recordsIn = await this.QueryPrometheusMetricAsync(prometheusUrl, sourceRecordsQuery);
+
+            // Query for Kafka sink operator numRecordsIn (= RecordsOut from the job)
+            string sinkRecordsQuery = $"sum(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{flinkJobId}\",operator_name=~\".*Sink.*\"}})";
+            long? recordsOut = await this.QueryPrometheusMetricAsync(prometheusUrl, sinkRecordsQuery);
+
+            // Query for Kafka source operator numBytesOut (bytes read from Kafka)
+            string sourceBytesQuery = $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{flinkJobId}\",operator_name=~\".*Source.*\"}})";
+            long? bytesRead = await this.QueryPrometheusMetricAsync(prometheusUrl, sourceBytesQuery);
+
+            // Query for Kafka sink operator numBytesIn (bytes written to Kafka)
+            string sinkBytesQuery = $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{flinkJobId}\",operator_name=~\".*Sink.*\"}})";
+            long? bytesWritten = await this.QueryPrometheusMetricAsync(prometheusUrl, sinkBytesQuery);
+
+            if (recordsIn.HasValue && recordsIn.Value > 0)
+            {
+                this._logger.LogInformation("Found RecordsIn from Prometheus: {Value}", recordsIn.Value);
+                metrics.AddRecordsIn(recordsIn.Value);
+                foundMetrics = true;
+            }
+
+            if (recordsOut.HasValue && recordsOut.Value > 0)
+            {
+                this._logger.LogInformation("Found RecordsOut from Prometheus: {Value}", recordsOut.Value);
+                metrics.AddRecordsOut(recordsOut.Value);
+                foundMetrics = true;
+            }
+
+            if (bytesRead.HasValue && bytesRead.Value > 0)
+            {
+                this._logger.LogInformation("Found BytesRead from Prometheus: {Value}", bytesRead.Value);
+                metrics.AddBytesRead(bytesRead.Value);
+                foundMetrics = true;
+            }
+
+            if (bytesWritten.HasValue && bytesWritten.Value > 0)
+            {
+                this._logger.LogInformation("Found BytesWritten from Prometheus: {Value}", bytesWritten.Value);
+                metrics.AddBytesWritten(bytesWritten.Value);
+                foundMetrics = true;
+            }
+
+            // ===== TASKMANAGER METRICS =====
+            // CPU Load - average across all TaskManagers
+            string tmCpuQuery = "avg(flink_taskmanager_Status_JVM_CPU_Load)";
+            long? tmCpuLoad = await this.QueryPrometheusMetricAsync(prometheusUrl, tmCpuQuery);
+            if (tmCpuLoad.HasValue)
+            {
+                metrics.AddCustomMetric("TaskManager.CPU.Load", tmCpuLoad.Value);
+                this._logger.LogInformation("Found TaskManager CPU Load: {Value}%", tmCpuLoad.Value);
+                foundMetrics = true;
+            }
+
+            // Heap Memory Used - sum across all TaskManagers
+            string tmHeapQuery = "sum(flink_taskmanager_Status_JVM_Memory_Heap_Used)";
+            long? tmHeapUsed = await this.QueryPrometheusMetricAsync(prometheusUrl, tmHeapQuery);
+            if (tmHeapUsed.HasValue)
+            {
+                metrics.AddCustomMetric("TaskManager.Memory.Heap.Used", tmHeapUsed.Value);
+                this._logger.LogInformation("Found TaskManager Heap Used: {Value} bytes", tmHeapUsed.Value);
+                foundMetrics = true;
+            }
+
+            // Number of running tasks
+            string tmTasksQuery = $"sum(flink_taskmanager_job_task_numRecordsInPerSecond{{job_id=\"{flinkJobId}\"}}) > 0";
+            long? activeTasks = await this.QueryPrometheusMetricAsync(prometheusUrl, tmTasksQuery);
+            if (activeTasks.HasValue)
+            {
+                metrics.AddCustomMetric("TaskManager.ActiveTasks", activeTasks.Value);
+                this._logger.LogInformation("Found Active Tasks: {Value}", activeTasks.Value);
+                foundMetrics = true;
+            }
+
+            // ===== JOBMANAGER METRICS =====
+            // CPU Load
+            string jmCpuQuery = "flink_jobmanager_Status_JVM_CPU_Load";
+            long? jmCpuLoad = await this.QueryPrometheusMetricAsync(prometheusUrl, jmCpuQuery);
+            if (jmCpuLoad.HasValue)
+            {
+                metrics.AddCustomMetric("JobManager.CPU.Load", jmCpuLoad.Value);
+                this._logger.LogInformation("Found JobManager CPU Load: {Value}%", jmCpuLoad.Value);
+                foundMetrics = true;
+            }
+
+            // Heap Memory Used
+            string jmHeapQuery = "flink_jobmanager_Status_JVM_Memory_Heap_Used";
+            long? jmHeapUsed = await this.QueryPrometheusMetricAsync(prometheusUrl, jmHeapQuery);
+            if (jmHeapUsed.HasValue)
+            {
+                metrics.AddCustomMetric("JobManager.Memory.Heap.Used", jmHeapUsed.Value);
+                this._logger.LogInformation("Found JobManager Heap Used: {Value} bytes", jmHeapUsed.Value);
+                foundMetrics = true;
+            }
+
+            // Number of running jobs
+            string jmRunningJobsQuery = "flink_jobmanager_numRunningJobs";
+            long? runningJobs = await this.QueryPrometheusMetricAsync(prometheusUrl, jmRunningJobsQuery);
+            if (runningJobs.HasValue)
+            {
+                metrics.AddCustomMetric("JobManager.RunningJobs", runningJobs.Value);
+                this._logger.LogInformation("Found Running Jobs: {Value}", runningJobs.Value);
+                foundMetrics = true;
+            }
+
+            // ===== KAFKA TOPIC METRICS (if available via kafka-exporter) =====
+            // Consumer lag - requires kafka-exporter or similar
+            string kafkaLagQuery = $"sum(kafka_consumergroup_lag{{consumergroup=~\".*{flinkJobId.Substring(0, Math.Min(8, flinkJobId.Length))}.*\"}})";
+            long? consumerLag = await this.QueryPrometheusMetricAsync(prometheusUrl, kafkaLagQuery);
+            if (consumerLag.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Consumer.Lag", consumerLag.Value);
+                this._logger.LogInformation("Found Kafka Consumer Lag: {Value}", consumerLag.Value);
+                foundMetrics = true;
+            }
+
+            // Topic partition offsets (highest offset across all partitions)
+            // This shows total messages available in topics
+            string topicOffsetsQuery = "sum by (topic) (kafka_topic_partition_current_offset)";
+            long? topicOffsets = await this.QueryPrometheusMetricAsync(prometheusUrl, topicOffsetsQuery);
+            if (topicOffsets.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Topic.TotalOffsets", topicOffsets.Value);
+                this._logger.LogInformation("Found Kafka Topic Total Offsets: {Value}", topicOffsets.Value);
+                foundMetrics = true;
+            }
+
+            // Topic partition count (number of partitions across all topics being monitored)
+            string partitionCountQuery = "count(kafka_topic_partition_current_offset)";
+            long? partitionCount = await this.QueryPrometheusMetricAsync(prometheusUrl, partitionCountQuery);
+            if (partitionCount.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Topic.PartitionCount", partitionCount.Value);
+                this._logger.LogInformation("Found Kafka Topic Partition Count: {Value}", partitionCount.Value);
+                foundMetrics = true;
+            }
+
+            // Consumer group current offset (where consumers are reading from)
+            string consumerOffsetQuery = "sum by (consumergroup) (kafka_consumergroup_current_offset)";
+            long? consumerOffset = await this.QueryPrometheusMetricAsync(prometheusUrl, consumerOffsetQuery);
+            if (consumerOffset.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Consumer.CurrentOffset", consumerOffset.Value);
+                this._logger.LogInformation("Found Kafka Consumer Current Offset: {Value}", consumerOffset.Value);
+                foundMetrics = true;
+            }
+
+            // Messages in flight (difference between latest and committed offsets across all partitions)
+            string messagesInFlightQuery = "sum(kafka_topic_partition_current_offset - kafka_consumergroup_current_offset)";
+            long? messagesInFlight = await this.QueryPrometheusMetricAsync(prometheusUrl, messagesInFlightQuery);
+            if (messagesInFlight.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Topic.MessagesInFlight", messagesInFlight.Value);
+                this._logger.LogInformation("Found Kafka Messages In Flight: {Value}", messagesInFlight.Value);
+                foundMetrics = true;
+            }
+
+            // Topic message rate (messages produced per second)
+            string topicMessageRateQuery = "sum(rate(kafka_topic_partition_current_offset[1m]))";
+            long? topicMessageRate = await this.QueryPrometheusMetricAsync(prometheusUrl, topicMessageRateQuery);
+            if (topicMessageRate.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Topic.MessageRate", topicMessageRate.Value);
+                this._logger.LogInformation("Found Kafka Topic Message Rate: {Value} msg/sec", topicMessageRate.Value);
+                foundMetrics = true;
+            }
+
+            return foundMetrics;
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogWarning(ex, "Failed to query Prometheus for metrics");
+            return false;
+        }
+    }
+
+    private async Task<long?> QueryPrometheusMetricAsync(string prometheusUrl, string query)
+    {
+        try
+        {
+            // Prometheus HTTP API: /api/v1/query?query={promql}
+            string encodedQuery = Uri.EscapeDataString(query);
+            string url = $"{prometheusUrl}/api/v1/query?query={encodedQuery}";
+
+            this._logger.LogDebug("Querying Prometheus: {Query}", query);
+
+            using HttpClient promClient = new()
+            {
+                Timeout = TimeSpan.FromSeconds(10)
+            };
+            HttpResponseMessage response = await promClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                this._logger.LogWarning("Prometheus query failed with status {Status}", response.StatusCode);
+                return null;
+            }
+
+            string json = await response.Content.ReadAsStringAsync();
+            using JsonDocument doc = JsonDocument.Parse(json);
+
+            // Prometheus response format: { "status": "success", "data": { "resultType": "vector", "result": [{ "value": [timestamp, "value"] }] } }
+            if (!doc.RootElement.TryGetProperty("status", out JsonElement statusEl) ||
+                statusEl.GetString() != "success")
+            {
+                this._logger.LogWarning("Prometheus query returned non-success status");
+                return null;
+            }
+
+            if (!doc.RootElement.TryGetProperty("data", out JsonElement dataEl) ||
+                !dataEl.TryGetProperty("result", out JsonElement resultEl) ||
+                resultEl.GetArrayLength() == 0)
+            {
+                this._logger.LogDebug("Prometheus query returned no results");
+                return null;
+            }
+
+            // Get the first result's value [timestamp, "value"]
+            JsonElement firstResult = resultEl[0];
+            if (firstResult.TryGetProperty("value", out JsonElement valueArray) &&
+                valueArray.GetArrayLength() >= 2)
+            {
+                string valueStr = valueArray[1].GetString() ?? "0";
+                if (long.TryParse(valueStr, out long value))
+                {
+                    return value;
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogWarning(ex, "Error querying Prometheus metric: {Query}", query);
+            return null;
+        }
     }
 
     private async Task CollectVertexNumericMetricsAsync(string flinkJobId, string vertexId, JobMetricsBuilder metrics)
@@ -718,7 +1033,7 @@ public partial class FlinkJobManager : IFlinkJobManager
         }
 
         string allMetricsJson = await allMetricsResp.Content.ReadAsStringAsync();
-        List<FlinkMetricEntry> allMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(allMetricsJson) ?? [];
+        List<FlinkMetricEntry> allMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(allMetricsJson, s_caseInsensitiveDeserializerOptions) ?? [];
 
         this._logger.LogDebug("Found {Count} total metrics for vertex {VertexId}", allMetrics.Count, vertexId);
 
@@ -732,10 +1047,7 @@ public partial class FlinkJobManager : IFlinkJobManager
             sourceMetrics.Count, sinkMetrics.Count, parallelismMetrics.Count);
 
         // Build query string for operator-specific metrics
-        List<string> metricsToQuery = new();
-        metricsToQuery.AddRange(sourceMetrics);
-        metricsToQuery.AddRange(sinkMetrics);
-        metricsToQuery.AddRange(parallelismMetrics);
+        List<string> metricsToQuery = [.. sourceMetrics, .. sinkMetrics, .. parallelismMetrics];
 
         if (metricsToQuery.Count == 0)
         {
@@ -748,7 +1060,7 @@ public partial class FlinkJobManager : IFlinkJobManager
                 return;
             }
 
-            List<FlinkMetricEntry> fallbackMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await fallbackResp.Content.ReadAsStringAsync()) ?? [];
+            List<FlinkMetricEntry> fallbackMetrics = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await fallbackResp.Content.ReadAsStringAsync(), s_caseInsensitiveDeserializerOptions) ?? [];
             this.ProcessMetricValues(fallbackMetrics, metrics);
             return;
         }
@@ -764,7 +1076,7 @@ public partial class FlinkJobManager : IFlinkJobManager
             return;
         }
 
-        List<FlinkMetricEntry> metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync()) ?? [];
+        List<FlinkMetricEntry> metricsList = JsonSerializer.Deserialize<List<FlinkMetricEntry>>(await mresp.Content.ReadAsStringAsync(), s_caseInsensitiveDeserializerOptions) ?? [];
         this.ProcessMetricValues(metricsList, metrics);
     }
 

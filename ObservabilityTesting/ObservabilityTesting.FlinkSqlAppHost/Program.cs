@@ -89,6 +89,25 @@ else
     Console.WriteLine("   [WARNING] Kafka JMX Exporter config not found, skipping deployment");
 }
 
+// 1.6. Kafka Exporter - Exports Kafka topic/partition/consumer group metrics to Prometheus
+// CRITICAL: This is DIFFERENT from JMX exporter - provides topic-level metrics
+Console.WriteLine("[INFO] Configuring Kafka Exporter for topic metrics...");
+var kafkaTopicExporter = builder.AddContainer("kafka-topic-exporter", "danielqsj/kafka-exporter", LatestTag)
+    .WithHttpEndpoint(targetPort: 9308, name: "kafka-topic-metrics")
+    .WithReference(kafka)  // Network connectivity to Kafka
+    .WaitFor(kafka)  // Wait for Kafka to be ready
+    .WithArgs(
+        "--kafka.server=kafka:9093",  // Use internal Kafka port
+        "--topic.filter=.*",  // Monitor all topics
+        "--group.filter=.*",  // Monitor all consumer groups
+        "--web.listen-address=:9308",
+        "--log.level=info"
+    )
+    .WithLifetime(ContainerLifetime.Persistent);
+
+Console.WriteLine("   [INFO] Kafka Topic Exporter configured: kafka:9093 → :9308/metrics");
+Console.WriteLine("   [INFO] Monitoring all topics and consumer groups for partition offsets and lag");
+
 // Constants for Flink container configuration
 const string FlinkImage = "flink";
 const string FlinkVersion = "2.1.0-java17";
@@ -101,7 +120,10 @@ string jobManagerFlinkProperties =
     "metrics.reporters: prom\n" +
     "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
     "metrics.reporter.prom.port: 9250\n" +
-    "metrics.reporter.prom.filterLabelValueCharacters: false\n";
+    "metrics.reporter.prom.filterLabelValueCharacters: false\n" +
+    "metrics.scope.operator: <host>.taskmanager.<tm_id>.<job_name>.<operator_name>.<subtask_index>\n" +
+    "metrics.latency.interval: 1000\n" +
+    "metrics.latency.granularity: operator\n";
 
 // Mount Kafka connector JARs - CRITICAL for Flink to read/write Kafka topics
 string connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "flink", "lib");
@@ -128,7 +150,10 @@ string taskManagerFlinkProperties =
     "metrics.reporters: prom\n" +
     "metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory\n" +
     "metrics.reporter.prom.port: 9251\n" +
-    "metrics.reporter.prom.filterLabelValueCharacters: false\n";
+    "metrics.reporter.prom.filterLabelValueCharacters: false\n" +
+    "metrics.scope.operator: <host>.taskmanager.<tm_id>.<job_name>.<operator_name>.<subtask_index>\n" +
+    "metrics.latency.interval: 1000\n" +
+    "metrics.latency.granularity: operator\n";
 
 builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
@@ -194,7 +219,8 @@ IResourceBuilder<ContainerResource> prometheusBuilder = builder.AddContainer("pr
 // Ensure Prometheus can reach all metrics endpoints via Aspire network
 // Using WaitFor to establish network connectivity for DNS resolution
 prometheusBuilder = prometheusBuilder
-    .WaitFor(jobManager);
+    .WaitFor(jobManager)
+    .WaitFor(kafkaTopicExporter);  // Wait for kafka topic exporter
 
 // Add kafka-exporter dependency if it was deployed
 if (kafkaExporter is not null)
@@ -202,6 +228,8 @@ if (kafkaExporter is not null)
     prometheusBuilder = prometheusBuilder.WaitFor(kafkaExporter);
     Console.WriteLine("   [INFO] Prometheus configured with kafka-exporter network dependency");
 }
+
+Console.WriteLine("   [INFO] Prometheus configured with kafka-topic-exporter network dependency");
 
 IResourceBuilder<ContainerResource> prometheus = prometheusBuilder;
 
@@ -230,6 +258,7 @@ builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("Flink__JobManager__BaseUrl", "http://flink-jobmanager:8081")
     .WithEnvironment("Flink__SqlGateway__BaseUrl", "http://flink-sql-gateway:8083")
+    .WithEnvironment("Flink__Prometheus__BaseUrl", "http://prometheus:9090")  // Inject Prometheus URL via Aspire
     .WithEnvironment("FLINK_CONNECTOR_PATH", "/app")  // Path to connector JARs (matches Gateway search logic)
     .WithEnvironment("Metrics__Prometheus__Enabled", "true")  // Enable Prometheus metrics
     .WithEnvironment("Metrics__Prometheus__Port", "9253")     // Metrics on port 9253
