@@ -809,112 +809,138 @@ public class ObservabilityTests : LocalTestingTestBase
             var targetsResponse = await _httpClient.GetFromJsonAsync<JsonDocument>(
                 $"{prometheusEndpoint}/api/v1/targets", cancellationToken);
             
-            if (targetsResponse != null && 
-                targetsResponse.RootElement.TryGetProperty("data", out var dataEl) &&
-                dataEl.TryGetProperty("activeTargets", out var targetsEl))
-            {
-                var activeTargets = targetsEl.EnumerateArray().ToList();
-                TestContext.WriteLine($"   📊 Active Prometheus targets: {activeTargets.Count}");
-                
-                var targetsByJob = new Dictionary<string, int>();
-                var upTargets = 0;
-                var downTargets = 0;
-                
-                foreach (var target in activeTargets)
-                {
-                    if (target.TryGetProperty("labels", out var labels) &&
-                        labels.TryGetProperty("job", out var jobLabel))
-                    {
-                        string jobName = jobLabel.GetString() ?? "unknown";
-                        targetsByJob.TryGetValue(jobName, out var count);
-                        targetsByJob[jobName] = count + 1;
-                    }
-                    
-                    if (target.TryGetProperty("health", out var health))
-                    {
-                        string healthStatus = health.GetString() ?? "unknown";
-                        if (healthStatus == "up")
-                            upTargets++;
-                        else
-                            downTargets++;
-                    }
-                }
-                
-                TestContext.WriteLine($"   📈 Target health: {upTargets} up, {downTargets} down");
-                
-                foreach (var (job, count) in targetsByJob.OrderBy(kv => kv.Key))
-                {
-                    TestContext.WriteLine($"      - {job}: {count} target(s)");
-                }
-                
-                // Check for expected targets
-                string[] expectedJobs = { "flink-jobmanager", "flink-taskmanager", "kafka-topics" };
-                var missingJobs = new List<string>();
-                
-                foreach (var expectedJob in expectedJobs)
-                {
-                    if (!targetsByJob.ContainsKey(expectedJob))
-                    {
-                        missingJobs.Add(expectedJob);
-                    }
-                }
-                
-                if (missingJobs.Count > 0)
-                {
-                    TestContext.WriteLine($"   ⚠️  CONFIGURATION WARNING: Missing expected Prometheus targets: {string.Join(", ", missingJobs)}");
-                    TestContext.WriteLine($"      → Check prometheus.yml scrape_configs");
-                }
-                
-                if (downTargets > 0)
-                {
-                    TestContext.WriteLine($"   ⚠️  SCRAPING WARNING: {downTargets} target(s) are down");
-                    TestContext.WriteLine($"      → Prometheus cannot scrape metrics from these targets");
-                }
-                
-                if (upTargets == 0)
-                {
-                    TestContext.WriteLine($"   ❌ CONFIGURATION ERROR: No Prometheus targets are up");
-                    TestContext.WriteLine($"      → Check that Flink and exporters are running and accessible");
-                }
-            }
-            else
-            {
-                TestContext.WriteLine($"   ⚠️  Could not retrieve Prometheus targets (API response format unexpected)");
-            }
+            await CheckPrometheusTargetsAsync(targetsResponse);
 
             // Check 3: Verify we can query a basic Flink metric
-            TestContext.WriteLine($"   3️⃣ Testing Prometheus query for Flink metrics...");
-            string testQuery = Uri.EscapeDataString("flink_jobmanager_Status_JVM_Memory_Heap_Used");
-            var queryResponse = await _httpClient.GetFromJsonAsync<JsonDocument>(
-                $"{prometheusEndpoint}/api/v1/query?query={testQuery}", cancellationToken);
-            
-            if (queryResponse != null &&
-                queryResponse.RootElement.TryGetProperty("status", out var statusEl) &&
-                statusEl.GetString() == "success" &&
-                queryResponse.RootElement.TryGetProperty("data", out var queryDataEl) &&
-                queryDataEl.TryGetProperty("result", out var resultEl))
-            {
-                int resultCount = resultEl.GetArrayLength();
-                if (resultCount > 0)
-                {
-                    TestContext.WriteLine($"   ✅ Successfully queried Flink JobManager metrics ({resultCount} result(s))");
-                }
-                else
-                {
-                    TestContext.WriteLine($"   ⚠️  SCRAPING WARNING: Query succeeded but returned no results");
-                    TestContext.WriteLine($"      → Prometheus may not have scraped Flink metrics yet");
-                    TestContext.WriteLine($"      → Or Flink metrics reporter is not exposing metrics");
-                }
-            }
-            else
-            {
-                TestContext.WriteLine($"   ⚠️  Failed to query Flink metrics from Prometheus");
-            }
+            await CheckPrometheusMetricQueryAsync(prometheusEndpoint, cancellationToken);
         }
         catch (Exception ex)
         {
             TestContext.WriteLine($"   ❌ DIAGNOSTIC ERROR: {ex.Message}");
             TestContext.WriteLine($"      → This may indicate network issues or Prometheus configuration problems");
+        }
+    }
+
+    private static async Task CheckPrometheusTargetsAsync(JsonDocument? targetsResponse)
+    {
+        if (targetsResponse == null || 
+            !targetsResponse.RootElement.TryGetProperty("data", out var dataEl) ||
+            !dataEl.TryGetProperty("activeTargets", out var targetsEl))
+        {
+            TestContext.WriteLine($"   ⚠️  Could not retrieve Prometheus targets (API response format unexpected)");
+            return;
+        }
+
+        var activeTargets = targetsEl.EnumerateArray().ToList();
+        TestContext.WriteLine($"   📊 Active Prometheus targets: {activeTargets.Count}");
+        
+        var (targetsByJob, upTargets, downTargets) = AnalyzePrometheusTargets(activeTargets);
+        
+        TestContext.WriteLine($"   📈 Target health: {upTargets} up, {downTargets} down");
+        
+        foreach (var (job, count) in targetsByJob.OrderBy(kv => kv.Key))
+        {
+            TestContext.WriteLine($"      - {job}: {count} target(s)");
+        }
+        
+        await ValidateExpectedPrometheusTargetsAsync(targetsByJob, upTargets, downTargets);
+    }
+
+    private static (Dictionary<string, int> targetsByJob, int upTargets, int downTargets) AnalyzePrometheusTargets(
+        List<JsonElement> activeTargets)
+    {
+        var targetsByJob = new Dictionary<string, int>();
+        var upTargets = 0;
+        var downTargets = 0;
+        
+        foreach (var target in activeTargets)
+        {
+            if (target.TryGetProperty("labels", out var labels) &&
+                labels.TryGetProperty("job", out var jobLabel))
+            {
+                string jobName = jobLabel.GetString() ?? "unknown";
+                targetsByJob.TryGetValue(jobName, out var count);
+                targetsByJob[jobName] = count + 1;
+            }
+            
+            if (target.TryGetProperty("health", out var health))
+            {
+                string healthStatus = health.GetString() ?? "unknown";
+                if (healthStatus == "up")
+                    upTargets++;
+                else
+                    downTargets++;
+            }
+        }
+        
+        return (targetsByJob, upTargets, downTargets);
+    }
+
+    private static Task ValidateExpectedPrometheusTargetsAsync(
+        Dictionary<string, int> targetsByJob, 
+        int upTargets, 
+        int downTargets)
+    {
+        string[] expectedJobs = { "flink-jobmanager", "flink-taskmanager", "kafka-topics" };
+        var missingJobs = new List<string>();
+        
+        foreach (var expectedJob in expectedJobs)
+        {
+            if (!targetsByJob.ContainsKey(expectedJob))
+            {
+                missingJobs.Add(expectedJob);
+            }
+        }
+        
+        if (missingJobs.Count > 0)
+        {
+            TestContext.WriteLine($"   ⚠️  CONFIGURATION WARNING: Missing expected Prometheus targets: {string.Join(", ", missingJobs)}");
+            TestContext.WriteLine($"      → Check prometheus.yml scrape_configs");
+        }
+        
+        if (downTargets > 0)
+        {
+            TestContext.WriteLine($"   ⚠️  SCRAPING WARNING: {downTargets} target(s) are down");
+            TestContext.WriteLine($"      → Prometheus cannot scrape metrics from these targets");
+        }
+        
+        if (upTargets == 0)
+        {
+            TestContext.WriteLine($"   ❌ CONFIGURATION ERROR: No Prometheus targets are up");
+            TestContext.WriteLine($"      → Check that Flink and exporters are running and accessible");
+        }
+        
+        return Task.CompletedTask;
+    }
+
+    private static async Task CheckPrometheusMetricQueryAsync(string prometheusEndpoint, CancellationToken cancellationToken)
+    {
+        TestContext.WriteLine($"   3️⃣ Testing Prometheus query for Flink metrics...");
+        string testQuery = Uri.EscapeDataString("flink_jobmanager_Status_JVM_Memory_Heap_Used");
+        var queryResponse = await _httpClient!.GetFromJsonAsync<JsonDocument>(
+            $"{prometheusEndpoint}/api/v1/query?query={testQuery}", cancellationToken);
+        
+        if (queryResponse != null &&
+            queryResponse.RootElement.TryGetProperty("status", out var statusEl) &&
+            statusEl.GetString() == "success" &&
+            queryResponse.RootElement.TryGetProperty("data", out var queryDataEl) &&
+            queryDataEl.TryGetProperty("result", out var resultEl))
+        {
+            int resultCount = resultEl.GetArrayLength();
+            if (resultCount > 0)
+            {
+                TestContext.WriteLine($"   ✅ Successfully queried Flink JobManager metrics ({resultCount} result(s))");
+            }
+            else
+            {
+                TestContext.WriteLine($"   ⚠️  SCRAPING WARNING: Query succeeded but returned no results");
+                TestContext.WriteLine($"      → Prometheus may not have scraped Flink metrics yet");
+                TestContext.WriteLine($"      → Or Flink metrics reporter is not exposing metrics");
+            }
+        }
+        else
+        {
+            TestContext.WriteLine($"   ⚠️  Failed to query Flink metrics from Prometheus");
         }
     }
 
