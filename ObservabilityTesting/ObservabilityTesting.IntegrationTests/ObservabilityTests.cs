@@ -279,11 +279,14 @@ public class ObservabilityTests : LocalTestingTestBase
                         continue;
                     }
                     
+                    // Convert to long for comparison
+                    // Note: When metrics are deserialized from JSON, numeric values are JsonElement objects
                     long value = metricValue switch
                     {
                         long l => l,
                         int i => i,
                         double d => (long)d,
+                        JsonElement je when je.ValueKind == JsonValueKind.Number => je.GetInt64(),
                         _ => 0
                     };
                     
@@ -796,11 +799,13 @@ public class ObservabilityTests : LocalTestingTestBase
                 $"{metricName} should not be null");
             
             // Convert to long for comparison
+            // Note: When metrics are deserialized from JSON, numeric values are JsonElement objects
             long value = metricValue switch
             {
                 long l => l,
                 int i => i,
                 double d => (long)d,
+                JsonElement je when je.ValueKind == JsonValueKind.Number => je.GetInt64(),
                 _ => 0
             };
 
