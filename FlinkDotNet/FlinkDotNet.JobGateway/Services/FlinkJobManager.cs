@@ -663,6 +663,11 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         string sanitizedJobId = ValidateAndSanitizePathSegment(flinkJobId);
 
+        // CRITICAL: Query Prometheus for metrics FIRST, before processing vertices
+        // This ensures Memory/CPU metrics are collected even if vertices don't exist or are empty
+        // Prometheus metrics are job-wide and don't depend on vertex existence
+        await this.TryCollectMetricsFromPrometheusAsync(flinkJobId, metrics);
+
         // Flink 2.x: Get vertices from job details endpoint, not from /vertices (which doesn't exist)
         HttpResponseMessage jobResp = await this._httpClient.GetAsync($"/v1/jobs/{sanitizedJobId}");
         if (!jobResp.IsSuccessStatusCode)
@@ -700,10 +705,6 @@ public partial class FlinkJobManager : IFlinkJobManager
         // OPTIMIZATION: Try to extract metrics from vertex object first (Flink 2.x job details include aggregated metrics)
         // This avoids the empty response issue from /metrics endpoint for completed jobs
         bool metricsExtracted = this.TryExtractVertexMetricsFromJobDetails(vertex, metrics);
-
-        // ALTERNATIVE SOURCE: Query Prometheus for operator-level Kafka metrics
-        // Prometheus scrapes detailed operator metrics that may not be in job details API
-        await this.TryCollectMetricsFromPrometheusAsync(flinkJobId, metrics);
 
         if (!metricsExtracted)
         {
