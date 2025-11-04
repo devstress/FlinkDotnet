@@ -772,19 +772,26 @@ public partial class FlinkJobManager : IFlinkJobManager
                 return false;
             }
 
-            this._logger.LogInformation("Querying Prometheus at {Url} for Flink job {JobId} operator metrics", prometheusUrl, flinkJobId);
-
-            // Query for Kafka source operator numRecordsOut (= RecordsIn to the job)
-            // Metric pattern: flink_taskmanager_job_task_operator_KafkaSource_numRecordsOut or similar
-            // Use sum() to aggregate across all subtasks
-            string sourceQuery = $"sum(flink_taskmanager_job_task_operator_numRecordsOut{{job_id=\"{flinkJobId}\",operator_name=~\".*Source.*\"}})";
-            long? recordsIn = await this.QueryPrometheusMetricAsync(prometheusUrl, sourceQuery);
-
-            // Query for Kafka sink operator numRecordsIn (= RecordsOut from the job)
-            string sinkQuery = $"sum(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{flinkJobId}\",operator_name=~\".*Sink.*\"}})";
-            long? recordsOut = await this.QueryPrometheusMetricAsync(prometheusUrl, sinkQuery);
+            this._logger.LogInformation("Querying Prometheus at {Url} for Flink job {JobId} comprehensive metrics", prometheusUrl, flinkJobId);
 
             bool foundMetrics = false;
+
+            // ===== OPERATOR METRICS (Kafka Source/Sink) =====
+            // Query for Kafka source operator numRecordsOut (= RecordsIn to the job)
+            string sourceRecordsQuery = $"sum(flink_taskmanager_job_task_operator_numRecordsOut{{job_id=\"{flinkJobId}\",operator_name=~\".*Source.*\"}})";
+            long? recordsIn = await this.QueryPrometheusMetricAsync(prometheusUrl, sourceRecordsQuery);
+
+            // Query for Kafka sink operator numRecordsIn (= RecordsOut from the job)
+            string sinkRecordsQuery = $"sum(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{flinkJobId}\",operator_name=~\".*Sink.*\"}})";
+            long? recordsOut = await this.QueryPrometheusMetricAsync(prometheusUrl, sinkRecordsQuery);
+
+            // Query for Kafka source operator numBytesOut (bytes read from Kafka)
+            string sourceBytesQuery = $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{flinkJobId}\",operator_name=~\".*Source.*\"}})";
+            long? bytesRead = await this.QueryPrometheusMetricAsync(prometheusUrl, sourceBytesQuery);
+
+            // Query for Kafka sink operator numBytesIn (bytes written to Kafka)
+            string sinkBytesQuery = $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{flinkJobId}\",operator_name=~\".*Sink.*\"}})";
+            long? bytesWritten = await this.QueryPrometheusMetricAsync(prometheusUrl, sinkBytesQuery);
 
             if (recordsIn.HasValue && recordsIn.Value > 0)
             {
@@ -797,6 +804,93 @@ public partial class FlinkJobManager : IFlinkJobManager
             {
                 this._logger.LogInformation("Found RecordsOut from Prometheus: {Value}", recordsOut.Value);
                 metrics.AddRecordsOut(recordsOut.Value);
+                foundMetrics = true;
+            }
+
+            if (bytesRead.HasValue && bytesRead.Value > 0)
+            {
+                this._logger.LogInformation("Found BytesRead from Prometheus: {Value}", bytesRead.Value);
+                metrics.AddBytesRead(bytesRead.Value);
+                foundMetrics = true;
+            }
+
+            if (bytesWritten.HasValue && bytesWritten.Value > 0)
+            {
+                this._logger.LogInformation("Found BytesWritten from Prometheus: {Value}", bytesWritten.Value);
+                metrics.AddBytesWritten(bytesWritten.Value);
+                foundMetrics = true;
+            }
+
+            // ===== TASKMANAGER METRICS =====
+            // CPU Load - average across all TaskManagers
+            string tmCpuQuery = "avg(flink_taskmanager_Status_JVM_CPU_Load)";
+            long? tmCpuLoad = await this.QueryPrometheusMetricAsync(prometheusUrl, tmCpuQuery);
+            if (tmCpuLoad.HasValue)
+            {
+                metrics.AddCustomMetric("TaskManager.CPU.Load", tmCpuLoad.Value);
+                this._logger.LogInformation("Found TaskManager CPU Load: {Value}%", tmCpuLoad.Value);
+                foundMetrics = true;
+            }
+
+            // Heap Memory Used - sum across all TaskManagers
+            string tmHeapQuery = "sum(flink_taskmanager_Status_JVM_Memory_Heap_Used)";
+            long? tmHeapUsed = await this.QueryPrometheusMetricAsync(prometheusUrl, tmHeapQuery);
+            if (tmHeapUsed.HasValue)
+            {
+                metrics.AddCustomMetric("TaskManager.Memory.Heap.Used", tmHeapUsed.Value);
+                this._logger.LogInformation("Found TaskManager Heap Used: {Value} bytes", tmHeapUsed.Value);
+                foundMetrics = true;
+            }
+
+            // Number of running tasks
+            string tmTasksQuery = $"sum(flink_taskmanager_job_task_numRecordsInPerSecond{{job_id=\"{flinkJobId}\"}}) > 0";
+            long? activeTasks = await this.QueryPrometheusMetricAsync(prometheusUrl, tmTasksQuery);
+            if (activeTasks.HasValue)
+            {
+                metrics.AddCustomMetric("TaskManager.ActiveTasks", activeTasks.Value);
+                this._logger.LogInformation("Found Active Tasks: {Value}", activeTasks.Value);
+                foundMetrics = true;
+            }
+
+            // ===== JOBMANAGER METRICS =====
+            // CPU Load
+            string jmCpuQuery = "flink_jobmanager_Status_JVM_CPU_Load";
+            long? jmCpuLoad = await this.QueryPrometheusMetricAsync(prometheusUrl, jmCpuQuery);
+            if (jmCpuLoad.HasValue)
+            {
+                metrics.AddCustomMetric("JobManager.CPU.Load", jmCpuLoad.Value);
+                this._logger.LogInformation("Found JobManager CPU Load: {Value}%", jmCpuLoad.Value);
+                foundMetrics = true;
+            }
+
+            // Heap Memory Used
+            string jmHeapQuery = "flink_jobmanager_Status_JVM_Memory_Heap_Used";
+            long? jmHeapUsed = await this.QueryPrometheusMetricAsync(prometheusUrl, jmHeapQuery);
+            if (jmHeapUsed.HasValue)
+            {
+                metrics.AddCustomMetric("JobManager.Memory.Heap.Used", jmHeapUsed.Value);
+                this._logger.LogInformation("Found JobManager Heap Used: {Value} bytes", jmHeapUsed.Value);
+                foundMetrics = true;
+            }
+
+            // Number of running jobs
+            string jmRunningJobsQuery = "flink_jobmanager_numRunningJobs";
+            long? runningJobs = await this.QueryPrometheusMetricAsync(prometheusUrl, jmRunningJobsQuery);
+            if (runningJobs.HasValue)
+            {
+                metrics.AddCustomMetric("JobManager.RunningJobs", runningJobs.Value);
+                this._logger.LogInformation("Found Running Jobs: {Value}", runningJobs.Value);
+                foundMetrics = true;
+            }
+
+            // ===== KAFKA CONSUMER METRICS (if available via kafka-exporter) =====
+            // Consumer lag - requires kafka-exporter or similar
+            string kafkaLagQuery = $"sum(kafka_consumergroup_lag{{consumergroup=~\".*{flinkJobId.Substring(0, Math.Min(8, flinkJobId.Length))}.*\"}})";
+            long? consumerLag = await this.QueryPrometheusMetricAsync(prometheusUrl, kafkaLagQuery);
+            if (consumerLag.HasValue)
+            {
+                metrics.AddCustomMetric("Kafka.Consumer.Lag", consumerLag.Value);
+                this._logger.LogInformation("Found Kafka Consumer Lag: {Value}", consumerLag.Value);
                 foundMetrics = true;
             }
 

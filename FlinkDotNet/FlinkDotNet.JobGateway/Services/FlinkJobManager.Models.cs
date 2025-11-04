@@ -81,13 +81,19 @@ public partial class FlinkJobManager
         private int _checkpoints;
         private DateTime? _lastCheckpoint;
         private string _backpressureLevel = "UNKNOWN";
+        private long _bytesRead;
+        private long _bytesWritten;
+        private readonly Dictionary<string, object> _customMetrics = new(StringComparer.OrdinalIgnoreCase);
 
         public void AddRecordsIn(long value) => this._recordsIn += value;
         public void AddRecordsOut(long value) => this._recordsOut += value;
+        public void AddBytesRead(long value) => this._bytesRead += value;
+        public void AddBytesWritten(long value) => this._bytesWritten += value;
         public void UpdateMaxParallelism(int value) => this._parallelism = Math.Max(this._parallelism, value);
         public void SetCheckpoints(int value) => this._checkpoints = value;
         public void SetLastCheckpoint(DateTime value) => this._lastCheckpoint = value;
         public void UpdateWorstBackpressure(string level) => this._backpressureLevel = WorstBackpressure(this._backpressureLevel, level);
+        public void AddCustomMetric(string key, object value) => this._customMetrics[key] = value;
 
         private static string WorstBackpressure(string current, string candidate)
         {
@@ -102,18 +108,25 @@ public partial class FlinkJobManager
             return Rank(candidate) > Rank(current) ? candidate : current;
         }
 
-        public JobMetrics Build() => new()
+        public JobMetrics Build()
         {
-            FlinkJobId = this._flinkJobId,
-            RecordsIn = this._recordsIn,
-            RecordsOut = this._recordsOut,
-            Parallelism = this._parallelism,
-            Checkpoints = this._checkpoints,
-            LastCheckpoint = this._lastCheckpoint,
-            CustomMetrics = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            Dictionary<string, object> customMetrics = new(this._customMetrics, StringComparer.OrdinalIgnoreCase)
             {
                 ["backpressureLevel"] = this._backpressureLevel
-            }
-        };
+            };
+
+            return new()
+            {
+                FlinkJobId = this._flinkJobId,
+                RecordsIn = this._recordsIn,
+                RecordsOut = this._recordsOut,
+                BytesRead = this._bytesRead,
+                BytesWritten = this._bytesWritten,
+                Parallelism = this._parallelism,
+                Checkpoints = this._checkpoints,
+                LastCheckpoint = this._lastCheckpoint,
+                CustomMetrics = customMetrics
+            };
+        }
     }
 }
