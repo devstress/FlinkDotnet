@@ -87,13 +87,10 @@ public partial class FlinkJobManager
 
         public void AddRecordsIn(long value) => this._recordsIn += value;
         public void AddRecordsOut(long value) => this._recordsOut += value;
-        public void AddBytesRead(long value) => this._bytesRead += value;
-        public void AddBytesWritten(long value) => this._bytesWritten += value;
         public void UpdateMaxParallelism(int value) => this._parallelism = Math.Max(this._parallelism, value);
         public void SetCheckpoints(int value) => this._checkpoints = value;
         public void SetLastCheckpoint(DateTime value) => this._lastCheckpoint = value;
         public void UpdateWorstBackpressure(string level) => this._backpressureLevel = WorstBackpressure(this._backpressureLevel, level);
-        public void AddCustomMetric(string key, object value) => this._customMetrics[key] = value;
 
         private static string WorstBackpressure(string current, string candidate)
         {
