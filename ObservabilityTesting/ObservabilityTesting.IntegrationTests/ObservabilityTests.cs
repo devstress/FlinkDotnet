@@ -220,6 +220,7 @@ public class ObservabilityTests : LocalTestingTestBase
         
         string? jobId = null;
         var gatewayEndpoint = await GetGatewayEndpointAsync();
+        var prometheusEndpoint = await GetPrometheusEndpointAsync();
         
         try
         {
@@ -451,7 +452,6 @@ public class ObservabilityTests : LocalTestingTestBase
             
             // STEP 5: Validate Prometheus integration
             TestContext.WriteLine("═══ Prometheus Integration Validation ═══");
-            var prometheusEndpoint = await GetPrometheusEndpointAsync();
             TestContext.WriteLine($"Prometheus endpoint: {prometheusEndpoint}");
             
             var httpClient = _httpClient!; // Null-forgiving operator safe after initialization check
