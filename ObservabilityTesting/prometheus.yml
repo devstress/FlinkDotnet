@@ -58,12 +58,12 @@ scrape_configs:
           role: 'topics'
 
   # FlinkDotNet JobGateway metrics
-  # Aspire internal network: flinkdotnet-jobgateway:9253
-  # Gateway exposes Prometheus metrics for job submission tracking
+  # Aspire internal network: flinkdotnet-jobgateway:8086
+  # Gateway exposes Prometheus metrics on the same port as HTTP API
   - job_name: 'flinkdotnet-jobgateway'
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['flinkdotnet-jobgateway:9253']
+      - targets: ['flinkdotnet-jobgateway:8086']
         labels:
           component: 'flinkdotnet'
           role: 'jobgateway'
