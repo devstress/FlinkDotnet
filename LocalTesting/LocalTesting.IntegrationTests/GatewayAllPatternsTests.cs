@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Confluent.Kafka;
 using LocalTesting.FlinkSqlAppHost;
 using NUnit.Framework;
@@ -118,6 +119,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
     #region Test Infrastructure
 
+    [SuppressMessage("SonarQube", "S4040:Strings should be normalized to uppercase", Justification = "Kafka topic names must be lowercase")]
     private async Task RunGatewayPatternTest(
         string patternName,
         Func<string, string, string, CancellationToken, Task<Flink.JobBuilder.Models.JobSubmissionResult>> jobCreator,
@@ -127,6 +129,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         bool allowLongerProcessing = false,
         bool usesJson = false)
     {
+        // Kafka topic names must be lowercase, so ToLowerInvariant is correct here
         var inputTopic = $"lt.gw.{patternName.ToLowerInvariant()}.input.{TestContext.CurrentContext.Test.ID}";
         var outputTopic = $"lt.gw.{patternName.ToLowerInvariant()}.output.{TestContext.CurrentContext.Test.ID}";
 

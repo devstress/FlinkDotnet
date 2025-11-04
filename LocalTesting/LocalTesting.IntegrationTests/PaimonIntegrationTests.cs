@@ -44,7 +44,7 @@ public class PaimonIntegrationTests
         var deserialized1 = JsonSerializer.Deserialize<PaimonCatalogDefinition>(json1);
 
         Assert.That(deserialized1, Is.Not.Null);
-        Assert.That(deserialized1.CatalogName, Is.EqualTo("paimon_filesystem"));
+        Assert.That(deserialized1!.CatalogName, Is.EqualTo("paimon_filesystem"));
         Assert.That(deserialized1.CatalogType, Is.EqualTo("paimon"));
         Assert.That(deserialized1.Warehouse, Is.EqualTo("file:/tmp/paimon"));
         Assert.That(deserialized1.Properties.Count, Is.EqualTo(1));
@@ -68,7 +68,7 @@ public class PaimonIntegrationTests
         var deserialized2 = JsonSerializer.Deserialize<PaimonCatalogDefinition>(json2);
 
         Assert.That(deserialized2, Is.Not.Null);
-        Assert.That(deserialized2.CatalogName, Is.EqualTo("paimon_hive"));
+        Assert.That(deserialized2!.CatalogName, Is.EqualTo("paimon_hive"));
         Assert.That(deserialized2.CatalogType, Is.EqualTo("paimon-generic"));
         Assert.That(deserialized2.Warehouse, Is.EqualTo("hdfs://namenode:8020/warehouse"));
         Assert.That(deserialized2.HiveConfDir, Is.EqualTo("/path/to/hive/conf"));
@@ -131,13 +131,13 @@ public class PaimonIntegrationTests
 
         // Assert - Structure
         Assert.That(deserialized, Is.Not.Null);
-        Assert.That(deserialized.Source, Is.InstanceOf<PaimonTableDefinition>());
+        Assert.That(deserialized!.Source, Is.InstanceOf<PaimonTableDefinition>());
 
         var tableDef = deserialized.Source as PaimonTableDefinition;
         Assert.That(tableDef, Is.Not.Null);
 
         // Assert - Basic properties
-        Assert.That(tableDef.CatalogName, Is.EqualTo("lakehouse"));
+        Assert.That(tableDef!.CatalogName, Is.EqualTo("lakehouse"));
         Assert.That(tableDef.TableName, Is.EqualTo("orders"));
         Assert.That(tableDef.Type, Is.EqualTo("paimon_table"));
 

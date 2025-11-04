@@ -73,11 +73,11 @@ public class MaterializedTableTests
 
         // Assert - Structure
         Assert.That(deserialized, Is.Not.Null);
-        Assert.That(deserialized.Source, Is.InstanceOf<MaterializedTableDefinition>());
+        Assert.That(deserialized!.Source, Is.InstanceOf<MaterializedTableDefinition>());
 
         var mtDef = deserialized.Source as MaterializedTableDefinition;
         Assert.That(mtDef, Is.Not.Null);
-        Assert.That(mtDef.Type, Is.EqualTo("materialized_table"));
+        Assert.That(mtDef!.Type, Is.EqualTo("materialized_table"));
         Assert.That(mtDef.TableName, Is.EqualTo("dwd_orders"));
         Assert.That(mtDef.RefreshMode, Is.EqualTo("CONTINUOUS"));
         Assert.That(mtDef.FreshnessInterval, Is.EqualTo("INTERVAL '3' MINUTE"));

@@ -69,11 +69,11 @@ public class ModelTests
 
         // Assert - Structure
         Assert.That(deserialized, Is.Not.Null);
-        Assert.That(deserialized.Source, Is.InstanceOf<ModelDefinition>());
+        Assert.That(deserialized!.Source, Is.InstanceOf<ModelDefinition>());
 
         var modelDef = deserialized.Source as ModelDefinition;
         Assert.That(modelDef, Is.Not.Null);
-        Assert.That(modelDef.Type, Is.EqualTo("model"));
+        Assert.That(modelDef!.Type, Is.EqualTo("model"));
         Assert.That(modelDef.ModelName, Is.EqualTo("sentiment_analyzer"));
         Assert.That(modelDef.Provider, Is.EqualTo("openai"));
         Assert.That(modelDef.Operation, Is.EqualTo("CREATE"));

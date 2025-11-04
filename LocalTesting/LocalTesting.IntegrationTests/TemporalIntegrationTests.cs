@@ -200,10 +200,10 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 Assert.That(result.Status, Is.EqualTo("Completed"), "Order should be completed");
                 Assert.That(result.Steps.Count, Is.GreaterThanOrEqualTo(5), "Should have multiple orchestration steps");
                 Assert.That(result.Steps, Does.Contain("Order validated"), "Should validate order");
-                Assert.That(result.Steps.Any(s => s.StartsWith("Approval received")), Is.True, "Should receive approval");
+                Assert.That(result.Steps.Exists(s => s.StartsWith("Approval received")), Is.True, "Should receive approval");
                 Assert.That(result.Steps, Does.Contain("Payment processed"), "Should process payment");
                 Assert.That(result.Steps, Does.Contain("Inventory reserved"), "Should reserve inventory");
-                Assert.That(result.Steps.Any(s => s.StartsWith("Shipment created")), Is.True, "Should create shipment");
+                Assert.That(result.Steps.Exists(s => s.StartsWith("Shipment created")), Is.True, "Should create shipment");
 
                 stopwatch.Stop();
                 TestContext.WriteLine("╔══════════════════════════════════════════════════════════════════════════╗");

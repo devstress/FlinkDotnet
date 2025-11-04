@@ -142,36 +142,36 @@ public class UnifiedSinkV2ConsolidatedTests
 
         // Assert: Exactly-Once Sink
         Assert.That(deserializedJobs[0], Is.Not.Null);
-        var exactlyOnceSink = deserializedJobs[0].Sink as UnifiedSinkV2Definition;
+        var exactlyOnceSink = deserializedJobs[0]!.Sink as UnifiedSinkV2Definition;
         Assert.That(exactlyOnceSink, Is.Not.Null);
-        Assert.That(exactlyOnceSink.Type, Is.EqualTo("unified_sink_v2"));
+        Assert.That(exactlyOnceSink!.Type, Is.EqualTo("unified_sink_v2"));
         Assert.That(exactlyOnceSink.SinkType, Is.EqualTo("kafka"));
         Assert.That(exactlyOnceSink.Semantics, Is.EqualTo("exactly-once"));
         Assert.That(exactlyOnceSink.Stateful, Is.True);
-        Assert.That(exactlyOnceSink.WriterConfig.ClassName, Is.EqualTo("KafkaUnifiedWriter"));
+        Assert.That(exactlyOnceSink.WriterConfig!.ClassName, Is.EqualTo("KafkaUnifiedWriter"));
         Assert.That(exactlyOnceSink.CommitterConfig, Is.Not.Null);
-        Assert.That(exactlyOnceSink.CommitterConfig.Enabled, Is.True);
+        Assert.That(exactlyOnceSink.CommitterConfig!.Enabled, Is.True);
         Assert.That(exactlyOnceSink.CommitterConfig.ClassName, Is.EqualTo("KafkaCommitter"));
 
         // Assert: At-Least-Once Sink
-        var atLeastOnceSink = deserializedJobs[1].Sink as UnifiedSinkV2Definition;
+        var atLeastOnceSink = deserializedJobs[1]!.Sink as UnifiedSinkV2Definition;
         Assert.That(atLeastOnceSink, Is.Not.Null);
-        Assert.That(atLeastOnceSink.SinkType, Is.EqualTo("file"));
+        Assert.That(atLeastOnceSink!.SinkType, Is.EqualTo("file"));
         Assert.That(atLeastOnceSink.Semantics, Is.EqualTo("at-least-once"));
         Assert.That(atLeastOnceSink.Stateful, Is.False);
         Assert.That(atLeastOnceSink.CommitterConfig, Is.Null);
 
         // Assert: Custom Sink
-        var customSink = deserializedJobs[2].Sink as UnifiedSinkV2Definition;
+        var customSink = deserializedJobs[2]!.Sink as UnifiedSinkV2Definition;
         Assert.That(customSink, Is.Not.Null);
-        Assert.That(customSink.SinkType, Is.EqualTo("custom"));
-        Assert.That(customSink.WriterConfig.ClassName, Is.EqualTo("MyCustomWriter"));
-        Assert.That(customSink.WriterConfig.Properties.ContainsKey("batchSize"), Is.True);
-        Assert.That(customSink.Properties["retryAttempts"], Is.EqualTo("3"));
+        Assert.That(customSink!.SinkType, Is.EqualTo("custom"));
+        Assert.That(customSink.WriterConfig!.ClassName, Is.EqualTo("MyCustomWriter"));
+        Assert.That(customSink.WriterConfig.Properties!.ContainsKey("batchSize"), Is.True);
+        Assert.That(customSink.Properties!["retryAttempts"], Is.EqualTo("3"));
 
         // Assert: All sinks are independent
         Assert.That(deserializedJobs, Has.Count.EqualTo(3));
-        var sinkTypes = deserializedJobs.Select(j => (j.Sink as UnifiedSinkV2Definition)?.SinkType).Distinct().ToList();
+        var sinkTypes = deserializedJobs.Select(j => (j!.Sink as UnifiedSinkV2Definition)?.SinkType).Distinct().ToList();
         Assert.That(sinkTypes, Has.Count.EqualTo(3));
         Assert.That(sinkTypes, Contains.Item("kafka"));
         Assert.That(sinkTypes, Contains.Item("file"));
@@ -362,8 +362,8 @@ public class UnifiedSinkV2ConsolidatedTests
         var unifiedDeserialized = JsonSerializer.Deserialize<JobDefinition>(unifiedJson);
 
         // Assert: Both patterns work independently
-        Assert.That(legacyDeserialized.Sink, Is.InstanceOf<KafkaSinkDefinition>());
-        Assert.That(unifiedDeserialized.Sink, Is.InstanceOf<UnifiedSinkV2Definition>());
+        Assert.That(legacyDeserialized!.Sink, Is.InstanceOf<KafkaSinkDefinition>());
+        Assert.That(unifiedDeserialized!.Sink, Is.InstanceOf<UnifiedSinkV2Definition>());
 
         // Assert: Type discriminators are different
         var legacySink = legacyDeserialized.Sink as KafkaSinkDefinition;
@@ -486,7 +486,7 @@ public class UnifiedSinkV2ConsolidatedTests
 
         var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
         Assert.That(deserialized, Is.Not.Null);
-        Assert.That(deserialized.Source, Is.InstanceOf<KafkaSourceDefinition>());
+        Assert.That(deserialized!.Source, Is.InstanceOf<KafkaSourceDefinition>());
         Assert.That(deserialized.Operations, Has.Count.EqualTo(2));
         Assert.That(deserialized.Sink, Is.InstanceOf<UnifiedSinkV2Definition>());
         Assert.That(deserialized.Metadata.Parallelism, Is.EqualTo(4));
@@ -506,7 +506,7 @@ public class UnifiedSinkV2ConsolidatedTests
 
         public Task<ISinkWriter<string, string, int>> CreateWriterAsync(
             SinkWriterContext context,
-            int restoredState = default,
+            int restoredState = default!,
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult<ISinkWriter<string, string, int>>(
