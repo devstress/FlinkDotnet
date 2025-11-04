@@ -420,6 +420,14 @@ public class ObservabilityTests : LocalTestingTestBase
             await VerifyPrometheusHealthAsync(prometheusEndpoint, cts.Token);
             TestContext.WriteLine();
 
+            // CRITICAL: Query metrics ONE MORE TIME before validation to ensure we have latest values
+            // This handles case where initial retries timed out before Prometheus finished scraping
+            TestContext.WriteLine("🔄 Querying final metrics state before validation...");
+            metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
+            TestContext.WriteLine($"   JobManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("JobManager.Memory.Heap.Used", 0)}");
+            TestContext.WriteLine($"   TaskManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("TaskManager.Memory.Heap.Used", 0)}");
+            TestContext.WriteLine();
+
             // Validate JobManager metrics (already collected during active processing)
             TestContext.WriteLine("JobManager Metrics:");
             ValidateCustomMetric(metrics, "JobManager.CPU.Load", "JobManager CPU Load", requireNonZero: false); // CPU can be 0 when idle
