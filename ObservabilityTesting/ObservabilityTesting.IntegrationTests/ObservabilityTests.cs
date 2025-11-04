@@ -1089,13 +1089,31 @@ public class ObservabilityTests : LocalTestingTestBase
         if (consumerOffset.HasValue)
             metrics["Kafka.Consumer.CurrentOffset"] = consumerOffset.Value;
 
+        // Kafka consumer lag
         var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
             "sum(kafka_consumergroup_lag)", cancellationToken);
         if (consumerLag.HasValue)
         {
             metrics["Kafka.Consumer.Lag"] = consumerLag.Value;
-            // MessagesInFlight is same as consumer lag
-            metrics["Kafka.Topic.MessagesInFlight"] = consumerLag.Value;
+        }
+
+        // Messages in flight: Use abs() to handle potential negative lag values
+        // Negative lag shouldn't happen but if it does, take absolute value
+        var messagesInFlight = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "abs(sum(kafka_consumergroup_lag))", cancellationToken);
+        if (messagesInFlight.HasValue)
+        {
+            metrics["Kafka.Topic.MessagesInFlight"] = messagesInFlight.Value;
+        }
+        else
+        {
+            // Fallback: try direct calculation
+            var directCalc = await QueryPrometheusMetricAsync(prometheusEndpoint,
+                "abs(sum(kafka_topic_partition_current_offset) - sum(kafka_consumergroup_current_offset))", cancellationToken);
+            if (directCalc.HasValue)
+            {
+                metrics["Kafka.Topic.MessagesInFlight"] = directCalc.Value;
+            }
         }
 
         var topicMessageRate = await QueryPrometheusMetricAsync(prometheusEndpoint,
