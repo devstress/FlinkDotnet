@@ -322,41 +322,107 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine("═══ Comprehensive Metrics Validation ═══");
             TestContext.WriteLine("Validating JobManager, TaskManager, and Kafka metrics...");
             TestContext.WriteLine();
+            
+            // CRITICAL: Wait and retry to ensure Prometheus has scraped ALL metrics
+            // ALL metrics MUST be > 0 to prove metrics collection works
+            TestContext.WriteLine("Waiting for Prometheus to scrape all metrics...");
+            int retryCount = 0;
+            const int maxRetries = 15;
+            const int retryDelayMs = 3000;
+            
+            string[] requiredNonZeroMetrics = new[]
+            {
+                "JobManager.Memory.Heap.Used",
+                "JobManager.RunningJobs",
+                "TaskManager.Memory.Heap.Used",
+                "TaskManager.ActiveTasks"
+            };
+            
+            while (retryCount < maxRetries)
+            {
+                bool allMetricsValid = true;
+                
+                foreach (var metricKey in requiredNonZeroMetrics)
+                {
+                    if (!metrics.CustomMetrics.TryGetValue(metricKey, out var metricValue))
+                    {
+                        allMetricsValid = false;
+                        TestContext.WriteLine($"⏳ Missing metric: {metricKey}");
+                        break;
+                    }
+                    
+                    long value = metricValue switch
+                    {
+                        long l => l,
+                        int i => i,
+                        double d => (long)d,
+                        _ => 0
+                    };
+                    
+                    if (value <= 0)
+                    {
+                        allMetricsValid = false;
+                        TestContext.WriteLine($"⏳ Metric {metricKey} is 0, waiting for Prometheus scrape...");
+                        break;
+                    }
+                }
+                
+                if (allMetricsValid)
+                {
+                    TestContext.WriteLine($"✅ All required metrics available and non-zero (after {retryCount} retries)");
+                    break;
+                }
+                
+                retryCount++;
+                if (retryCount < maxRetries)
+                {
+                    TestContext.WriteLine($"⏳ Retrying metrics query... (attempt {retryCount}/{maxRetries})");
+                    await Task.Delay(retryDelayMs, cts.Token);
+                    
+                    // Re-query metrics to get updated values from Prometheus
+                    metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
+                }
+                else
+                {
+                    TestContext.WriteLine("❌ Max retries reached. Proceeding with validation (may fail).");
+                }
+            }
+            TestContext.WriteLine();
 
-            // Validate JobManager metrics
+            // Validate JobManager metrics (ALL must be > 0)
             TestContext.WriteLine("JobManager Metrics:");
-            ValidateCustomMetric(metrics, "JobManager.CPU.Load", "JobManager CPU Load", requireNonZero: false);
-            ValidateCustomMetric(metrics, "JobManager.Memory.Heap.Used", "JobManager Heap Memory", requireNonZero: false); // Can be 0 if Prometheus hasn't scraped yet
+            ValidateCustomMetric(metrics, "JobManager.CPU.Load", "JobManager CPU Load", requireNonZero: true);
+            ValidateCustomMetric(metrics, "JobManager.Memory.Heap.Used", "JobManager Heap Memory", requireNonZero: true);
             ValidateCustomMetric(metrics, "JobManager.RunningJobs", "JobManager Running Jobs", requireNonZero: true);
             TestContext.WriteLine();
 
-            // Validate TaskManager metrics
+            // Validate TaskManager metrics (ALL must be > 0)
             TestContext.WriteLine("TaskManager Metrics:");
-            ValidateCustomMetric(metrics, "TaskManager.CPU.Load", "TaskManager CPU Load", requireNonZero: false);
-            ValidateCustomMetric(metrics, "TaskManager.Memory.Heap.Used", "TaskManager Heap Memory", requireNonZero: false); // Can be 0 if Prometheus hasn't scraped yet
-            ValidateCustomMetric(metrics, "TaskManager.ActiveTasks", "TaskManager Active Tasks", requireNonZero: false); // Can be 0 during initialization
+            ValidateCustomMetric(metrics, "TaskManager.CPU.Load", "TaskManager CPU Load", requireNonZero: true);
+            ValidateCustomMetric(metrics, "TaskManager.Memory.Heap.Used", "TaskManager Heap Memory", requireNonZero: true);
+            ValidateCustomMetric(metrics, "TaskManager.ActiveTasks", "TaskManager Active Tasks", requireNonZero: true);
             TestContext.WriteLine();
 
-            // Validate Kafka topic metrics
+            // Validate Kafka topic metrics (ALL must be > 0)
             TestContext.WriteLine("Kafka Topic Metrics:");
-            ValidateCustomMetric(metrics, "Kafka.Topic.TotalOffsets", "Kafka Topic Total Offsets", requireNonZero: false);
-            ValidateCustomMetric(metrics, "Kafka.Topic.PartitionCount", "Kafka Topic Partition Count", requireNonZero: false); // Can be 0 if kafka-exporter not available
-            ValidateCustomMetric(metrics, "Kafka.Consumer.CurrentOffset", "Kafka Consumer Current Offset", requireNonZero: false);
-            ValidateCustomMetric(metrics, "Kafka.Topic.MessagesInFlight", "Kafka Messages In Flight", requireNonZero: false);
-            ValidateCustomMetric(metrics, "Kafka.Topic.MessageRate", "Kafka Topic Message Rate", requireNonZero: false);
-            ValidateCustomMetric(metrics, "Kafka.Consumer.Lag", "Kafka Consumer Lag", requireNonZero: false);
+            ValidateCustomMetric(metrics, "Kafka.Topic.TotalOffsets", "Kafka Topic Total Offsets", requireNonZero: true);
+            ValidateCustomMetric(metrics, "Kafka.Topic.PartitionCount", "Kafka Topic Partition Count", requireNonZero: true);
+            ValidateCustomMetric(metrics, "Kafka.Consumer.CurrentOffset", "Kafka Consumer Current Offset", requireNonZero: true);
+            ValidateCustomMetric(metrics, "Kafka.Topic.MessagesInFlight", "Kafka Messages In Flight", requireNonZero: true);
+            ValidateCustomMetric(metrics, "Kafka.Topic.MessageRate", "Kafka Topic Message Rate", requireNonZero: true);
+            ValidateCustomMetric(metrics, "Kafka.Consumer.Lag", "Kafka Consumer Lag", requireNonZero: false); // Lag can be 0 if consumer caught up
             TestContext.WriteLine();
 
-            // Validate operator throughput metrics
+            // Validate operator throughput metrics (ALL must be > 0)
             TestContext.WriteLine("Operator Throughput Metrics:");
-            ValidateCustomMetric(metrics, "Operator.BytesRead", "Operator Bytes Read", requireNonZero: false);
-            ValidateCustomMetric(metrics, "Operator.BytesWritten", "Operator Bytes Written", requireNonZero: false);
+            ValidateCustomMetric(metrics, "Operator.BytesRead", "Operator Bytes Read", requireNonZero: true);
+            ValidateCustomMetric(metrics, "Operator.BytesWritten", "Operator Bytes Written", requireNonZero: true);
             
-            // Also validate the direct properties on JobMetrics
-            Assert.That(metrics.BytesRead, Is.GreaterThanOrEqualTo(0), 
-                "BytesRead property should be >= 0");
-            Assert.That(metrics.BytesWritten, Is.GreaterThanOrEqualTo(0), 
-                "BytesWritten property should be >= 0");
+            // Also validate the direct properties on JobMetrics (must be > 0)
+            Assert.That(metrics.BytesRead, Is.GreaterThan(0), 
+                "BytesRead property should be > 0");
+            Assert.That(metrics.BytesWritten, Is.GreaterThan(0), 
+                "BytesWritten property should be > 0");
             TestContext.WriteLine($"   BytesRead (property): {metrics.BytesRead:N0} bytes");
             TestContext.WriteLine($"   BytesWritten (property): {metrics.BytesWritten:N0} bytes");
             TestContext.WriteLine();
