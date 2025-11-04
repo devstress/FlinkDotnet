@@ -326,36 +326,40 @@ public class ObservabilityTests : LocalTestingTestBase
 
             // Validate JobManager metrics
             TestContext.WriteLine("JobManager Metrics:");
-            ValidateCustomMetric(metrics, "JobManager.CPU.Load", "JobManager CPU Load");
-            ValidateCustomMetric(metrics, "JobManager.Memory.Heap.Used", "JobManager Heap Memory");
-            ValidateCustomMetric(metrics, "JobManager.RunningJobs", "JobManager Running Jobs");
+            ValidateCustomMetric(metrics, "JobManager.CPU.Load", "JobManager CPU Load", requireNonZero: false);
+            ValidateCustomMetric(metrics, "JobManager.Memory.Heap.Used", "JobManager Heap Memory", requireNonZero: true);
+            ValidateCustomMetric(metrics, "JobManager.RunningJobs", "JobManager Running Jobs", requireNonZero: true);
             TestContext.WriteLine();
 
             // Validate TaskManager metrics
             TestContext.WriteLine("TaskManager Metrics:");
-            ValidateCustomMetric(metrics, "TaskManager.CPU.Load", "TaskManager CPU Load");
-            ValidateCustomMetric(metrics, "TaskManager.Memory.Heap.Used", "TaskManager Heap Memory");
-            ValidateCustomMetric(metrics, "TaskManager.ActiveTasks", "TaskManager Active Tasks");
+            ValidateCustomMetric(metrics, "TaskManager.CPU.Load", "TaskManager CPU Load", requireNonZero: false);
+            ValidateCustomMetric(metrics, "TaskManager.Memory.Heap.Used", "TaskManager Heap Memory", requireNonZero: true);
+            ValidateCustomMetric(metrics, "TaskManager.ActiveTasks", "TaskManager Active Tasks", requireNonZero: true);
             TestContext.WriteLine();
 
             // Validate Kafka topic metrics
             TestContext.WriteLine("Kafka Topic Metrics:");
-            ValidateCustomMetric(metrics, "Kafka.Topic.TotalOffsets", "Kafka Topic Total Offsets");
-            ValidateCustomMetric(metrics, "Kafka.Topic.PartitionCount", "Kafka Topic Partition Count");
-            ValidateCustomMetric(metrics, "Kafka.Consumer.CurrentOffset", "Kafka Consumer Current Offset");
-            ValidateCustomMetric(metrics, "Kafka.Topic.MessagesInFlight", "Kafka Messages In Flight");
-            ValidateCustomMetric(metrics, "Kafka.Topic.MessageRate", "Kafka Topic Message Rate");
-            ValidateCustomMetric(metrics, "Kafka.Consumer.Lag", "Kafka Consumer Lag");
+            ValidateCustomMetric(metrics, "Kafka.Topic.TotalOffsets", "Kafka Topic Total Offsets", requireNonZero: false);
+            ValidateCustomMetric(metrics, "Kafka.Topic.PartitionCount", "Kafka Topic Partition Count", requireNonZero: true);
+            ValidateCustomMetric(metrics, "Kafka.Consumer.CurrentOffset", "Kafka Consumer Current Offset", requireNonZero: false);
+            ValidateCustomMetric(metrics, "Kafka.Topic.MessagesInFlight", "Kafka Messages In Flight", requireNonZero: false);
+            ValidateCustomMetric(metrics, "Kafka.Topic.MessageRate", "Kafka Topic Message Rate", requireNonZero: false);
+            ValidateCustomMetric(metrics, "Kafka.Consumer.Lag", "Kafka Consumer Lag", requireNonZero: false);
             TestContext.WriteLine();
 
             // Validate operator throughput metrics
             TestContext.WriteLine("Operator Throughput Metrics:");
+            ValidateCustomMetric(metrics, "Operator.BytesRead", "Operator Bytes Read", requireNonZero: false);
+            ValidateCustomMetric(metrics, "Operator.BytesWritten", "Operator Bytes Written", requireNonZero: false);
+            
+            // Also validate the direct properties on JobMetrics
             Assert.That(metrics.BytesRead, Is.GreaterThanOrEqualTo(0), 
-                "BytesRead should be >= 0 (may be 0 if not yet scraped)");
+                "BytesRead property should be >= 0");
             Assert.That(metrics.BytesWritten, Is.GreaterThanOrEqualTo(0), 
-                "BytesWritten should be >= 0 (may be 0 if not yet scraped)");
-            TestContext.WriteLine($"   BytesRead: {metrics.BytesRead:N0} bytes");
-            TestContext.WriteLine($"   BytesWritten: {metrics.BytesWritten:N0} bytes");
+                "BytesWritten property should be >= 0");
+            TestContext.WriteLine($"   BytesRead (property): {metrics.BytesRead:N0} bytes");
+            TestContext.WriteLine($"   BytesWritten (property): {metrics.BytesWritten:N0} bytes");
             TestContext.WriteLine();
 
             TestContext.WriteLine("✅ COMPREHENSIVE METRICS VALIDATED");
@@ -659,11 +663,15 @@ public class ObservabilityTests : LocalTestingTestBase
             $"{metricName}: expected {expected} ±{MetricTolerancePercent}% (range: {lowerBound:F0}-{upperBound:F0}), got {actual}");
     }
 
-    private static void ValidateCustomMetric(JobMetrics metrics, string metricKey, string metricName)
+    private static void ValidateCustomMetric(JobMetrics metrics, string metricKey, string metricName, bool requireNonZero = true)
     {
         // Try to get the metric from CustomMetrics dictionary
         if (metrics.CustomMetrics.TryGetValue(metricKey, out var metricValue))
         {
+            // Validate the metric value is not null
+            Assert.That(metricValue, Is.Not.Null, 
+                $"{metricName} should not be null");
+            
             // Convert to long for comparison
             long value = metricValue switch
             {
@@ -673,17 +681,27 @@ public class ObservabilityTests : LocalTestingTestBase
                 _ => 0
             };
 
-            // Note: Some metrics may be 0 if not yet scraped or unavailable (e.g., kafka-exporter not deployed)
-            // We validate they exist and are non-negative, but don't require > 0
-            Assert.That(value, Is.GreaterThanOrEqualTo(0), 
-                $"{metricName} should be >= 0 (found: {value})");
-            
-            TestContext.WriteLine($"   ✅ {metricName}: {value:N0}");
+            // Validate the metric value is valid
+            if (requireNonZero)
+            {
+                Assert.That(value, Is.GreaterThan(0), 
+                    $"{metricName} should be > 0 to prove it's being collected (found: {value})");
+                TestContext.WriteLine($"   ✅ {metricName}: {value:N0}");
+            }
+            else
+            {
+                // For optional metrics, just verify they're non-negative
+                Assert.That(value, Is.GreaterThanOrEqualTo(0), 
+                    $"{metricName} should be >= 0 (found: {value})");
+                TestContext.WriteLine($"   ✅ {metricName}: {value:N0}");
+            }
         }
         else
         {
-            // Metric not found - this is acceptable for optional metrics (e.g., Kafka metrics require kafka-exporter)
-            TestContext.WriteLine($"   ⚠️  {metricName}: Not available (may require additional exporters)");
+            // Metric not found - FAIL the test since we expect all metrics to be present
+            Assert.Fail($"{metricName} (key: {metricKey}) was not found in CustomMetrics. " +
+                       $"Expected all comprehensive metrics to be collected. " +
+                       $"Available metrics: {string.Join(", ", metrics.CustomMetrics.Keys)}");
         }
     }
 
