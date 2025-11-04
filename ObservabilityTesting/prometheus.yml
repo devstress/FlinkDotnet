@@ -44,6 +44,19 @@ scrape_configs:
           component: 'kafka'
           role: 'broker'
 
+  # Kafka Topic/Partition/Consumer Group metrics via Kafka Exporter
+  # Aspire internal network: kafka-topic-exporter:9308
+  # Provides topic partition offsets, consumer group offsets, and lag metrics
+  - job_name: 'kafka-topics'
+    scrape_interval: 5s
+    scrape_timeout: 4s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['kafka-topic-exporter:9308']
+        labels:
+          component: 'kafka'
+          role: 'topics'
+
   # FlinkDotNet JobGateway metrics
   # Aspire internal network: flinkdotnet-jobgateway:9253
   # Gateway exposes Prometheus metrics for job submission tracking
