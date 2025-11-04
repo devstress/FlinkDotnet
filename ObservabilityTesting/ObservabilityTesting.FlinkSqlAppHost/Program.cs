@@ -254,15 +254,15 @@ const string gatewayImageTag = "flinkdotnet-gateway:local";
 // The Docker image is built as part of the AppHost build process (see .csproj BuildGatewayDockerImage target)
 builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WithHttpEndpoint(targetPort: 8086, name: "gateway-http")
-    .WithHttpEndpoint(targetPort: 9253, name: "gateway-metrics")  // Prometheus metrics endpoint
+    // Note: Prometheus metrics are exposed on the same port (8086) via /metrics endpoint
+    // No separate metrics port needed - prometheus-net.AspNetCore uses the main HTTP server
     .WithEnvironment("FLINK_JOBMANAGER_URL", "http://flink-jobmanager:8081")
     .WithEnvironment("Flink__JobManager__BaseUrl", "http://flink-jobmanager:8081")
     .WithEnvironment("Flink__SqlGateway__BaseUrl", "http://flink-sql-gateway:8083")
     .WithEnvironment("Flink__Prometheus__BaseUrl", "http://prometheus:9090")  // Inject Prometheus URL via Aspire
     .WithEnvironment("FLINK_CONNECTOR_PATH", "/app")  // Path to connector JARs (matches Gateway search logic)
-    .WithEnvironment("Metrics__Prometheus__Enabled", "true")  // Enable Prometheus metrics
-    .WithEnvironment("Metrics__Prometheus__Port", "9253")     // Metrics on port 9253
-    .WithEnvironment("Metrics__Prometheus__Path", "/metrics") // Metrics path
+    .WithEnvironment("Metrics__Prometheus__Enabled", "true")  // Enable Prometheus metrics endpoint
+    .WithEnvironment("Metrics__Prometheus__Path", "/metrics") // Metrics path (on same port as HTTP API)
     .WaitFor(jobManager)
     .WaitFor(sqlGateway)
     .WaitFor(prometheus)  // Ensure Prometheus is ready to scrape Gateway metrics
