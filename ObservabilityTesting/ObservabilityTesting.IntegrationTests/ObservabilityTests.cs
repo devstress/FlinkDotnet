@@ -815,13 +815,15 @@ public class ObservabilityTests : LocalTestingTestBase
                 var targetsByJob = new Dictionary<string, int>();
                 var upTargets = 0;
                 var downTargets = 0;
+                var downTargetsList = new List<string>();
                 
                 foreach (var target in activeTargets)
                 {
+                    string jobName = "unknown";
                     if (target.TryGetProperty("labels", out var labels) &&
                         labels.TryGetProperty("job", out var jobLabel))
                     {
-                        string jobName = jobLabel.GetString() ?? "unknown";
+                        jobName = jobLabel.GetString() ?? "unknown";
                         targetsByJob.TryGetValue(jobName, out var count);
                         targetsByJob[jobName] = count + 1;
                     }
@@ -830,9 +832,20 @@ public class ObservabilityTests : LocalTestingTestBase
                     {
                         string healthStatus = health.GetString() ?? "unknown";
                         if (healthStatus == "up")
+                        {
                             upTargets++;
+                        }
                         else
+                        {
                             downTargets++;
+                            // Get target URL for more context
+                            string targetUrl = "unknown";
+                            if (target.TryGetProperty("scrapeUrl", out var scrapeUrlEl))
+                            {
+                                targetUrl = scrapeUrlEl.GetString() ?? "unknown";
+                            }
+                            downTargetsList.Add($"{jobName} ({targetUrl})");
+                        }
                     }
                 }
                 
@@ -841,6 +854,16 @@ public class ObservabilityTests : LocalTestingTestBase
                 foreach (var (job, count) in targetsByJob.OrderBy(kv => kv.Key))
                 {
                     TestContext.WriteLine($"      - {job}: {count} target(s)");
+                }
+                
+                // Show which specific targets are down
+                if (downTargetsList.Count > 0)
+                {
+                    TestContext.WriteLine($"   ⚠️  DOWN targets:");
+                    foreach (var downTarget in downTargetsList)
+                    {
+                        TestContext.WriteLine($"      - {downTarget}");
+                    }
                 }
                 
                 // Check for expected targets

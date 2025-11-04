@@ -846,8 +846,8 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         bool foundMetrics = false;
 
-        // CPU Load - average across all TaskManagers
-        string tmCpuQuery = "avg(flink_taskmanager_Status_JVM_CPU_Load)";
+        // CPU Load - average across all TaskManagers (multiply by 100 to convert to percentage)
+        string tmCpuQuery = "avg(flink_taskmanager_Status_JVM_CPU_Load) * 100";
         long? tmCpuLoad = await this.QueryPrometheusMetricAsync(prometheusUrl, tmCpuQuery);
         if (tmCpuLoad.HasValue)
         {
@@ -885,8 +885,8 @@ public partial class FlinkJobManager : IFlinkJobManager
     {
         bool foundMetrics = false;
 
-        // CPU Load
-        string jmCpuQuery = "flink_jobmanager_Status_JVM_CPU_Load";
+        // CPU Load (multiply by 100 to convert from fraction to percentage)
+        string jmCpuQuery = "flink_jobmanager_Status_JVM_CPU_Load * 100";
         long? jmCpuLoad = await this.QueryPrometheusMetricAsync(prometheusUrl, jmCpuQuery);
         if (jmCpuLoad.HasValue)
         {
@@ -1024,7 +1024,7 @@ public partial class FlinkJobManager : IFlinkJobManager
                 !dataEl.TryGetProperty("result", out JsonElement resultEl) ||
                 resultEl.GetArrayLength() == 0)
             {
-                this._logger.LogDebug("Prometheus query returned no results");
+                this._logger.LogWarning("Prometheus query '{Query}' returned no results - metric may not exist or have no data", query);
                 return null;
             }
 
@@ -1037,8 +1037,16 @@ public partial class FlinkJobManager : IFlinkJobManager
                 // Try parsing as double first (handles both int and float values from Prometheus)
                 if (double.TryParse(valueStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double doubleValue))
                 {
-                    return (long) doubleValue;
+                    long longValue = (long) doubleValue;
+                    this._logger.LogDebug("Prometheus query '{Query}' returned value: {DoubleValue} -> {LongValue}", query, doubleValue, longValue);
+                    return longValue;
                 }
+
+                this._logger.LogWarning("Failed to parse Prometheus value '{ValueStr}' for query '{Query}'", valueStr, query);
+            }
+            else
+            {
+                this._logger.LogWarning("Prometheus query '{Query}' returned unexpected result format", query);
             }
 
             return null;
