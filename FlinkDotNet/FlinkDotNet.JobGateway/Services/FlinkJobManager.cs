@@ -842,7 +842,9 @@ public partial class FlinkJobManager : IFlinkJobManager
                 foundMetrics = true;
             }
 
-            // Number of running tasks - count tasks with active operators
+            // Number of running tasks - count tasks with operator metrics
+            // Note: Counts operators that have numRecordsIn metrics exposed, which represents
+            // tasks that have been initialized with Flink operators (not necessarily actively processing)
             string tmTasksQuery = $"count(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{flinkJobId}\"}})";
             long? activeTasks = await this.QueryPrometheusMetricAsync(prometheusUrl, tmTasksQuery);
             if (activeTasks.HasValue)
@@ -873,8 +875,8 @@ public partial class FlinkJobManager : IFlinkJobManager
                 foundMetrics = true;
             }
 
-            // Number of running jobs - use job state filter for Flink 2.x compatibility
-            string jmRunningJobsQuery = "count(flink_jobmanager_job_uptime{job_state=\"RUNNING\"} > 0)";
+            // Number of running jobs - count jobs by state (uptime metric only exists for running jobs)
+            string jmRunningJobsQuery = "count(flink_jobmanager_job_uptime{job_state=\"RUNNING\"})";
             long? runningJobs = await this.QueryPrometheusMetricAsync(prometheusUrl, jmRunningJobsQuery);
             if (runningJobs.HasValue)
             {
