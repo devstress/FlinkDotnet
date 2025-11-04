@@ -125,6 +125,8 @@ namespace FlinkDotNet.DataStream
             return null;
         }
 
+        // Suppress S138: Large switch expressions are acceptable for exhaustive enum mapping
+#pragma warning disable S138
         private static string? GetBinaryOperationName(ExpressionType nodeType)
         {
             return nodeType switch
@@ -217,6 +219,7 @@ namespace FlinkDotNet.DataStream
                 _ => null
             };
         }
+#pragma warning restore S138
 
         private static string? AnalyzeUnaryExpression(UnaryExpression unary)
         {

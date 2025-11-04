@@ -344,6 +344,11 @@ public class ObservabilityTests : LocalTestingTestBase
             }
             
             // Display collected metrics
+            if (metrics == null)
+            {
+                throw new InvalidOperationException("Metrics collection failed - metrics object is null after validation attempts");
+            }
+            
             TestContext.WriteLine();
             TestContext.WriteLine($"📊 Gateway Metrics (during processing):");
             TestContext.WriteLine($"   RecordsIn: {metrics.RecordsIn}");
