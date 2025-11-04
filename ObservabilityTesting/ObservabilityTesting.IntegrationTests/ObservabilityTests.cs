@@ -864,104 +864,26 @@ public class ObservabilityTests : LocalTestingTestBase
         
         foreach (var target in activeTargets)
         {
+            string jobName = "unknown";
             if (target.TryGetProperty("labels", out var labels) &&
                 labels.TryGetProperty("job", out var jobLabel))
             {
-                var activeTargets = targetsEl.EnumerateArray().ToList();
-                TestContext.WriteLine($"   📊 Active Prometheus targets: {activeTargets.Count}");
-                
-                var targetsByJob = new Dictionary<string, int>();
-                var upTargets = 0;
-                var downTargets = 0;
-                var downTargetsList = new List<string>();
-                
-                foreach (var target in activeTargets)
-                {
-                    string jobName = "unknown";
-                    if (target.TryGetProperty("labels", out var labels) &&
-                        labels.TryGetProperty("job", out var jobLabel))
-                    {
-                        jobName = jobLabel.GetString() ?? "unknown";
-                        targetsByJob.TryGetValue(jobName, out var count);
-                        targetsByJob[jobName] = count + 1;
-                    }
-                    
-                    if (target.TryGetProperty("health", out var health))
-                    {
-                        string healthStatus = health.GetString() ?? "unknown";
-                        if (healthStatus == "up")
-                        {
-                            upTargets++;
-                        }
-                        else
-                        {
-                            downTargets++;
-                            // Get target URL for more context
-                            string targetUrl = "unknown";
-                            if (target.TryGetProperty("scrapeUrl", out var scrapeUrlEl))
-                            {
-                                targetUrl = scrapeUrlEl.GetString() ?? "unknown";
-                            }
-                            downTargetsList.Add($"{jobName} ({targetUrl})");
-                        }
-                    }
-                }
-                
-                TestContext.WriteLine($"   📈 Target health: {upTargets} up, {downTargets} down");
-                
-                foreach (var (job, count) in targetsByJob.OrderBy(kv => kv.Key))
-                {
-                    TestContext.WriteLine($"      - {job}: {count} target(s)");
-                }
-                
-                // Show which specific targets are down
-                if (downTargetsList.Count > 0)
-                {
-                    TestContext.WriteLine($"   ⚠️  DOWN targets:");
-                    foreach (var downTarget in downTargetsList)
-                    {
-                        TestContext.WriteLine($"      - {downTarget}");
-                    }
-                }
-                
-                // Check for expected targets
-                string[] expectedJobs = { "flink-jobmanager", "flink-taskmanager", "kafka-topics" };
-                var missingJobs = new List<string>();
-                
-                foreach (var expectedJob in expectedJobs)
-                {
-                    if (!targetsByJob.ContainsKey(expectedJob))
-                    {
-                        missingJobs.Add(expectedJob);
-                    }
-                }
-                
-                if (missingJobs.Count > 0)
-                {
-                    TestContext.WriteLine($"   ⚠️  CONFIGURATION WARNING: Missing expected Prometheus targets: {string.Join(", ", missingJobs)}");
-                    TestContext.WriteLine($"      → Check prometheus.yml scrape_configs");
-                }
-                
-                if (downTargets > 0)
-                {
-                    TestContext.WriteLine($"   ⚠️  SCRAPING WARNING: {downTargets} target(s) are down");
-                    TestContext.WriteLine($"      → Prometheus cannot scrape metrics from these targets");
-                }
-                
-                if (upTargets == 0)
-                {
-                    TestContext.WriteLine($"   ❌ CONFIGURATION ERROR: No Prometheus targets are up");
-                    TestContext.WriteLine($"      → Check that Flink and exporters are running and accessible");
-                }
+                jobName = jobLabel.GetString() ?? "unknown";
+                targetsByJob.TryGetValue(jobName, out var count);
+                targetsByJob[jobName] = count + 1;
             }
             
             if (target.TryGetProperty("health", out var health))
             {
                 string healthStatus = health.GetString() ?? "unknown";
                 if (healthStatus == "up")
+                {
                     upTargets++;
+                }
                 else
+                {
                     downTargets++;
+                }
             }
         }
         
