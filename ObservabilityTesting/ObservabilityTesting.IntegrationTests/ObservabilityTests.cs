@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Flink.JobBuilder.Models;
-using ObservabilityTesting.FlinkSqlAppHost;
 using NUnit.Framework;
 
 namespace ObservabilityTesting.IntegrationTests;
@@ -205,7 +204,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine("  • Checkpoint metrics");
         TestContext.WriteLine();
         
-        var cts = new CancellationTokenSource(TestTimeout);
+        using var cts = new CancellationTokenSource(TestTimeout);
         const int expectedMessageCount = 1000; // Increased from 100 to allow live monitoring during test execution
         
         // Setup: Create unique topics
@@ -475,12 +474,17 @@ public class ObservabilityTests : LocalTestingTestBase
             var grafanaEndpoint = await GetGrafanaEndpointAsync();
             TestContext.WriteLine($"Grafana endpoint: {grafanaEndpoint}");
             
+            if (_httpClient == null)
+            {
+                throw new InvalidOperationException("HttpClient is not initialized");
+            }
+            
             var dataSourcesResponse = await _httpClient.GetFromJsonAsync<JsonDocument>($"{grafanaEndpoint}/api/datasources", cts.Token);
             var dataSources = dataSourcesResponse?.RootElement.EnumerateArray().ToList();
             
             Assert.That(dataSources?.Count, Is.GreaterThan(0), "Grafana should have configured data sources");
             
-            var prometheusDataSource = dataSources?.FirstOrDefault(ds => 
+            var prometheusDataSource = dataSources?.Find(ds => 
                 ds.GetProperty("type").GetString() == "prometheus");
             
             Assert.That(prometheusDataSource.HasValue, Is.True, "Grafana should have Prometheus data source configured");

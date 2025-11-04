@@ -1,8 +1,6 @@
 using System.Diagnostics;
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
-using ObservabilityTesting.FlinkSqlAppHost;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
@@ -36,10 +34,7 @@ public class GlobalTestInfrastructure
     {
         get; private set;
     } // Kafka IP for Flink jobs (e.g., "172.17.0.2:9093")
-    public static string? TemporalEndpoint
-    {
-        get; private set;
-    } // Discovered Temporal endpoint with dynamic port
+    public static string? TemporalEndpoint { get; } // Discovered Temporal endpoint with dynamic port
 
     [OneTimeSetUp]
     public async Task GlobalSetUp()
@@ -84,43 +79,7 @@ public class GlobalTestInfrastructure
             Console.WriteLine("✅ Aspire ApplicationHost started");
 
             // Smart polling: Wait for containers to be created and port mappings to be established
-            // Aspire creates containers asynchronously - use smart polling instead of fixed delays
-            Console.WriteLine("⏳ Waiting for Docker/Podman containers to be created and ports to be mapped...");
-            Console.WriteLine("🔍 Using optimized polling (check every 2s, max 20s)...");
-
-            bool containersDetected = false;
-            for (int attempt = 1; attempt <= 10; attempt++) // 10 attempts × 3s = 30s max
-            {
-                await Task.Delay(TimeSpan.FromSeconds(3));
-
-                // Check for kafka container with "Up" status (not just "Created")
-                var containers = await RunDockerCommandAsync("ps --filter name=kafka --filter status=running --format \"{{.Names}}\"");
-                if (!string.IsNullOrWhiteSpace(containers))
-                {
-                    Console.WriteLine($"✅ Kafka container running after {attempt * 3}s");
-                    containersDetected = true;
-
-                    // Show all containers for diagnostics
-                    var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
-                    Console.WriteLine($"🐳 All containers:\n{allContainers}");
-                    break;
-                }
-                
-                // Show current status for debugging
-                var currentStatus = await RunDockerCommandAsync("ps -a --filter name=kafka --format \"{{.Names}} - {{.Status}}\"");
-                Console.WriteLine($"⏳ Still waiting for kafka container to be running... ({attempt * 3}s elapsed)");
-                if (!string.IsNullOrWhiteSpace(currentStatus))
-                {
-                    Console.WriteLine($"   Current kafka status: {currentStatus.Trim()}");
-                }
-            }
-
-            if (!containersDetected)
-            {
-                Console.WriteLine("⚠️ Kafka container not running within 30s, proceeding anyway...");
-                var allContainers = await RunDockerCommandAsync("ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
-                Console.WriteLine($"🐳 Current containers (including non-running):\n{allContainers}");
-            }
+            await WaitForContainersAsync();
 
             // Capture network state after containers are detected
             await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync("1-after-container-detection");
@@ -211,7 +170,11 @@ public class GlobalTestInfrastructure
             // Get Flink endpoint and wait for readiness (don't require free slots initially - TaskManager registration takes time)
             var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
             Console.WriteLine($"🔍 Flink JobManager endpoint: {flinkEndpoint}");
-            await RetryWaitForReadyAsync("Flink", () => LocalTestingTestBase.WaitForFlinkReadyAsync($"{flinkEndpoint}v1/overview", DefaultTimeout, default, requireFreeSlots: false), 3, TimeSpan.FromSeconds(5));
+            await RetryWaitForReadyAsync(
+                "Flink",
+                () => LocalTestingTestBase.WaitForFlinkReadyAsync($"{flinkEndpoint}v1/overview", DefaultTimeout, default, requireFreeSlots: false),
+                3,
+                TimeSpan.FromSeconds(5));
             Console.WriteLine("✅ Flink JobManager is ready (TaskManagers will register asynchronously)");
 
             // Wait for Gateway with retry mechanism (using pre-built Docker image)
@@ -715,8 +678,7 @@ public class GlobalTestInfrastructure
     {
         var lines = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         
-        // Cache container name and port for debugging
-        string? discoveredContainer = null;
+        // Cache port for debugging
         string? discoveredPort = null;
         
         foreach (var line in lines)
@@ -748,7 +710,6 @@ public class GlobalTestInfrastructure
             if (match.Success)
             {
                 discoveredPort = match.Groups[1].Value;
-                discoveredContainer = containerName;
                 
                 Console.WriteLine($"✅ Discovered Kafka endpoint:");
                 Console.WriteLine($"   Container Name: {containerName}");
@@ -778,9 +739,8 @@ public class GlobalTestInfrastructure
             // We filter out kafka-ui explicitly in code for reliability.
             // Also filter by status=running to only get running containers.
             var kafkaContainers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --filter \"status=running\" --format \"{{.Names}}\"");
-            var kafkaContainer = kafkaContainers
-                .Split('\n', StringSplitOptions.RemoveEmptyEntries)
-                .FirstOrDefault(name => !name.StartsWith("kafka-ui", StringComparison.OrdinalIgnoreCase));
+            var kafkaContainerArray = kafkaContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            var kafkaContainer = Array.Find(kafkaContainerArray, name => !name.StartsWith("kafka-ui", StringComparison.OrdinalIgnoreCase));
 
             if (string.IsNullOrWhiteSpace(kafkaContainer))
             {
@@ -999,5 +959,46 @@ public class GlobalTestInfrastructure
             $"Service '{serviceName}' failed to become ready after {maxRetries} attempts. " +
             $"Last error: {lastException?.Message}",
             lastException);
+    }
+
+    private static async Task WaitForContainersAsync()
+    {
+        // Aspire creates containers asynchronously - use smart polling instead of fixed delays
+        Console.WriteLine("⏳ Waiting for Docker/Podman containers to be created and ports to be mapped...");
+        Console.WriteLine("🔍 Using optimized polling (check every 2s, max 20s)...");
+
+        bool containersDetected = false;
+        for (int attempt = 1; attempt <= 10; attempt++) // 10 attempts × 3s = 30s max
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3));
+
+            // Check for kafka container with "Up" status (not just "Created")
+            var containers = await RunDockerCommandAsync("ps --filter name=kafka --filter status=running --format \"{{.Names}}\"");
+            if (!string.IsNullOrWhiteSpace(containers))
+            {
+                Console.WriteLine($"✅ Kafka container running after {attempt * 3}s");
+                containersDetected = true;
+
+                // Show all containers for diagnostics
+                var allContainers = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+                Console.WriteLine($"🐳 All containers:\n{allContainers}");
+                break;
+            }
+            
+            // Show current status for debugging
+            var currentStatus = await RunDockerCommandAsync("ps -a --filter name=kafka --format \"{{.Names}} - {{.Status}}\"");
+            Console.WriteLine($"⏳ Still waiting for kafka container to be running... ({attempt * 3}s elapsed)");
+            if (!string.IsNullOrWhiteSpace(currentStatus))
+            {
+                Console.WriteLine($"   Current kafka status: {currentStatus.Trim()}");
+            }
+        }
+
+        if (!containersDetected)
+        {
+            Console.WriteLine("⚠️ Kafka container not running within 30s, proceeding anyway...");
+            var allContainers = await RunDockerCommandAsync("ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+            Console.WriteLine($"🐳 Current containers (including non-running):\n{allContainers}");
+        }
     }
 }
