@@ -105,7 +105,29 @@ namespace FlinkDotNet.DataStream
 
         private static string? AnalyzeBinaryExpression(BinaryExpression binary)
         {
-            string? operation = binary.NodeType switch
+            string? operation = GetBinaryOperationName(binary.NodeType);
+
+            if (operation == null)
+            {
+                _logger.Warning("[LambdaExpressionAnalyzer] Unsupported binary operation: {NodeType}", binary.NodeType);
+                return null;
+            }
+
+            // Extract operands
+            string? left = ExtractOperand(binary.Left);
+            string? right = ExtractOperand(binary.Right);
+
+            if (left != null && right != null)
+            {
+                return $"{operation}:{left}:{right}";
+            }
+
+            return null;
+        }
+
+        private static string? GetBinaryOperationName(ExpressionType nodeType)
+        {
+            return nodeType switch
             {
                 ExpressionType.Multiply => "multiply",
                 ExpressionType.Add => "add",
@@ -194,23 +216,6 @@ namespace FlinkDotNet.DataStream
                 ExpressionType.IsFalse => throw new NotImplementedException(),
                 _ => null
             };
-
-            if (operation == null)
-            {
-                _logger.Warning("[LambdaExpressionAnalyzer] Unsupported binary operation: {NodeType}", binary.NodeType);
-                return null;
-            }
-
-            // Extract operands
-            string? left = ExtractOperand(binary.Left);
-            string? right = ExtractOperand(binary.Right);
-
-            if (left != null && right != null)
-            {
-                return $"{operation}:{left}:{right}";
-            }
-
-            return null;
         }
 
         private static string? AnalyzeUnaryExpression(UnaryExpression unary)

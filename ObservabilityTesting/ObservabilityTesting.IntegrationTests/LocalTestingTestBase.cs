@@ -2,7 +2,6 @@ using System.Diagnostics;
 using Aspire.Hosting;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
-using ObservabilityTesting.FlinkSqlAppHost;
 using NUnit.Framework;
 
 namespace ObservabilityTesting.IntegrationTests;
@@ -734,37 +733,6 @@ public abstract class LocalTestingTestBase
     /// Temporal is a workflow orchestration system that starts after basic infrastructure.
     /// SQLite initialization can take significant time on first startup.
     /// </summary>
-    private static Task LogTemporalConnectionAttemptAsync(int attempt, TimeSpan elapsed, Exception? lastException)
-    {
-        if (attempt % 10 == 0 || (attempt % 30 == 0 && elapsed.TotalSeconds >= 30))
-        {
-            if (lastException != null)
-            {
-                TestContext.WriteLine($"⏳ [TemporalReady] Attempt {attempt} ({elapsed.TotalSeconds:F0}s elapsed): {lastException.GetType().Name}");
-            }
-
-            if (elapsed.TotalSeconds >= 30 && attempt % 30 == 0)
-            {
-                TestContext.WriteLine($"   💡 Temporal PostgreSQL initialization can be slow - this is normal for first startup");
-            }
-        }
-
-        return Task.CompletedTask;
-    }
-
-    private static TimeoutException CreateTemporalTimeoutException(string address, TimeSpan timeout, int attempt, TimeSpan elapsed, Exception? lastException)
-    {
-        var errorMessage = $"Temporal not ready within {timeout.TotalSeconds:F0}s at {address}. " +
-                          $"Attempted {attempt} times over {elapsed.TotalSeconds:F1}s.";
-
-        if (lastException != null)
-        {
-            errorMessage += $" Last error: {lastException.GetType().Name} - {lastException.Message}";
-        }
-
-        return new TimeoutException(errorMessage);
-    }
-
 
     /// <summary>
     /// Create Kafka topic with proper error handling for existing topics.
@@ -807,7 +775,7 @@ public abstract class LocalTestingTestBase
         }
         catch (CreateTopicsException ex)
         {
-            if (ex.Results?.Any(r => r.Error.Code == ErrorCode.TopicAlreadyExists) == true)
+            if (ex.Results?.Exists(r => r.Error.Code == ErrorCode.TopicAlreadyExists) == true)
             {
                 TestContext.WriteLine($"ℹ️ Topic '{topicName}' already exists");
             }
@@ -1071,7 +1039,11 @@ public abstract class LocalTestingTestBase
         return taskManagers;
     }
 
-    private static async Task<int> ProcessTaskManagersAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, System.Text.Json.JsonElement taskManagers, System.Text.StringBuilder logsBuilder)
+    private static async Task<int> ProcessTaskManagersAsync(
+        System.Net.Http.HttpClient httpClient,
+        string flinkEndpoint,
+        System.Text.Json.JsonElement taskManagers,
+        System.Text.StringBuilder logsBuilder)
     {
         int tmCount = 0;
         foreach (var tm in taskManagers.EnumerateArray())
@@ -1150,7 +1122,7 @@ public abstract class LocalTestingTestBase
             // Get all container names and filter in C# to handle Aspire's random suffixes
             var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
             var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            var containerName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var containerName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (string.IsNullOrEmpty(containerName))
             {
@@ -1308,7 +1280,7 @@ public abstract class LocalTestingTestBase
             TestContext.WriteLine($"🐳 Flink containers found: {string.Join(", ", flinkContainers)}");
 
             // Find JobManager container
-            var jmName = flinkContainers.FirstOrDefault(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var jmName = flinkContainers.Find(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(jmName))
             {
@@ -1323,7 +1295,7 @@ public abstract class LocalTestingTestBase
             }
 
             // Find TaskManager container
-            var tmName = flinkContainers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var tmName = flinkContainers.Find(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(tmName))
             {
@@ -1362,7 +1334,7 @@ public abstract class LocalTestingTestBase
             var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
             // Find JobManager container
-            var jmName = containers.FirstOrDefault(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var jmName = Array.Find(containers, name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(jmName))
             {
@@ -1411,7 +1383,7 @@ public abstract class LocalTestingTestBase
             // Get all container names and filter in C# to handle Aspire's random suffixes
             var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
             var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            var tmName = containers.FirstOrDefault(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            var tmName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (string.IsNullOrWhiteSpace(tmName))
             {
