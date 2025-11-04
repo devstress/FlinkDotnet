@@ -185,37 +185,18 @@ public class ObservabilityTests : LocalTestingTestBase
     /// Also validates: Gateway metrics API, Prometheus scraping, Grafana configuration, backpressure, checkpoints.
     /// </summary>
     [Test, Order(2)]
+    [Test, Order(2)]
     public async Task Test2_ComprehensiveObservability_KafkaMetricsAndMonitoring()
     {
-        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
-        TestContext.WriteLine("Test 2: Comprehensive Observability - Kafka Metrics and Monitoring");
-        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
-        TestContext.WriteLine();
-        TestContext.WriteLine("PRIMARY FOCUS: Kafka Topic Message Metrics (Most Crucial)");
-        TestContext.WriteLine("  • RecordsIn count and accuracy");
-        TestContext.WriteLine("  • RecordsOut count and accuracy");
-        TestContext.WriteLine("  • Records per second throughput");
-        TestContext.WriteLine();
-        TestContext.WriteLine("Also validates:");
-        TestContext.WriteLine("  • Gateway metrics API accuracy");
-        TestContext.WriteLine("  • Prometheus scraping and metrics availability");
-        TestContext.WriteLine("  • Grafana data source configuration");
-        TestContext.WriteLine("  • Backpressure detection");
-        TestContext.WriteLine("  • Checkpoint metrics");
-        TestContext.WriteLine();
+        PrintTestHeader();
         
         using var cts = new CancellationTokenSource(TestTimeout);
-        const int expectedMessageCount = 1000; // Increased from 100 to allow live monitoring during test execution
+        const int expectedMessageCount = 1000;
         
-        // Setup: Create unique topics
         var inputTopic = $"comprehensive-input-{Guid.NewGuid():N}";
         var outputTopic = $"comprehensive-output-{Guid.NewGuid():N}";
         
-        TestContext.WriteLine($"📋 Test configuration:");
-        TestContext.WriteLine($"   Input topic: {inputTopic}");
-        TestContext.WriteLine($"   Output topic: {outputTopic}");
-        TestContext.WriteLine($"   Expected messages: {expectedMessageCount}");
-        TestContext.WriteLine();
+        PrintTestConfiguration(inputTopic, outputTopic, expectedMessageCount);
         
         string? jobId = null;
         var gatewayEndpoint = await GetGatewayEndpointAsync();
@@ -775,6 +756,35 @@ public class ObservabilityTests : LocalTestingTestBase
         {
             throw new InvalidOperationException($"Failed to get Grafana endpoint: {ex.Message}", ex);
         }
+    }
+
+    private static void PrintTestHeader()
+    {
+        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
+        TestContext.WriteLine("Test 2: Comprehensive Observability - Kafka Metrics and Monitoring");
+        TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
+        TestContext.WriteLine();
+        TestContext.WriteLine("PRIMARY FOCUS: Kafka Topic Message Metrics (Most Crucial)");
+        TestContext.WriteLine("  • RecordsIn count and accuracy");
+        TestContext.WriteLine("  • RecordsOut count and accuracy");
+        TestContext.WriteLine("  • Records per second throughput");
+        TestContext.WriteLine();
+        TestContext.WriteLine("Also validates:");
+        TestContext.WriteLine("  • Gateway metrics API accuracy");
+        TestContext.WriteLine("  • Prometheus scraping and metrics availability");
+        TestContext.WriteLine("  • Grafana data source configuration");
+        TestContext.WriteLine("  • Backpressure detection");
+        TestContext.WriteLine("  • Checkpoint metrics");
+        TestContext.WriteLine();
+    }
+
+    private static void PrintTestConfiguration(string inputTopic, string outputTopic, int expectedMessageCount)
+    {
+        TestContext.WriteLine($"📋 Test configuration:");
+        TestContext.WriteLine($"   Input topic: {inputTopic}");
+        TestContext.WriteLine($"   Output topic: {outputTopic}");
+        TestContext.WriteLine($"   Expected messages: {expectedMessageCount}");
+        TestContext.WriteLine();
     }
 
     private static void ValidateCustomMetric(JobMetrics metrics, string metricKey, string metricName, bool requireNonZero = true)
