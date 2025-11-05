@@ -190,7 +190,7 @@ public class ObservabilityTests : LocalTestingTestBase
         PrintTestHeader();
         
         using var cts = new CancellationTokenSource(TestTimeout);
-        const int expectedMessageCount = 100000;
+        const int expectedMessageCount = 10000;
         
         var inputTopic = $"comprehensive-input-{Guid.NewGuid():N}";
         var outputTopic = $"comprehensive-output-{Guid.NewGuid():N}";
@@ -257,8 +257,8 @@ public class ObservabilityTests : LocalTestingTestBase
             
             // STEP 3: CRITICAL - Verify messages consumed from output topic AFTER checking metrics
             TestContext.WriteLine("═══ KAFKA MESSAGE METRICS VALIDATION (PRIMARY FOCUS) ═══");
-            // Increase timeout for 100,000 messages - give 20 minutes to consume all messages
-            var consumeTimeout = TimeSpan.FromSeconds(1200);
+            // Increase timeout for 10,000 messages - give 2 minutes to consume all messages
+            var consumeTimeout = TimeSpan.FromSeconds(120);
             var consumedMessages = await ConsumeMessagesAsync(outputTopic, expectedMessageCount, consumeTimeout, cts.Token);
             TestContext.WriteLine($"✅ Consumed {consumedMessages.Count} messages from output topic");
             

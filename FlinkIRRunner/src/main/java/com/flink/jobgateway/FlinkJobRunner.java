@@ -152,7 +152,7 @@ public class FlinkJobRunner {
             // Enable auto-commit for consumer group offset tracking
             // This allows Kafka to track consumer lag properly
             props.put("enable.auto.commit", "true");
-            props.put("auto.commit.interval.ms", "5000"); // Commit every 5 seconds
+            props.put("auto.commit.interval.ms", "1000"); // Commit every 1 second
             
             logger.info("[KAFKA SOURCE] Creating Kafka consumer with properties:");
             logger.info("  - bootstrap.servers: {}", props.getProperty("bootstrap.servers"));
