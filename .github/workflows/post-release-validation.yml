@@ -1,0 +1,159 @@
+name: Post-Release Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to validate (e.g., 1.0.0)'
+        required: true
+        type: string
+      release_branch:
+        description: 'Release branch (e.g., release/v1.0.0)'
+        required: true
+        type: string
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  CONFIGURATION: 'Release'
+  DOCKER_IMAGE_NAME: 'devstress/flinkdotnet'
+
+jobs:
+  validate-published-packages:
+    name: Validate Published Packages (Post-Release Validation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_branch }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: '3.9.6'
+
+      - name: Set up .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
+
+      - name: Wait for NuGet.org indexing
+        run: |
+          echo "⏳ Waiting 2 minutes for NuGet.org to index the package version ${{ inputs.version }}..."
+          sleep 120
+
+      - name: Clear NuGet cache
+        run: |
+          dotnet nuget locals all --clear
+          echo "Cleared NuGet cache to force download from NuGet.org"
+
+      - name: Pull Docker image from Docker Hub
+        run: |
+          VERSION=${{ inputs.version }}
+          echo "Pulling Docker image from Docker Hub..."
+          docker pull ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION flinkdotnet-gateway:local
+          echo "✅ Docker image pulled from Docker Hub and tagged as latest and flinkdotnet-gateway:local"
+
+      - name: Configure system for optimal performance
+        run: |
+          echo "=== Configuring system for optimal performance ==="
+          sudo sysctl -w vm.max_map_count=262144
+          sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+          sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+          echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+          echo "Available memory: $(free -h)"
+          echo "CPU info: $(nproc) cores"
+
+      - name: Verify Docker environment
+        run: |
+          echo "=== Verifying Docker environment ==="
+          docker --version
+          docker info
+          docker ps -a
+
+      - name: Build ObservabilityTesting solution
+        env:
+          SKIP_DOCKER_BUILD: "true"
+          RELEASE_VALIDATION_MODE: "PostRelease"
+        run: |
+          echo "🔨 Building ObservabilityTesting solution..."
+          echo "   SKIP_DOCKER_BUILD=true (using published Docker image from Docker Hub)"
+          echo "   RELEASE_VALIDATION_MODE=PostRelease (using FlinkDotnet NuGet package from NuGet.org)"
+          dotnet restore ObservabilityTesting/ObservabilityTesting.sln
+          dotnet build ObservabilityTesting/ObservabilityTesting.sln --configuration Release --no-restore
+
+      - name: Run Post-Release Validation Tests
+        timeout-minutes: 12
+        env:
+          DOTNET_ENVIRONMENT: Testing
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+          SKIP_DOCKER_BUILD: "true"
+          RELEASE_VALIDATION_MODE: "PostRelease"
+        run: |
+          echo "=== Running Post-Release Validation Tests ==="
+          dotnet test ObservabilityTesting/ObservabilityTesting.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: PostReleaseTestResults
+          path: TestResults/
+        if: always()
+
+  merge-to-main:
+    name: Merge Release Branch to Main
+    needs: [validate-published-packages]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.release_branch }}
+      
+      - name: Create Pull Request to Main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=${{ inputs.version }}
+          RELEASE_BRANCH="${{ inputs.release_branch }}"
+          
+          # Create PR to merge release branch to main
+          PR_URL=$(gh pr create \
+            --base main \
+            --head "$RELEASE_BRANCH" \
+            --title "Release v$VERSION" \
+            --body "This PR merges the release branch for version $VERSION back to main.
+
+          ## Release Summary
+          - Version: $VERSION
+          - Packages published to NuGet.org
+          - Docker image published to Docker Hub
+          - GitHub release created with tag v$VERSION
+          
+          ## Validation
+          - ✅ Post-release validation passed
+          
+          Please review and merge this PR manually. The release branch can be deleted after merge." || echo "PR may already exist")
+          
+          echo "Created or found PR: $PR_URL"
+          echo "Please review and merge the PR manually to complete the release process."

@@ -1,11 +1,8 @@
 using System;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
-using Flink.JobBuilder.Models;
 using FlinkDotNet.DataStream;
 using Serilog;
 
@@ -152,34 +149,21 @@ namespace SampleApp
                 .Map(new UppercaseMapper())
                 .SinkToKafka(OutputTopic, KafkaFlinkBootstrapServers);
 
-            JobDefinition jobDefinition = environment.GetJobDefinition("sample-uppercase-job");
-
             Console.WriteLine($"   Submitting job to FlinkDotNet JobGateway at {FlinkJobGatewayUrl}...");
 
-            using HttpClient httpClient = new()
-            {
-                Timeout = TimeSpan.FromSeconds(30)
-            };
+            // Use ExecuteAsync which internally submits to the JobGateway
+            // This approach works with all FlinkDotnet package versions
+            IJobClient jobClient = await environment.ExecuteAsync("sample-uppercase-job");
 
-            // Ensure URL doesn't have double slashes when combining
-            string gatewayBaseUrl = FlinkJobGatewayUrl.TrimEnd('/');
-            HttpResponseMessage response = await httpClient.PostAsJsonAsync($"{gatewayBaseUrl}/api/v1/jobs/submit", jobDefinition);
+            string? jobId = jobClient?.GetJobId();
 
-            if (!response.IsSuccessStatusCode)
-            {
-                string errorContent = await response.Content.ReadAsStringAsync();
-                throw new HttpRequestException($"Job submission failed: {response.StatusCode} - {errorContent}");
-            }
-
-            JobSubmissionResult? result = await response.Content.ReadFromJsonAsync<JobSubmissionResult>();
-
-            if (result?.FlinkJobId == null)
+            if (string.IsNullOrEmpty(jobId))
             {
                 throw new InvalidOperationException("Job submission succeeded but no JobId returned");
             }
 
-            Console.WriteLine($"   [SUCCESS] Job submitted with ID: {result.FlinkJobId}");
-            return result.FlinkJobId;
+            Console.WriteLine($"   [SUCCESS] Job submitted with ID: {jobId}");
+            return jobId;
         }
 
         private static async Task ProduceMessagesAsync()
