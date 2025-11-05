@@ -9,7 +9,7 @@
           <Include>[FlinkDotNet.*]*,[Flink.JobBuilder]*</Include>
           <!-- Exclude test assemblies, Program, and Startup classes -->
           <Exclude>[*.Tests]*,[*]*.Program,[*]*.Startup</Exclude>
-          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
+          <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverage</ExcludeByAttribute>
           <IncludeTestAssembly>false</IncludeTestAssembly>
         </Configuration>
       </DataCollector>

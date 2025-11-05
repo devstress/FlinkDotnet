@@ -127,6 +127,7 @@ namespace FlinkDotNet.DataStream
 
         // Suppress S138: Large switch expressions are acceptable for exhaustive enum mapping
 #pragma warning disable S138
+        [System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]  // Mostly unimplemented placeholder code for future expression types
         private static string? GetBinaryOperationName(ExpressionType nodeType)
         {
             return nodeType switch
