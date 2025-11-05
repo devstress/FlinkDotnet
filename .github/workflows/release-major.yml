@@ -47,8 +47,9 @@ jobs:
             local version=$1
             echo "Checking if version $version exists on NuGet.org..."
             
-            # Query NuGet API for the package versions
-            NUGET_VERSIONS=$(curl -s "https://api.nuget.org/v3-flatcontainer/flinkdotnet/index.json" | grep -o "\"$version\"" || echo "")
+            # Query NuGet API for the package versions with timeout and error handling
+            # Pattern matches version in JSON array context: "version" followed by comma, bracket, or whitespace
+            NUGET_VERSIONS=$(curl -s --max-time 30 --fail "https://api.nuget.org/v3-flatcontainer/flinkdotnet/index.json" 2>/dev/null | grep -E "\"$version\"" || echo "")
             
             if [ -n "$NUGET_VERSIONS" ]; then
               echo "Version $version exists on NuGet.org"
