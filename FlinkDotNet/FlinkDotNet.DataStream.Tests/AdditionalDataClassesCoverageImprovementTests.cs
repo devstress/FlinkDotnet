@@ -105,5 +105,45 @@ public class AdditionalDataClassesCoverageImprovementTests
         Assert.That(tag, Is.Not.Null);
     }
 
+    [Test]
+    public void OutputTag_Equals_SameId_ReturnsTrue()
+    {
+        // Arrange
+        var tag1 = new OutputTag<string>("output-1");
+        var tag2 = new OutputTag<string>("output-1");
+
+        // Act & Assert
+        Assert.That(tag1.Equals(tag2), Is.True);
+        Assert.That(tag1.GetHashCode(), Is.EqualTo(tag2.GetHashCode()));
+    }
+
+    [Test]
+    public void OutputTag_Equals_DifferentId_ReturnsFalse()
+    {
+        // Arrange
+        var tag1 = new OutputTag<string>("output-1");
+        var tag2 = new OutputTag<string>("output-2");
+
+        // Act & Assert
+        Assert.That(tag1.Equals(tag2), Is.False);
+    }
+
+    [Test]
+    public void OutputTag_Equals_Null_ReturnsFalse()
+    {
+        // Arrange
+        var tag = new OutputTag<string>("output");
+
+        // Act & Assert
+        Assert.That(tag.Equals(null), Is.False);
+    }
+
+    [Test]
+    public void OutputTag_WithNullId_ThrowsArgumentNullException()
+    {
+        // Arrange, Act & Assert
+        Assert.Throws<ArgumentNullException>(() => new OutputTag<string>(null!));
+    }
+
     #endregion
 }
