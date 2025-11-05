@@ -212,29 +212,8 @@ public class ObservabilityTests : LocalTestingTestBase
             
             // STEP 2: Start producing messages asynchronously to keep job actively processing
             // This runs in parallel with metrics validation so Prometheus can scrape while messages flow
-            var messageProducingTask = Task.Run(async () =>
-            {
-                try
-                {
-                    // Produce first batch to start the job processing
-                    const int batchSize = 200;
-                    await ProduceMessagesInBatchAsync(inputTopic, batchSize, 0, cts.Token);
-                    TestContext.WriteLine($"✅ Produced first batch of {batchSize} messages to input topic");
-                    
-                    // Produce remaining messages in batches
-                    for (int batch = 1; batch < (expectedMessageCount / batchSize); batch++)
-                    {
-                        await ProduceMessagesInBatchAsync(inputTopic, batchSize, batch * batchSize, cts.Token);
-                        await Task.Delay(TimeSpan.FromMilliseconds(500), cts.Token); // Small delay between batches
-                    }
-                    TestContext.WriteLine($"✅ Produced all {expectedMessageCount} messages to input topic in batches");
-                }
-                catch (Exception ex)
-                {
-                    TestContext.WriteLine($"⚠️  Message production error: {ex.Message}");
-                    throw;
-                }
-            }, cts.Token);
+            var messageProducingTask = await StartMessageProductionAsync(
+                inputTopic, expectedMessageCount, ProduceMessagesInBatchAsync, cts.Token);
             
             // STEP 2.5: Poll Prometheus metrics until they're available (run in parallel with message production)
             // CRITICAL: Don't cancel job until Prometheus has scraped metrics
@@ -246,8 +225,6 @@ public class ObservabilityTests : LocalTestingTestBase
             // Initial delay to allow Prometheus first scrape cycle (1s interval + processing time)
             await Task.Delay(TimeSpan.FromSeconds(3), cts.Token);
             
-            JobMetrics? metrics = null;
-            int retryCount = 0;
             const int maxRetries = 30; // Increased to allow more time for Prometheus scraping
             const int retryDelayMs = 2000; // 2 seconds between checks
             
@@ -261,96 +238,11 @@ public class ObservabilityTests : LocalTestingTestBase
                 "Operator.BytesWritten"  // Must be captured during active processing
             };
             
-            bool allMetricsValid = false;
-            while (retryCount < maxRetries && !allMetricsValid)
-            {
-                // Query basic job metrics from gateway (job status, etc.)
-                metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
-                
-                // Enhance with comprehensive metrics from Prometheus
-                var prometheusMetrics = await CollectPrometheusMetricsAsync(prometheusEndpoint, jobId, cts.Token);
-                foreach (var (key, value) in prometheusMetrics)
-                {
-                    metrics.CustomMetrics[key] = value;
-                }
-                
-                // Also update direct properties if available
-                if (prometheusMetrics.TryGetValue("BytesRead", out var bytesReadObj) && bytesReadObj is long bytesReadVal)
-                    metrics.BytesRead = bytesReadVal;
-                if (prometheusMetrics.TryGetValue("BytesWritten", out var bytesWrittenObj) && bytesWrittenObj is long bytesWrittenVal)
-                    metrics.BytesWritten = bytesWrittenVal;
-                if (prometheusMetrics.TryGetValue("RecordsIn", out var recordsInObj) && recordsInObj is long recordsInVal)
-                    metrics.RecordsIn = recordsInVal;
-                if (prometheusMetrics.TryGetValue("RecordsOut", out var recordsOutObj) && recordsOutObj is long recordsOutVal)
-                    metrics.RecordsOut = recordsOutVal;
-                
-                allMetricsValid = true;
-                var missingMetrics = new List<string>();
-                var zeroMetrics = new List<string>();
-                
-                foreach (var metricKey in requiredNonZeroMetrics)
-                {
-                    if (!metrics.CustomMetrics.TryGetValue(metricKey, out var metricValue))
-                    {
-                        allMetricsValid = false;
-                        missingMetrics.Add(metricKey);
-                        continue;
-                    }
-                    
-                    // Convert to long for comparison
-                    // Note: When metrics are deserialized from JSON, numeric values are JsonElement objects
-                    long value = metricValue switch
-                    {
-                        long l => l,
-                        int i => i,
-                        double d => (long)d,
-                        JsonElement je when je.ValueKind == JsonValueKind.Number => 
-                            je.TryGetInt64(out long l) ? l : (long)je.GetDouble(),
-                        _ => 0
-                    };
-                    
-                    if (value <= 0)
-                    {
-                        allMetricsValid = false;
-                        zeroMetrics.Add(metricKey);
-                    }
-                }
-                
-                if (!allMetricsValid)
-                {
-                    retryCount++;
-                    if (missingMetrics.Count > 0)
-                    {
-                        TestContext.WriteLine($"⏳ Missing metrics: {string.Join(", ", missingMetrics)} (attempt {retryCount}/{maxRetries})");
-                    }
-                    if (zeroMetrics.Count > 0)
-                    {
-                        TestContext.WriteLine($"⏳ Zero-value metrics: {string.Join(", ", zeroMetrics)} (attempt {retryCount}/{maxRetries})");
-                    }
-                    
-                    if (retryCount < maxRetries)
-                    {
-                        await Task.Delay(retryDelayMs, cts.Token);
-                    }
-                }
-                else
-                {
-                    TestContext.WriteLine($"✅ All required metrics have non-zero values (after {retryCount} retries)");
-                    break;
-                }
-            }
-            
-            if (!allMetricsValid)
-            {
-                TestContext.WriteLine($"⚠️  Warning: Some metrics still zero after {maxRetries} retries, proceeding anyway");
-            }
+            var metrics = await PollPrometheusMetricsAsync(
+                gatewayEndpoint, prometheusEndpoint, jobId, 
+                requiredNonZeroMetrics, maxRetries, retryDelayMs, cts.Token);
             
             // Display collected metrics
-            if (metrics == null)
-            {
-                throw new InvalidOperationException("Metrics collection failed - metrics object is null after validation attempts");
-            }
-            
             TestContext.WriteLine();
             TestContext.WriteLine($"📊 Gateway Metrics (during processing):");
             TestContext.WriteLine($"   RecordsIn: {metrics.RecordsIn}");
@@ -599,6 +491,151 @@ public class ObservabilityTests : LocalTestingTestBase
     }
 
     // ========== Helper Methods ==========
+
+    private static async Task<JobMetrics> PollPrometheusMetricsAsync(
+        string gatewayEndpoint, 
+        string prometheusEndpoint, 
+        string jobId, 
+        string[] requiredNonZeroMetrics, 
+        int maxRetries,
+        int retryDelayMs,
+        CancellationToken ct)
+    {
+        JobMetrics? metrics = null;
+        int retryCount = 0;
+        bool allMetricsValid = false;
+
+        while (retryCount < maxRetries && !allMetricsValid)
+        {
+            metrics = await CollectAndMergeMetricsAsync(gatewayEndpoint, prometheusEndpoint, jobId, ct);
+            allMetricsValid = ValidateRequiredMetrics(metrics, requiredNonZeroMetrics, retryCount, maxRetries);
+
+            if (!allMetricsValid && retryCount < maxRetries)
+            {
+                retryCount++;
+                await Task.Delay(retryDelayMs, ct);
+            }
+            else if (allMetricsValid)
+            {
+                TestContext.WriteLine($"✅ All required metrics have non-zero values (after {retryCount} retries)");
+                break;
+            }
+        }
+
+        if (!allMetricsValid)
+        {
+            TestContext.WriteLine($"⚠️  Warning: Some metrics still zero after {maxRetries} retries, proceeding anyway");
+        }
+
+        return metrics ?? throw new InvalidOperationException("Failed to collect metrics");
+    }
+
+    private static async Task<JobMetrics> CollectAndMergeMetricsAsync(
+        string gatewayEndpoint,
+        string prometheusEndpoint,
+        string jobId,
+        CancellationToken ct)
+    {
+        var metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, ct);
+        var prometheusMetrics = await CollectPrometheusMetricsAsync(prometheusEndpoint, jobId, ct);
+
+        foreach (var (key, value) in prometheusMetrics)
+        {
+            metrics.CustomMetrics[key] = value;
+        }
+
+        // Update direct properties if available
+        if (prometheusMetrics.TryGetValue("BytesRead", out var bytesReadObj) && bytesReadObj is long bytesReadVal)
+            metrics.BytesRead = bytesReadVal;
+        if (prometheusMetrics.TryGetValue("BytesWritten", out var bytesWrittenObj) && bytesWrittenObj is long bytesWrittenVal)
+            metrics.BytesWritten = bytesWrittenVal;
+        if (prometheusMetrics.TryGetValue("RecordsIn", out var recordsInObj) && recordsInObj is long recordsInVal)
+            metrics.RecordsIn = recordsInVal;
+        if (prometheusMetrics.TryGetValue("RecordsOut", out var recordsOutObj) && recordsOutObj is long recordsOutVal)
+            metrics.RecordsOut = recordsOutVal;
+
+        return metrics;
+    }
+
+    private static bool ValidateRequiredMetrics(JobMetrics metrics, string[] requiredNonZeroMetrics, int retryCount, int maxRetries)
+    {
+        bool allValid = true;
+        var missingMetrics = new List<string>();
+        var zeroMetrics = new List<string>();
+
+        foreach (var metricKey in requiredNonZeroMetrics)
+        {
+            if (!metrics.CustomMetrics.TryGetValue(metricKey, out var metricValue))
+            {
+                allValid = false;
+                missingMetrics.Add(metricKey);
+                continue;
+            }
+
+            long value = ConvertMetricValueToLong(metricValue);
+            if (value <= 0)
+            {
+                allValid = false;
+                zeroMetrics.Add(metricKey);
+            }
+        }
+
+        if (!allValid)
+        {
+            if (missingMetrics.Count > 0)
+            {
+                TestContext.WriteLine($"⏳ Missing metrics: {string.Join(", ", missingMetrics)} (attempt {retryCount + 1}/{maxRetries})");
+            }
+            if (zeroMetrics.Count > 0)
+            {
+                TestContext.WriteLine($"⏳ Zero-value metrics: {string.Join(", ", zeroMetrics)} (attempt {retryCount + 1}/{maxRetries})");
+            }
+        }
+
+        return allValid;
+    }
+
+    private static long ConvertMetricValueToLong(object metricValue)
+    {
+        return metricValue switch
+        {
+            long l => l,
+            int i => i,
+            double d => (long)d,
+            JsonElement je when je.ValueKind == JsonValueKind.Number =>
+                je.TryGetInt64(out long l) ? l : (long)je.GetDouble(),
+            _ => 0
+        };
+    }
+
+    private static async Task<Task> StartMessageProductionAsync(
+        string inputTopic,
+        int expectedMessageCount,
+        Func<string, int, int, CancellationToken, Task> produceMethod,
+        CancellationToken ct)
+    {
+        return Task.Run(async () =>
+        {
+            try
+            {
+                const int batchSize = 200;
+                await produceMethod(inputTopic, batchSize, 0, ct);
+                TestContext.WriteLine($"✅ Produced first batch of {batchSize} messages to input topic");
+
+                for (int batch = 1; batch < (expectedMessageCount / batchSize); batch++)
+                {
+                    await produceMethod(inputTopic, batchSize, batch * batchSize, ct);
+                    await Task.Delay(TimeSpan.FromMilliseconds(500), ct);
+                }
+                TestContext.WriteLine($"✅ Produced all {expectedMessageCount} messages to input topic in batches");
+            }
+            catch (Exception ex)
+            {
+                TestContext.WriteLine($"⚠️  Message production error: {ex.Message}");
+                throw;
+            }
+        }, ct);
+    }
 
     private static async Task<string> SubmitJobViaGatewayAsync(string gatewayEndpoint, object jobDefinition, CancellationToken ct)
     {
@@ -960,11 +997,10 @@ public class ObservabilityTests : LocalTestingTestBase
         
         foreach (var target in activeTargets)
         {
-            string jobName = "unknown";
             if (target.TryGetProperty("labels", out var labels) &&
                 labels.TryGetProperty("job", out var jobLabel))
             {
-                jobName = jobLabel.GetString() ?? "unknown";
+                string jobName = jobLabel.GetString() ?? "unknown";
                 targetsByJob.TryGetValue(jobName, out var count);
                 targetsByJob[jobName] = count + 1;
             }
@@ -1156,31 +1192,14 @@ public class ObservabilityTests : LocalTestingTestBase
             metrics["RecordsOut"] = recordsOut.Value;
 
         // BytesRead: Try multiple queries to find the right metric
-        // According to Flink docs, numBytesIn is bytes received by operator (from source)
-        var bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            $"sum(flink_taskmanager_job_task_operator_numBytesInPerSecond{{job_id=\"{jobId}\"}})", cancellationToken);
-        
-        if (!bytesRead.HasValue || bytesRead.Value == 0)
+        var bytesReadQueries = new[]
         {
-            // Try cumulative counter instead of rate
-            bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
-                $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\"}})", cancellationToken);
-        }
-        
-        if (!bytesRead.HasValue || bytesRead.Value == 0)
-        {
-            // Try with Source operator filter
-            bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
-                $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ource.*\"}})", cancellationToken);
-        }
-        
-        if (!bytesRead.HasValue || bytesRead.Value == 0)
-        {
-            // Try numBytesOut from Source (bytes leaving source operator)
-            bytesRead = await QueryPrometheusMetricAsync(prometheusEndpoint,
-                $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ource.*\"}})", cancellationToken);
-        }
-        
+            $"sum(flink_taskmanager_job_task_operator_numBytesInPerSecond{{job_id=\"{jobId}\"}})",
+            $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\"}})",
+            $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ource.*\"}})",
+            $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ource.*\"}})"
+        };
+        var bytesRead = await TryMultipleQueriesAsync(prometheusEndpoint, bytesReadQueries, cancellationToken);
         if (bytesRead.HasValue)
         {
             metrics["BytesRead"] = bytesRead.Value;
@@ -1188,30 +1207,14 @@ public class ObservabilityTests : LocalTestingTestBase
         }
 
         // BytesWritten: Try multiple queries
-        var bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            $"sum(flink_taskmanager_job_task_operator_numBytesOutPerSecond{{job_id=\"{jobId}\"}})", cancellationToken);
-        
-        if (!bytesWritten.HasValue || bytesWritten.Value == 0)
+        var bytesWrittenQueries = new[]
         {
-            // Try cumulative counter
-            bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
-                $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\"}})", cancellationToken);
-        }
-        
-        if (!bytesWritten.HasValue || bytesWritten.Value == 0)
-        {
-            // Try with Sink operator filter  
-            bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
-                $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ink.*\"}})", cancellationToken);
-        }
-        
-        if (!bytesWritten.HasValue || bytesWritten.Value == 0)
-        {
-            // Try numBytesIn to Sink (bytes entering sink operator)
-            bytesWritten = await QueryPrometheusMetricAsync(prometheusEndpoint,
-                $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ink.*\"}})", cancellationToken);
-        }
-        
+            $"sum(flink_taskmanager_job_task_operator_numBytesOutPerSecond{{job_id=\"{jobId}\"}})",
+            $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\"}})",
+            $"sum(flink_taskmanager_job_task_operator_numBytesOut{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ink.*\"}})",
+            $"sum(flink_taskmanager_job_task_operator_numBytesIn{{job_id=\"{jobId}\",operator_name=~\".*[Ss]ink.*\"}})"
+        };
+        var bytesWritten = await TryMultipleQueriesAsync(prometheusEndpoint, bytesWrittenQueries, cancellationToken);
         if (bytesWritten.HasValue)
         {
             metrics["BytesWritten"] = bytesWritten.Value;
@@ -1219,6 +1222,36 @@ public class ObservabilityTests : LocalTestingTestBase
         }
 
         return metrics;
+    }
+
+    private static async Task TryAddMetricAsync(
+        Dictionary<string, object> metrics,
+        string prometheusEndpoint,
+        string metricKey,
+        string query,
+        CancellationToken cancellationToken)
+    {
+        var value = await QueryPrometheusMetricAsync(prometheusEndpoint, query, cancellationToken);
+        if (value.HasValue)
+        {
+            metrics[metricKey] = value.Value;
+        }
+    }
+
+    private static async Task<long?> TryMultipleQueriesAsync(
+        string prometheusEndpoint,
+        string[] queries,
+        CancellationToken cancellationToken)
+    {
+        foreach (var query in queries)
+        {
+            var value = await QueryPrometheusMetricAsync(prometheusEndpoint, query, cancellationToken);
+            if (value.HasValue && value.Value > 0)
+            {
+                return value;
+            }
+        }
+        return null;
     }
 
     /// <summary>
