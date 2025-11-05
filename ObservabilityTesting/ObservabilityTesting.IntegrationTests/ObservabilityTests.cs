@@ -212,7 +212,7 @@ public class ObservabilityTests : LocalTestingTestBase
             
             // STEP 2: Start producing messages asynchronously to keep job actively processing
             // This runs in parallel with metrics validation so Prometheus can scrape while messages flow
-            var messageProducingTask = await StartMessageProductionAsync(
+            var messageProducingTask = StartMessageProductionAsync(
                 inputTopic, expectedMessageCount, ProduceMessagesInBatchAsync, cts.Token);
             
             // STEP 2.5: Poll Prometheus metrics until they're available (run in parallel with message production)
@@ -568,7 +568,7 @@ public class ObservabilityTests : LocalTestingTestBase
         };
     }
 
-    private static async Task<Task> StartMessageProductionAsync(
+    private static Task StartMessageProductionAsync(
         string inputTopic,
         int expectedMessageCount,
         Func<string, int, int, CancellationToken, Task> produceMethod,
@@ -1079,6 +1079,84 @@ public class ObservabilityTests : LocalTestingTestBase
         }
     }
 
+    private static async Task AddFlinkTaskManagerMetrics(Dictionary<string, object> metrics, string prometheusEndpoint, string jobId, CancellationToken ct)
+    {
+        var tmCpuLoad = await QueryPrometheusMetricAsync(prometheusEndpoint, 
+            "avg(flink_taskmanager_Status_JVM_CPU_Load) * 100", ct);
+        if (tmCpuLoad.HasValue)
+            metrics["TaskManager.CPU.Load"] = tmCpuLoad.Value;
+
+        var tmHeapUsed = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum(flink_taskmanager_Status_JVM_Memory_Heap_Used)", ct);
+        if (tmHeapUsed.HasValue)
+            metrics["TaskManager.Memory.Heap.Used"] = tmHeapUsed.Value;
+
+        var activeTasks = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            $"count(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{jobId}\"}})", ct);
+        if (activeTasks.HasValue)
+            metrics["TaskManager.ActiveTasks"] = activeTasks.Value;
+    }
+
+    private static async Task AddFlinkJobManagerMetrics(Dictionary<string, object> metrics, string prometheusEndpoint, CancellationToken ct)
+    {
+        var jmCpuLoad = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "flink_jobmanager_Status_JVM_CPU_Load * 100", ct);
+        if (jmCpuLoad.HasValue)
+            metrics["JobManager.CPU.Load"] = jmCpuLoad.Value;
+
+        var jmHeapUsed = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "flink_jobmanager_Status_JVM_Memory_Heap_Used", ct);
+        if (jmHeapUsed.HasValue)
+            metrics["JobManager.Memory.Heap.Used"] = jmHeapUsed.Value;
+
+        var runningJobs = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "count(count by (job_id) (flink_taskmanager_job_task_operator_numRecordsIn))", ct);
+        if (runningJobs.HasValue)
+            metrics["JobManager.RunningJobs"] = runningJobs.Value;
+    }
+
+    private static async Task AddKafkaMetrics(Dictionary<string, object> metrics, string prometheusEndpoint, CancellationToken ct)
+    {
+        var topicOffsets = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum by (topic) (kafka_topic_partition_current_offset)", ct);
+        if (topicOffsets.HasValue)
+            metrics["Kafka.Topic.TotalOffsets"] = topicOffsets.Value;
+
+        var partitionCount = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "count(kafka_topic_partition_current_offset)", ct);
+        if (partitionCount.HasValue)
+            metrics["Kafka.Topic.PartitionCount"] = partitionCount.Value;
+
+        var consumerOffset = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum(kafka_consumergroup_current_offset)", ct);
+        if (consumerOffset.HasValue)
+            metrics["Kafka.Consumer.CurrentOffset"] = consumerOffset.Value;
+
+        var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum(kafka_consumergroup_lag)", ct);
+        if (consumerLag.HasValue)
+            metrics["Kafka.Consumer.Lag"] = consumerLag.Value;
+
+        var messagesInFlight = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "abs(sum(kafka_consumergroup_lag))", ct);
+        if (messagesInFlight.HasValue)
+        {
+            metrics["Kafka.Topic.MessagesInFlight"] = messagesInFlight.Value;
+        }
+        else
+        {
+            var directCalc = await QueryPrometheusMetricAsync(prometheusEndpoint,
+                "abs(sum(kafka_topic_partition_current_offset) - sum(kafka_consumergroup_current_offset))", ct);
+            if (directCalc.HasValue)
+                metrics["Kafka.Topic.MessagesInFlight"] = directCalc.Value;
+        }
+
+        var topicMessageRate = await QueryPrometheusMetricAsync(prometheusEndpoint,
+            "sum(rate(kafka_topic_partition_current_offset[1m]))", ct);
+        if (topicMessageRate.HasValue)
+            metrics["Kafka.Topic.MessageRate"] = topicMessageRate.Value;
+    }
+
     /// <summary>
     /// Collect comprehensive metrics from Prometheus directly (Flink, Kafka, etc.)
     /// </summary>
@@ -1087,86 +1165,10 @@ public class ObservabilityTests : LocalTestingTestBase
     {
         var metrics = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
 
-        // Flink TaskManager metrics
-        var tmCpuLoad = await QueryPrometheusMetricAsync(prometheusEndpoint, 
-            "avg(flink_taskmanager_Status_JVM_CPU_Load) * 100", cancellationToken);
-        if (tmCpuLoad.HasValue)
-            metrics["TaskManager.CPU.Load"] = tmCpuLoad.Value;
-
-        var tmHeapUsed = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "sum(flink_taskmanager_Status_JVM_Memory_Heap_Used)", cancellationToken);
-        if (tmHeapUsed.HasValue)
-            metrics["TaskManager.Memory.Heap.Used"] = tmHeapUsed.Value;
-
-        var activeTasks = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            $"count(flink_taskmanager_job_task_operator_numRecordsIn{{job_id=\"{jobId}\"}})", cancellationToken);
-        if (activeTasks.HasValue)
-            metrics["TaskManager.ActiveTasks"] = activeTasks.Value;
-
-        // Flink JobManager metrics
-        var jmCpuLoad = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "flink_jobmanager_Status_JVM_CPU_Load * 100", cancellationToken);
-        if (jmCpuLoad.HasValue)
-            metrics["JobManager.CPU.Load"] = jmCpuLoad.Value;
-
-        var jmHeapUsed = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "flink_jobmanager_Status_JVM_Memory_Heap_Used", cancellationToken);
-        if (jmHeapUsed.HasValue)
-            metrics["JobManager.Memory.Heap.Used"] = jmHeapUsed.Value;
-
-        var runningJobs = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "count(count by (job_id) (flink_taskmanager_job_task_operator_numRecordsIn))", cancellationToken);
-        if (runningJobs.HasValue)
-            metrics["JobManager.RunningJobs"] = runningJobs.Value;
-
-        // Kafka metrics from kafka-exporter
-        var topicOffsets = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "sum by (topic) (kafka_topic_partition_current_offset)", cancellationToken);
-        if (topicOffsets.HasValue)
-            metrics["Kafka.Topic.TotalOffsets"] = topicOffsets.Value;
-
-        var partitionCount = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "count(kafka_topic_partition_current_offset)", cancellationToken);
-        if (partitionCount.HasValue)
-            metrics["Kafka.Topic.PartitionCount"] = partitionCount.Value;
-
-        var consumerOffset = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "sum(kafka_consumergroup_current_offset)", cancellationToken);
-        if (consumerOffset.HasValue)
-            metrics["Kafka.Consumer.CurrentOffset"] = consumerOffset.Value;
-
-        // Kafka consumer lag
-        // Now that Flink commits offsets properly, this should return valid lag values (>= 0)
-        var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "sum(kafka_consumergroup_lag)", cancellationToken);
-        if (consumerLag.HasValue)
-        {
-            metrics["Kafka.Consumer.Lag"] = consumerLag.Value;
-        }
-
-        // Messages in flight: Use abs() to handle potential negative lag values
-        // Negative lag shouldn't happen but if it does, take absolute value
-        var messagesInFlight = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "abs(sum(kafka_consumergroup_lag))", cancellationToken);
-        if (messagesInFlight.HasValue)
-        {
-            metrics["Kafka.Topic.MessagesInFlight"] = messagesInFlight.Value;
-        }
-        else
-        {
-            // Fallback: try direct calculation
-            var directCalc = await QueryPrometheusMetricAsync(prometheusEndpoint,
-                "abs(sum(kafka_topic_partition_current_offset) - sum(kafka_consumergroup_current_offset))", cancellationToken);
-            if (directCalc.HasValue)
-            {
-                metrics["Kafka.Topic.MessagesInFlight"] = directCalc.Value;
-            }
-        }
-
-        var topicMessageRate = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "sum(rate(kafka_topic_partition_current_offset[1m]))", cancellationToken);
-        if (topicMessageRate.HasValue)
-            metrics["Kafka.Topic.MessageRate"] = topicMessageRate.Value;
+        // Collect metrics by category using helper methods to reduce complexity
+        await AddFlinkTaskManagerMetrics(metrics, prometheusEndpoint, jobId, cancellationToken);
+        await AddFlinkJobManagerMetrics(metrics, prometheusEndpoint, cancellationToken);
+        await AddKafkaMetrics(metrics, prometheusEndpoint, cancellationToken);
 
         // Operator metrics from Flink
         // Try to get records and bytes from Source operators
