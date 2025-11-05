@@ -2,7 +2,7 @@
 
 FlinkDotNet provides **100% feature parity** with Apache Flink 1.0-2.1, implementing all major features across every version release.
 
-Complete observability stack (Prometheus, Grafana) included.
+Complete observability (Prometheus) included.
 
 ## Apache Flink Versions Coverage
 
