@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Confluent.Kafka;
 using NUnit.Framework;
 
@@ -398,7 +399,7 @@ public abstract partial class LocalTestingTestBase
 
             // Simple JSON parsing to check for freeSlots > 0
             // Look for "freeSlots": pattern followed by a number greater than 0
-            var freeSlotsMatch = System.Text.RegularExpressions.Regex.Match(content, @"""freeSlots""\s*:\s*(\d+)");
+            var freeSlotsMatch = Regex.Match(content, @"""freeSlots""\s*:\s*(\d+)");
             if (freeSlotsMatch.Success)
             {
                 var freeSlots = int.Parse(freeSlotsMatch.Groups[1].Value);

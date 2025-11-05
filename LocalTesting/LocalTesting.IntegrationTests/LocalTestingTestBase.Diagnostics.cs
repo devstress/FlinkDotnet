@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
@@ -53,7 +54,7 @@ public abstract partial class LocalTestingTestBase
         if (!line.Contains("->8081/tcp"))
             return null;
 
-        var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8081");
+        var match = Regex.Match(line, @"127\.0\.0\.1:(\d+)->8081");
         return match.Success ? $"http://localhost:{match.Groups[1].Value}/" : null;
     }
 
