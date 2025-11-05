@@ -332,6 +332,9 @@ public class ObservabilityTests : LocalTestingTestBase
             await VerifyPrometheusHealthAsync(prometheusEndpoint, cts.Token);
             TestContext.WriteLine();
 
+            // DEBUG: Check Kafka consumer groups and offset commits before querying metrics
+            await DebugKafkaConsumerGroupsAsync();
+
             // CRITICAL: Always query fresh metrics right before validation
             await CollectFinalMetricsAndMergeAsync(gatewayEndpoint, prometheusEndpoint, jobId, metrics, cts.Token);
 
@@ -586,6 +589,9 @@ public class ObservabilityTests : LocalTestingTestBase
 
     private async Task ProduceMessagesInBatchAsync(string topic, int count, int startIndex, CancellationToken ct)
     {
+        var produceStartTime = DateTime.UtcNow;
+        TestContext.WriteLine($"[TIMING] [PRODUCE] Starting production of {count} messages at: {produceStartTime:HH:mm:ss.fff}");
+        
         var producerConfig = new Confluent.Kafka.ProducerConfig
         {
             BootstrapServers = GlobalTestInfrastructure.KafkaConnectionString,
@@ -618,6 +624,10 @@ public class ObservabilityTests : LocalTestingTestBase
         
         // Flush to ensure all messages are sent
         producer.Flush(TimeSpan.FromSeconds(10));
+        
+        var produceEndTime = DateTime.UtcNow;
+        var duration = (produceEndTime - produceStartTime).TotalSeconds;
+        TestContext.WriteLine($"[TIMING] [PRODUCE] Completed production of {count} messages at: {produceEndTime:HH:mm:ss.fff} (duration: {duration:F2}s, rate: {count/duration:F0} msg/s)");
     }
 
     private Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
@@ -1054,6 +1064,9 @@ public class ObservabilityTests : LocalTestingTestBase
 
     private static async Task AddKafkaMetrics(Dictionary<string, object> metrics, string prometheusEndpoint, CancellationToken ct)
     {
+        var queryTime = DateTime.UtcNow;
+        TestContext.WriteLine($"[TIMING] Querying Kafka metrics at: {queryTime:HH:mm:ss.fff}");
+        
         var topicOffsets = await QueryPrometheusMetricAsync(prometheusEndpoint,
             "sum by (topic) (kafka_topic_partition_current_offset)", ct);
         if (topicOffsets.HasValue)
@@ -1064,6 +1077,16 @@ public class ObservabilityTests : LocalTestingTestBase
         if (partitionCount.HasValue)
             metrics["Kafka.Topic.PartitionCount"] = partitionCount.Value;
 
+        // DEBUG: Check if any consumer groups are being tracked
+        TestContext.WriteLine("[DEBUG] Checking for consumer group metrics in Prometheus...");
+        var allConsumerGroupsRaw = await QueryPrometheusRawAsync(prometheusEndpoint,
+            "kafka_consumergroup_current_offset", ct);
+        TestContext.WriteLine($"[DEBUG] Raw kafka_consumergroup_current_offset response: {allConsumerGroupsRaw?.Substring(0, Math.Min(500, allConsumerGroupsRaw?.Length ?? 0))}");
+        
+        var allConsumerLagRaw = await QueryPrometheusRawAsync(prometheusEndpoint,
+            "kafka_consumergroup_lag", ct);
+        TestContext.WriteLine($"[DEBUG] Raw kafka_consumergroup_lag response: {allConsumerLagRaw?.Substring(0, Math.Min(500, allConsumerLagRaw?.Length ?? 0))}");
+
         var consumerOffset = await QueryPrometheusMetricAsync(prometheusEndpoint,
             "sum(kafka_consumergroup_current_offset)", ct);
         TestContext.WriteLine($"[DEBUG] kafka_consumergroup_current_offset query returned: {(consumerOffset.HasValue ? consumerOffset.Value.ToString() : "null")}");
@@ -1072,7 +1095,7 @@ public class ObservabilityTests : LocalTestingTestBase
 
         var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
             "sum(kafka_consumergroup_lag)", ct);
-        TestContext.WriteLine($"[DEBUG] kafka_consumergroup_lag query returned: {(consumerLag.HasValue ? consumerLag.Value.ToString() : "null")}");
+        TestContext.WriteLine($"[DEBUG] [TIMING {queryTime:HH:mm:ss.fff}] kafka_consumergroup_lag query returned: {(consumerLag.HasValue ? consumerLag.Value.ToString() : "null")}");
         if (consumerLag.HasValue)
         {
             TestContext.WriteLine($"[DEBUG] Storing Kafka.Consumer.Lag = {consumerLag.Value}");
@@ -1081,6 +1104,10 @@ public class ObservabilityTests : LocalTestingTestBase
         else
         {
             TestContext.WriteLine("[WARNING] kafka_consumergroup_lag metric not available from Prometheus");
+            TestContext.WriteLine("[DEBUG] This typically means:");
+            TestContext.WriteLine("[DEBUG]   1. Kafka consumer group has not committed any offsets yet");
+            TestContext.WriteLine("[DEBUG]   2. kafka-topic-exporter hasn't scraped consumer group info yet");
+            TestContext.WriteLine("[DEBUG]   3. Consumer group ID doesn't match expected pattern (expected: 'uppercase-job')");
         }
 
         var messagesInFlight = await QueryPrometheusMetricAsync(prometheusEndpoint,
@@ -1223,6 +1250,27 @@ public class ObservabilityTests : LocalTestingTestBase
         }
     }
 
+    /// <summary>
+    /// Query Prometheus and return the raw JSON response for debugging
+    /// </summary>
+    private static async Task<string?> QueryPrometheusRawAsync(string prometheusEndpoint, string query, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string encodedQuery = Uri.EscapeDataString(query);
+            string url = $"{prometheusEndpoint}/api/v1/query?query={encodedQuery}";
+
+            var httpClient = new HttpClient();
+            var response = await httpClient.GetStringAsync(url, cancellationToken);
+            return response;
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"   ⚠️  Error querying Prometheus (raw): {ex.Message}");
+            return null;
+        }
+    }
+
     private async Task ValidatePrometheusIntegrationAsync(string prometheusEndpoint, CancellationToken cancellationToken)
     {
         TestContext.WriteLine("═══ Prometheus Integration Validation ═══");
@@ -1327,6 +1375,101 @@ public class ObservabilityTests : LocalTestingTestBase
             metrics.RecordsIn = recordsInVal;
         if (prometheusMetrics.TryGetValue("RecordsOut", out var recordsOutObj) && recordsOutObj is long recordsOutVal)
             metrics.RecordsOut = recordsOutVal;
+    }
+
+    /// <summary>
+    /// Debug helper to check Kafka consumer groups and offset commits via Docker exec
+    /// </summary>
+    private static async Task DebugKafkaConsumerGroupsAsync()
+    {
+        TestContext.WriteLine();
+        TestContext.WriteLine("═══ DEBUG: Checking Kafka Consumer Groups via Docker ═══");
+        
+        try
+        {
+            // Get Kafka container name
+            var processInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = "ps --format \"{{.Names}}\" --filter \"name=kafka\"",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            
+            using var process = System.Diagnostics.Process.Start(processInfo);
+            if (process == null)
+            {
+                TestContext.WriteLine("[DEBUG] Could not start docker process");
+                return;
+            }
+            
+            var containerName = (await process.StandardOutput.ReadToEndAsync()).Trim();
+            await process.WaitForExitAsync();
+            
+            if (string.IsNullOrWhiteSpace(containerName))
+            {
+                TestContext.WriteLine("[DEBUG] No Kafka container found");
+                return;
+            }
+            
+            TestContext.WriteLine($"[DEBUG] Found Kafka container: {containerName}");
+            
+            // List all consumer groups
+            TestContext.WriteLine("[DEBUG] Listing all consumer groups...");
+            var listGroupsInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"exec {containerName} kafka-consumer-groups --bootstrap-server localhost:9092 --list",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            
+            using var listProcess = System.Diagnostics.Process.Start(listGroupsInfo);
+            if (listProcess != null)
+            {
+                var groups = await listProcess.StandardOutput.ReadToEndAsync();
+                var errors = await listProcess.StandardError.ReadToEndAsync();
+                await listProcess.WaitForExitAsync();
+                
+                TestContext.WriteLine($"[DEBUG] Consumer groups:\n{groups}");
+                if (!string.IsNullOrWhiteSpace(errors))
+                    TestContext.WriteLine($"[DEBUG] Errors: {errors}");
+            }
+            
+            // Check specific group 'uppercase-job'
+            TestContext.WriteLine("[DEBUG] Checking 'uppercase-job' consumer group details...");
+            var describeGroupInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "docker",
+                Arguments = $"exec {containerName} kafka-consumer-groups --bootstrap-server localhost:9092 --group uppercase-job --describe",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            
+            using var describeProcess = System.Diagnostics.Process.Start(describeGroupInfo);
+            if (describeProcess != null)
+            {
+                var description = await describeProcess.StandardOutput.ReadToEndAsync();
+                var errors = await describeProcess.StandardError.ReadToEndAsync();
+                await describeProcess.WaitForExitAsync();
+                
+                TestContext.WriteLine($"[DEBUG] uppercase-job group description:\n{description}");
+                if (!string.IsNullOrWhiteSpace(errors))
+                    TestContext.WriteLine($"[DEBUG] Errors: {errors}");
+            }
+        }
+        catch (Exception ex)
+        {
+            TestContext.WriteLine($"[DEBUG] Error checking Kafka consumer groups: {ex.Message}");
+        }
+        
+        TestContext.WriteLine("═══ END DEBUG: Kafka Consumer Groups ═══");
+        TestContext.WriteLine();
     }
 
     // ========== Data Models ==========
