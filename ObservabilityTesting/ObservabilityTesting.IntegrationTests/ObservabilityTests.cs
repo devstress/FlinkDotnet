@@ -321,7 +321,7 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine();
 
             // CRITICAL: Always query fresh metrics right before validation
-            await CollectAndMergeMetricsAsync(gatewayEndpoint, prometheusEndpoint, jobId, metrics, cts.Token);
+            await CollectFinalMetricsAndMergeAsync(gatewayEndpoint, prometheusEndpoint, jobId, metrics, cts.Token);
 
             // Validate all comprehensive metrics (JobManager, TaskManager, Kafka)
             ValidateAllComprehensiveMetrics(metrics);
@@ -1271,7 +1271,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
     }
 
-    private async Task CollectAndMergeMetricsAsync(
+    private async Task CollectFinalMetricsAndMergeAsync(
         string gatewayEndpoint, string prometheusEndpoint, string jobId, JobMetrics metrics, CancellationToken cancellationToken)
     {
         // Wait a bit more to ensure Prometheus has had time to complete scraping
