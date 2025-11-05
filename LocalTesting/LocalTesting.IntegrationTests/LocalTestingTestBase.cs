@@ -47,6 +47,7 @@ public abstract partial class LocalTestingTestBase
                 "Ensure GlobalTestInfrastructure.GlobalSetUp completed successfully.");
         }
 
+        TestContext.WriteLine($"✅ Test class using shared infrastructure (Kafka: {KafkaConnectionString})");
         return Task.CompletedTask;
     }
 
