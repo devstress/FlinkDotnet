@@ -101,7 +101,7 @@ public class AdditionalDataClassesCoverageImprovementTests
         // Act
         var tag = new OutputTag<int>(tagName);
 
-        // Assert - OutputTag should store the name
+        // Assert
         Assert.That(tag, Is.Not.Null);
     }
 
