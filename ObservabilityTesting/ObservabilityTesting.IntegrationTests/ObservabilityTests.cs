@@ -321,33 +321,7 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine();
 
             // CRITICAL: Always query fresh metrics right before validation
-            // Wait a bit more to ensure Prometheus has had time to complete scraping
-            TestContext.WriteLine("⏳ Waiting 5 more seconds for Prometheus to complete scraping...");
-            await Task.Delay(5000, cts.Token);
-            
-            TestContext.WriteLine("🔄 Querying final metrics state before validation...");
-            metrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cts.Token);
-            
-            // Enhance with comprehensive metrics from Prometheus
-            var finalPrometheusMetrics = await CollectPrometheusMetricsAsync(prometheusEndpoint, jobId, cts.Token);
-            foreach (var (key, value) in finalPrometheusMetrics)
-            {
-                metrics.CustomMetrics[key] = value;
-            }
-            
-            // Also update direct properties
-            if (finalPrometheusMetrics.TryGetValue("BytesRead", out var finalBytesReadObj) && finalBytesReadObj is long finalBytesReadVal)
-                metrics.BytesRead = finalBytesReadVal;
-            if (finalPrometheusMetrics.TryGetValue("BytesWritten", out var finalBytesWrittenObj) && finalBytesWrittenObj is long finalBytesWrittenVal)
-                metrics.BytesWritten = finalBytesWrittenVal;
-            if (finalPrometheusMetrics.TryGetValue("RecordsIn", out var finalRecordsInObj) && finalRecordsInObj is long finalRecordsInVal)
-                metrics.RecordsIn = finalRecordsInVal;
-            if (finalPrometheusMetrics.TryGetValue("RecordsOut", out var finalRecordsOutObj) && finalRecordsOutObj is long finalRecordsOutVal)
-                metrics.RecordsOut = finalRecordsOutVal;
-            
-            TestContext.WriteLine($"   JobManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("JobManager.Memory.Heap.Used", 0)}");
-            TestContext.WriteLine($"   TaskManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("TaskManager.Memory.Heap.Used", 0)}");
-            TestContext.WriteLine();
+            await CollectAndMergeMetricsAsync(gatewayEndpoint, prometheusEndpoint, jobId, metrics, cts.Token);
 
             // Validate all comprehensive metrics (JobManager, TaskManager, Kafka)
             ValidateAllComprehensiveMetrics(metrics);
@@ -359,65 +333,16 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine();
             
             // STEP 5: Validate Prometheus integration
-            TestContext.WriteLine("═══ Prometheus Integration Validation ═══");
-            TestContext.WriteLine($"Prometheus endpoint: {prometheusEndpoint}");
-            
-            var httpClient = _httpClient!; // Null-forgiving operator safe after initialization check
-            var targetsResponse = await httpClient.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/targets", cts.Token);
-            var activeTargets = targetsResponse?.RootElement.GetProperty("data").GetProperty("activeTargets");
-            
-            Assert.That(activeTargets?.GetArrayLength(), Is.GreaterThan(0), "Prometheus should have active scrape targets");
-            TestContext.WriteLine($"✅ Prometheus has {activeTargets?.GetArrayLength()} active targets");
-            
-            // Validate Kafka metrics are available in Prometheus
-            var kafkaMetricsQuery = "flink_taskmanager_job_task_operator_records_out_rate";
-            var queryResponse = await _httpClient!.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/query?query={kafkaMetricsQuery}", cts.Token);
-            var resultType = queryResponse?.RootElement.GetProperty("data").GetProperty("resultType").GetString();
-            
-            Assert.That(resultType, Is.EqualTo("vector"), "Kafka metrics query should return vector results");
-            TestContext.WriteLine($"✅ Kafka metrics available in Prometheus: {kafkaMetricsQuery}");
-            TestContext.WriteLine();
+            await ValidatePrometheusIntegrationAsync(prometheusEndpoint, cts.Token);
             
             // STEP 6: Validate Grafana configuration
-            TestContext.WriteLine("═══ Grafana Configuration Validation ═══");
-            var grafanaEndpoint = await GetGrafanaEndpointAsync();
-            TestContext.WriteLine($"Grafana endpoint: {grafanaEndpoint}");
-            
-            if (_httpClient == null)
-            {
-                throw new InvalidOperationException("HttpClient is not initialized");
-            }
-            
-            var dataSourcesResponse = await _httpClient.GetFromJsonAsync<JsonDocument>($"{grafanaEndpoint}/api/datasources", cts.Token);
-            var dataSources = dataSourcesResponse?.RootElement.EnumerateArray().ToList();
-            
-            Assert.That(dataSources?.Count, Is.GreaterThan(0), "Grafana should have configured data sources");
-            
-            var prometheusDataSource = dataSources?.Find(ds => 
-                ds.GetProperty("type").GetString() == "prometheus");
-            
-            Assert.That(prometheusDataSource.HasValue, Is.True, "Grafana should have Prometheus data source configured");
-            TestContext.WriteLine($"✅ Grafana has Prometheus data source configured");
-            TestContext.WriteLine();
+            await ValidateGrafanaConfigurationAsync(cts.Token);
             
             // STEP 7: Validate backpressure detection
-            TestContext.WriteLine("═══ Backpressure Detection Validation ═══");
-            Assert.That(metrics.BackpressureLevel, Is.Not.Null, "Backpressure level should not be null");
-            Assert.That(metrics.BackpressureLevel, Is.Not.Empty, "Backpressure level should not be empty");
-            TestContext.WriteLine($"✅ Backpressure level detected: {metrics.BackpressureLevel}");
-            
-            // Also validate it's in CustomMetrics for backward compatibility
-            if (metrics.CustomMetrics.TryGetValue("backpressureLevel", out var bpLevel))
-            {
-                TestContext.WriteLine($"   Backpressure also available in CustomMetrics: {bpLevel}");
-            }
-            TestContext.WriteLine();
+            ValidateBackpressureMetrics(metrics);
             
             // STEP 8: Validate checkpoint metrics
-            TestContext.WriteLine("═══ Checkpoint Metrics Validation ═══");
-            Assert.That(metrics.Checkpoints, Is.GreaterThanOrEqualTo(0), "Checkpoint count should be non-negative");
-            TestContext.WriteLine($"✅ Checkpoint metrics available: {metrics.Checkpoints} checkpoints");
-            TestContext.WriteLine();
+            ValidateCheckpointMetrics(metrics);
             
             // Final summary
             TestContext.WriteLine("═══════════════════════════════════════════════════════════════════════════════");
@@ -1275,6 +1200,112 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine($"   ⚠️  Error querying Prometheus metric: {ex.Message}");
             return null;
         }
+    }
+
+    private async Task ValidatePrometheusIntegrationAsync(string prometheusEndpoint, CancellationToken cancellationToken)
+    {
+        TestContext.WriteLine("═══ Prometheus Integration Validation ═══");
+        TestContext.WriteLine($"Prometheus endpoint: {prometheusEndpoint}");
+        
+        var httpClient = _httpClient!; // Null-forgiving operator safe after initialization check
+        var targetsResponse = await httpClient.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/targets", cancellationToken);
+        var activeTargets = targetsResponse?.RootElement.GetProperty("data").GetProperty("activeTargets");
+        
+        Assert.That(activeTargets?.GetArrayLength(), Is.GreaterThan(0), "Prometheus should have active scrape targets");
+        TestContext.WriteLine($"✅ Prometheus has {activeTargets?.GetArrayLength()} active targets");
+        
+        // Validate Kafka metrics are available in Prometheus
+        var kafkaMetricsQuery = "flink_taskmanager_job_task_operator_records_out_rate";
+        var queryResponse = await _httpClient!.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/query?query={kafkaMetricsQuery}", cancellationToken);
+        var resultType = queryResponse?.RootElement.GetProperty("data").GetProperty("resultType").GetString();
+        
+        Assert.That(resultType, Is.EqualTo("vector"), "Kafka metrics query should return vector results");
+        TestContext.WriteLine($"✅ Kafka metrics available in Prometheus: {kafkaMetricsQuery}");
+        TestContext.WriteLine();
+    }
+
+    private async Task ValidateGrafanaConfigurationAsync(CancellationToken cancellationToken)
+    {
+        TestContext.WriteLine("═══ Grafana Configuration Validation ═══");
+        var grafanaEndpoint = await GetGrafanaEndpointAsync();
+        TestContext.WriteLine($"Grafana endpoint: {grafanaEndpoint}");
+        
+        if (_httpClient == null)
+        {
+            throw new InvalidOperationException("HttpClient is not initialized");
+        }
+        
+        var dataSourcesResponse = await _httpClient.GetFromJsonAsync<JsonDocument>($"{grafanaEndpoint}/api/datasources", cancellationToken);
+        var dataSources = dataSourcesResponse?.RootElement.EnumerateArray().ToList();
+        
+        Assert.That(dataSources?.Count, Is.GreaterThan(0), "Grafana should have configured data sources");
+        
+        var prometheusDataSource = dataSources?.Find(ds => 
+            ds.GetProperty("type").GetString() == "prometheus");
+        
+        Assert.That(prometheusDataSource.HasValue, Is.True, "Grafana should have Prometheus data source configured");
+        TestContext.WriteLine($"✅ Grafana has Prometheus data source configured");
+        TestContext.WriteLine();
+    }
+
+    private void ValidateBackpressureMetrics(JobMetrics metrics)
+    {
+        TestContext.WriteLine("═══ Backpressure Detection Validation ═══");
+        Assert.That(metrics.BackpressureLevel, Is.Not.Null, "Backpressure level should not be null");
+        Assert.That(metrics.BackpressureLevel, Is.Not.Empty, "Backpressure level should not be empty");
+        TestContext.WriteLine($"✅ Backpressure level detected: {metrics.BackpressureLevel}");
+        
+        // Also validate it's in CustomMetrics for backward compatibility
+        if (metrics.CustomMetrics.TryGetValue("backpressureLevel", out var bpLevel))
+        {
+            TestContext.WriteLine($"   Backpressure also available in CustomMetrics: {bpLevel}");
+        }
+        TestContext.WriteLine();
+    }
+
+    private void ValidateCheckpointMetrics(JobMetrics metrics)
+    {
+        TestContext.WriteLine("═══ Checkpoint Metrics Validation ═══");
+        Assert.That(metrics.Checkpoints, Is.GreaterThanOrEqualTo(0), "Checkpoint count should be non-negative");
+        TestContext.WriteLine($"✅ Checkpoint metrics available: {metrics.Checkpoints} checkpoints");
+        TestContext.WriteLine();
+    }
+
+    private async Task CollectAndMergeMetricsAsync(
+        string gatewayEndpoint, string prometheusEndpoint, string jobId, JobMetrics metrics, CancellationToken cancellationToken)
+    {
+        // Wait a bit more to ensure Prometheus has had time to complete scraping
+        TestContext.WriteLine("⏳ Waiting 5 more seconds for Prometheus to complete scraping...");
+        await Task.Delay(5000, cancellationToken);
+        
+        TestContext.WriteLine("🔄 Querying final metrics state before validation...");
+        var freshMetrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cancellationToken);
+        
+        // Enhance with comprehensive metrics from Prometheus
+        var finalPrometheusMetrics = await CollectPrometheusMetricsAsync(prometheusEndpoint, jobId, cancellationToken);
+        foreach (var (key, value) in finalPrometheusMetrics)
+        {
+            metrics.CustomMetrics[key] = value;
+        }
+        
+        // Update direct properties from Prometheus metrics
+        UpdateMetricsProperties(metrics, finalPrometheusMetrics);
+        
+        TestContext.WriteLine($"   JobManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("JobManager.Memory.Heap.Used", 0)}");
+        TestContext.WriteLine($"   TaskManager.Memory.Heap.Used: {metrics.CustomMetrics.GetValueOrDefault("TaskManager.Memory.Heap.Used", 0)}");
+        TestContext.WriteLine();
+    }
+
+    private static void UpdateMetricsProperties(JobMetrics metrics, Dictionary<string, object> prometheusMetrics)
+    {
+        if (prometheusMetrics.TryGetValue("BytesRead", out var bytesReadObj) && bytesReadObj is long bytesReadVal)
+            metrics.BytesRead = bytesReadVal;
+        if (prometheusMetrics.TryGetValue("BytesWritten", out var bytesWrittenObj) && bytesWrittenObj is long bytesWrittenVal)
+            metrics.BytesWritten = bytesWrittenVal;
+        if (prometheusMetrics.TryGetValue("RecordsIn", out var recordsInObj) && recordsInObj is long recordsInVal)
+            metrics.RecordsIn = recordsInVal;
+        if (prometheusMetrics.TryGetValue("RecordsOut", out var recordsOutObj) && recordsOutObj is long recordsOutVal)
+            metrics.RecordsOut = recordsOutVal;
     }
 
     // ========== Data Models ==========
