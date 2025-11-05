@@ -28,6 +28,29 @@ This repo also provides a comprehensive distributed message-oriented architectur
 [![Temporal](https://img.shields.io/badge/Temporal-latest-purple)](https://temporal.io/)
 [![Microsoft Aspire](https://img.shields.io/badge/Aspire-latest-512BD4)](https://learn.microsoft.com/en-us/dotnet/aspire/)
 
+## What is Kafka and Flink? Why Do We Need Them?
+
+### The Problems You'll Face as Your Application Grows
+
+| **Stage** | **What Works** | **Problems You'll Hit** | **Why Simple Solutions Break** |
+|-----------|----------------|-------------------------|--------------------------------|
+| **Starting Out** | Single server + database | Everything runs on one machine | Works great for small apps! |
+| **Growing Fast** | Need to handle more users | Server crashes under heavy load | One machine can't handle thousands of users at once |
+| | | Data gets lost when server restarts | No backup - if server dies, everything is gone |
+| | | Slow response times | Processing requests one by one is too slow |
+| **Going Big** | Need multiple servers | How do servers talk to each other? | Direct connections become a tangled mess |
+| | | Messages get lost between servers | Network failures mean data disappears |
+| | | Can't track long-running processes | If a process takes hours, how do you monitor it? |
+| | | Need to process data in real-time | Batch processing is too slow for live data |
+| **Enterprise Scale** | Millions of users globally | Coordinating across data centers | Hundreds of servers need to work together seamlessly |
+| | | Handling 1 million+ connections per second | Need smart routing and load balancing |
+| | | Data must survive server failures | Redundancy and durability become critical |
+| | | Complex retry logic needed | Failures happen - need automatic recovery |
+
+### The Solutions: Kafka, Flink, and Temporal
+
+**FlinkDotNet brings billion-scale architecture to .NET developers** - combining these three technologies to handle routing billions of messages per second across distributed systems, processing them in real-time with global context awareness, and coordinating millions of complex workflows simultaneously.
+
 ## What is FlinkDotNet?
 FlinkDotNet lets you write **Apache Flink 2.1** streaming jobs in C# and submit them to Flink clusters. No Java required.
 A complete distributed message-oriented architecture for building enterprise stream processing applications in .NET, it combines:
