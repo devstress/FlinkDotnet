@@ -7,6 +7,11 @@ on:
         description: 'Version to validate (e.g., 1.0.0)'
         required: true
         type: string
+      skip_merge:
+        description: 'Skip creating merge PR to main (useful for testing)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   DOTNET_VERSION: '9.0.x'
@@ -117,6 +122,7 @@ jobs:
   merge-to-main:
     name: Merge Release Branch to Main
     needs: [validate-published-packages]
+    if: ${{ inputs.skip_merge != true }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
