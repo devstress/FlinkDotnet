@@ -190,7 +190,7 @@ public class ObservabilityTests : LocalTestingTestBase
         PrintTestHeader();
         
         using var cts = new CancellationTokenSource(TestTimeout);
-        const int expectedMessageCount = 1000;
+        const int expectedMessageCount = 10000;
         
         var inputTopic = $"comprehensive-input-{Guid.NewGuid():N}";
         var outputTopic = $"comprehensive-output-{Guid.NewGuid():N}";
@@ -481,8 +481,7 @@ public class ObservabilityTests : LocalTestingTestBase
             ValidateCustomMetric(metrics, "Kafka.Consumer.CurrentOffset", "Kafka Consumer Current Offset", requireNonZero: true);
             ValidateCustomMetric(metrics, "Kafka.Topic.MessagesInFlight", "Kafka Messages In Flight", requireNonZero: false); // Can be 0 when consumer caught up (no lag)
             ValidateCustomMetric(metrics, "Kafka.Topic.MessageRate", "Kafka Topic Message Rate", requireNonZero: false); // Can be 0 after processing completes
-            // Kafka consumer lag is optional - may not be available when consumer group has no committed offsets or when lag cannot be calculated
-            ValidateCustomMetric(metrics, "Kafka.Consumer.Lag", "Kafka Consumer Lag", requireNonZero: false, optional: true);
+            ValidateCustomMetric(metrics, "Kafka.Consumer.Lag", "Kafka Consumer Lag", requireNonZero: false); // Lag can be 0 if consumer caught up
             TestContext.WriteLine();
 
             // Validate operator throughput metrics (captured during active processing in polling loop)
@@ -827,7 +826,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
     }
 
-    private static void ValidateCustomMetric(JobMetrics metrics, string metricKey, string metricName, bool requireNonZero = true, bool optional = false)
+    private static void ValidateCustomMetric(JobMetrics metrics, string metricKey, string metricName, bool requireNonZero = true)
     {
         // Try to get the metric from CustomMetrics dictionary
         if (metrics.CustomMetrics.TryGetValue(metricKey, out var metricValue))
@@ -865,19 +864,10 @@ public class ObservabilityTests : LocalTestingTestBase
         }
         else
         {
-            // Metric not found
-            if (optional)
-            {
-                // For truly optional metrics, just log and continue
-                TestContext.WriteLine($"   ℹ️  {metricName}: Not available (optional metric)");
-            }
-            else
-            {
-                // For required metrics, fail the test
-                Assert.Fail($"{metricName} (key: {metricKey}) was not found in CustomMetrics. " +
-                           $"Expected all comprehensive metrics to be collected. " +
-                           $"Available metrics: {string.Join(", ", metrics.CustomMetrics.Keys)}");
-            }
+            // Metric not found - FAIL the test since we expect all metrics to be present
+            Assert.Fail($"{metricName} (key: {metricKey}) was not found in CustomMetrics. " +
+                       $"Expected all comprehensive metrics to be collected. " +
+                       $"Available metrics: {string.Join(", ", metrics.CustomMetrics.Keys)}");
         }
     }
 
@@ -1101,11 +1091,9 @@ public class ObservabilityTests : LocalTestingTestBase
             metrics["Kafka.Consumer.CurrentOffset"] = consumerOffset.Value;
 
         // Kafka consumer lag
-        // Note: Kafka exporter may return -1 when consumer group doesn't exist or has no committed offsets
-        // Treat -1 as "metric not available" rather than storing invalid value
         var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
             "sum(kafka_consumergroup_lag)", cancellationToken);
-        if (consumerLag.HasValue && consumerLag.Value >= 0)
+        if (consumerLag.HasValue)
         {
             metrics["Kafka.Consumer.Lag"] = consumerLag.Value;
         }
