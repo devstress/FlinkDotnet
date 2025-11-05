@@ -1248,7 +1248,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
     }
 
-    private void ValidateBackpressureMetrics(JobMetrics metrics)
+    private static void ValidateBackpressureMetrics(JobMetrics metrics)
     {
         TestContext.WriteLine("═══ Backpressure Detection Validation ═══");
         Assert.That(metrics.BackpressureLevel, Is.Not.Null, "Backpressure level should not be null");
@@ -1263,7 +1263,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
     }
 
-    private void ValidateCheckpointMetrics(JobMetrics metrics)
+    private static void ValidateCheckpointMetrics(JobMetrics metrics)
     {
         TestContext.WriteLine("═══ Checkpoint Metrics Validation ═══");
         Assert.That(metrics.Checkpoints, Is.GreaterThanOrEqualTo(0), "Checkpoint count should be non-negative");
@@ -1271,7 +1271,7 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
     }
 
-    private async Task CollectFinalMetricsAndMergeAsync(
+    private static async Task CollectFinalMetricsAndMergeAsync(
         string gatewayEndpoint, string prometheusEndpoint, string jobId, JobMetrics metrics, CancellationToken cancellationToken)
     {
         // Wait a bit more to ensure Prometheus has had time to complete scraping
@@ -1279,7 +1279,7 @@ public class ObservabilityTests : LocalTestingTestBase
         await Task.Delay(5000, cancellationToken);
         
         TestContext.WriteLine("🔄 Querying final metrics state before validation...");
-        var freshMetrics = await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cancellationToken);
+        await QueryGatewayMetricsAsync(gatewayEndpoint, jobId, cancellationToken);
         
         // Enhance with comprehensive metrics from Prometheus
         var finalPrometheusMetrics = await CollectPrometheusMetricsAsync(prometheusEndpoint, jobId, cancellationToken);
