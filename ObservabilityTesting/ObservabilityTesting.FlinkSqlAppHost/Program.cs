@@ -2,6 +2,7 @@
 using ObservabilityTesting.FlinkSqlAppHost;
 
 const string LatestTag = "latest";
+const string FlinkJobManagerHostname = "flink-jobmanager";
 
 // Setup environment for Aspire - required by Aspire SDK
 SetupEnvironment();
@@ -59,7 +60,6 @@ Console.WriteLine("  - Port 9092: PLAINTEXT_HOST for host access");
 Console.WriteLine("  - Port 9093: PLAINTEXT_INTERNAL for container access");
 Console.WriteLine("  - JMX Port 9101: For metrics export (JMX exporter)");
 Console.WriteLine("  [INFO] Using both KAFKA_JMX_OPTS and KAFKA_OPTS for Confluent compatibility");
-
 
 // 1.5. Kafka JMX Exporter - Exports Kafka JMX metrics to Prometheus format
 // CRITICAL: This container enables Prometheus to scrape Kafka metrics
@@ -130,10 +130,10 @@ string connectorsDir = Path.Combine(repoRoot, "LocalTesting", "connectors", "fli
 string kafkaConnectorJar = Path.Combine(connectorsDir, "flink-sql-connector-kafka-4.0.1-2.0.jar");
 string jsonConnectorJar = Path.Combine(connectorsDir, "flink-json-2.1.0.jar");
 
-IResourceBuilder<ContainerResource> jobManager = builder.AddContainer("flink-jobmanager", FlinkImage, FlinkVersion)
+IResourceBuilder<ContainerResource> jobManager = builder.AddContainer(FlinkJobManagerHostname, FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8081, name: "jobmanager-http")
     .WithHttpEndpoint(targetPort: 9250, name: "jm-metrics")
-    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // CRITICAL: Set hostname for RPC binding
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", FlinkJobManagerHostname)  // CRITICAL: Set hostname for RPC binding
     .WithEnvironment("FLINK_PROPERTIES", jobManagerFlinkProperties)  // Metrics configuration
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
@@ -157,7 +157,7 @@ string taskManagerFlinkProperties =
 
 builder.AddContainer("flink-taskmanager", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 9251, name: "tm-metrics")
-    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")  // Standard Flink environment variable  
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", FlinkJobManagerHostname)  // Standard Flink environment variable  
     .WithEnvironment("FLINK_PROPERTIES", taskManagerFlinkProperties)  // Metrics configuration only
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
@@ -196,7 +196,7 @@ string baseSqlGatewayFlinkProperties =
 
 IResourceBuilder<ContainerResource> sqlGateway = builder.AddContainer("flink-sql-gateway", FlinkImage, FlinkVersion)
     .WithHttpEndpoint(targetPort: 8083, name: "sg-http")
-    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", "flink-jobmanager")
+    .WithEnvironment("JOB_MANAGER_RPC_ADDRESS", FlinkJobManagerHostname)
     .WithEnvironment("FLINK_PROPERTIES", baseSqlGatewayFlinkProperties)
     .WithBindMount(kafkaConnectorJar, "/opt/flink/lib/flink-sql-connector-kafka-4.0.1-2.0.jar", isReadOnly: true)
     .WithBindMount(jsonConnectorJar, "/opt/flink/lib/flink-json-2.1.0.jar", isReadOnly: true)
