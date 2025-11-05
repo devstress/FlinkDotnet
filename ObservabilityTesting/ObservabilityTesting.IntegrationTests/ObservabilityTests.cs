@@ -1091,8 +1091,10 @@ public class ObservabilityTests : LocalTestingTestBase
             metrics["Kafka.Consumer.CurrentOffset"] = consumerOffset.Value;
 
         // Kafka consumer lag
+        // Use max(sum(...), 0) to handle -1 values from Kafka exporter when consumer group hasn't committed offsets yet
+        // The Kafka exporter returns -1 when lag cannot be determined, which should be treated as 0 (no lag available)
         var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "sum(kafka_consumergroup_lag)", cancellationToken);
+            "max(sum(kafka_consumergroup_lag), 0)", cancellationToken);
         if (consumerLag.HasValue)
         {
             metrics["Kafka.Consumer.Lag"] = consumerLag.Value;
