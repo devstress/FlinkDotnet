@@ -37,40 +37,26 @@ jobs:
           
           echo "current=$CURRENT" >> $GITHUB_OUTPUT
       
-      - name: Bump major version and check for existing release branches
+      - name: Bump major version and check NuGet for existing published versions
         id: bump
         run: |
           CURRENT="${{ steps.get_version.outputs.current }}"
           
-          # Get the default branch name (more reliable method)
-          DEFAULT_BRANCH=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@' || echo "main")
-          echo "Default branch: $DEFAULT_BRANCH"
-          
-          # Function to check if a release branch exists and is merged
-          check_branch_merged() {
+          # Function to check if a version exists on NuGet.org
+          check_nuget_version_exists() {
             local version=$1
-            local branch="release/v$version"
+            echo "Checking if version $version exists on NuGet.org..."
             
-            # Check if branch exists remotely
-            if git ls-remote --heads origin "$branch" | grep -q "$branch"; then
-              echo "Branch $branch exists remotely"
-              
-              # Fetch the default branch and the release branch to check merge status
-              git fetch origin "$DEFAULT_BRANCH" 2>/dev/null || true
-              git fetch origin "$branch" 2>/dev/null || true
-              
-              # Check if branch has been merged to the default branch
-              # Use git merge-base and git rev-parse to check if branch is ancestor of default branch
-              if git merge-base --is-ancestor "origin/$branch" "origin/$DEFAULT_BRANCH" 2>/dev/null; then
-                echo "Branch $branch has been merged to $DEFAULT_BRANCH"
-                return 0  # Branch is merged
-              else
-                echo "Branch $branch exists but is NOT merged to $DEFAULT_BRANCH"
-                return 1  # Branch exists but not merged
-              fi
+            # Query NuGet API for the package versions with timeout and error handling
+            # Pattern matches version in JSON array context: "version" followed by comma, bracket, or whitespace
+            NUGET_VERSIONS=$(curl -s --max-time 30 --fail "https://api.nuget.org/v3-flatcontainer/flinkdotnet/index.json" 2>/dev/null | grep -E "\"$version\"" || echo "")
+            
+            if [ -n "$NUGET_VERSIONS" ]; then
+              echo "Version $version exists on NuGet.org"
+              return 0  # Version exists
             else
-              echo "Branch $branch does not exist"
-              return 2  # Branch doesn't exist
+              echo "Version $version does NOT exist on NuGet.org"
+              return 1  # Version doesn't exist
             fi
           }
           
@@ -80,22 +66,18 @@ jobs:
             TARGET_VERSION="1.0.0"
             echo "Starting with version 1.0.0 from main branch"
             
-            set +e  # Allow check_branch_merged to return non-zero without failing
-            check_branch_merged "$TARGET_VERSION"
+            set +e  # Allow check_nuget_version_exists to return non-zero without failing
+            check_nuget_version_exists "$TARGET_VERSION"
             result=$?
             set -e  # Re-enable error exit
             
             if [ $result -eq 0 ]; then
-              # Branch exists and is merged - bump to next version
-              echo "release/v1.0.0 is already merged, bumping to next version"
+              # Version exists on NuGet - bump to next version
+              echo "Version 1.0.0 is already published on NuGet, bumping to next major version"
               FINAL_VERSION="2.0.0"
-            elif [ $result -eq 1 ]; then
-              # Branch exists but not merged - use 1.0.0
-              echo "release/v1.0.0 exists but not merged, using 1.0.0"
-              FINAL_VERSION="1.0.0"
             else
-              # Branch doesn't exist - use 1.0.0
-              echo "release/v1.0.0 doesn't exist, using 1.0.0"
+              # Version doesn't exist on NuGet - use 1.0.0
+              echo "Version 1.0.0 not published on NuGet, using 1.0.0"
               FINAL_VERSION="1.0.0"
             fi
           else
@@ -105,23 +87,19 @@ jobs:
             TARGET_VERSION="${NEW_MAJOR}.0.0"
             echo "Bumped version from $CURRENT to $TARGET_VERSION"
             
-            set +e  # Allow check_branch_merged to return non-zero without failing
-            check_branch_merged "$TARGET_VERSION"
+            set +e  # Allow check_nuget_version_exists to return non-zero without failing
+            check_nuget_version_exists "$TARGET_VERSION"
             result=$?
             set -e  # Re-enable error exit
             
             if [ $result -eq 0 ]; then
-              # Bumped version branch exists and is merged - bump again
-              echo "release/v$TARGET_VERSION is already merged, bumping to next version"
+              # Bumped version exists on NuGet - bump again
+              echo "Version $TARGET_VERSION is already published on NuGet, bumping to next major version"
               NEW_MAJOR=$((NEW_MAJOR + 1))
               FINAL_VERSION="${NEW_MAJOR}.0.0"
-            elif [ $result -eq 1 ]; then
-              # Bumped version branch exists but not merged - use it
-              echo "release/v$TARGET_VERSION exists but not merged, using $TARGET_VERSION"
-              FINAL_VERSION="$TARGET_VERSION"
             else
-              # Bumped version branch doesn't exist - use it
-              echo "release/v$TARGET_VERSION doesn't exist, using $TARGET_VERSION"
+              # Bumped version doesn't exist on NuGet - use it
+              echo "Version $TARGET_VERSION not published on NuGet, using $TARGET_VERSION"
               FINAL_VERSION="$TARGET_VERSION"
             fi
           fi
