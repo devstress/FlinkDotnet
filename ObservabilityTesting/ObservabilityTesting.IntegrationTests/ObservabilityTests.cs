@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Flink.JobBuilder.Models;
 using NUnit.Framework;
 
