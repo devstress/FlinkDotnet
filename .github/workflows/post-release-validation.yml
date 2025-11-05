@@ -121,7 +121,7 @@ jobs:
   merge-to-main:
     name: Merge Release Branch to Main
     needs: [validate-published-packages]
-    if: ${{ inputs.skip_merge != true }}
+    if: ${{ !inputs.skip_merge }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
