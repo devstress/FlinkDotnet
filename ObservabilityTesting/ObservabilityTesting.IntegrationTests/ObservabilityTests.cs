@@ -365,7 +365,8 @@ public class ObservabilityTests : LocalTestingTestBase
             
             // STEP 3: CRITICAL - Verify messages consumed from output topic AFTER checking metrics
             TestContext.WriteLine("═══ KAFKA MESSAGE METRICS VALIDATION (PRIMARY FOCUS) ═══");
-            var consumeTimeout = TimeSpan.FromSeconds(60);
+            // Increase timeout for 10,000 messages - give 2 minutes to consume all messages
+            var consumeTimeout = TimeSpan.FromSeconds(120);
             var consumedMessages = await ConsumeMessagesAsync(outputTopic, expectedMessageCount, consumeTimeout, cts.Token);
             TestContext.WriteLine($"✅ Consumed {consumedMessages.Count} messages from output topic");
             
@@ -583,6 +584,9 @@ public class ObservabilityTests : LocalTestingTestBase
             {
                 try
                 {
+                    // Small delay to allow Kafka consumers/producers to complete any in-flight operations
+                    await Task.Delay(TimeSpan.FromSeconds(2));
+                    
                     using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
                     // Remove trailing slash to avoid double slashes
                     var baseUrl = gatewayEndpoint.TrimEnd('/');
@@ -646,7 +650,7 @@ public class ObservabilityTests : LocalTestingTestBase
         return Task.CompletedTask;
     }
 
-    private Task ProduceMessagesInBatchAsync(string topic, int count, int startIndex, CancellationToken ct)
+    private async Task ProduceMessagesInBatchAsync(string topic, int count, int startIndex, CancellationToken ct)
     {
         var producerConfig = new Confluent.Kafka.ProducerConfig
         {
@@ -660,6 +664,7 @@ public class ObservabilityTests : LocalTestingTestBase
 
         using var producer = new Confluent.Kafka.ProducerBuilder<string, string>(producerConfig).Build();
         
+        var tasks = new List<Task>();
         for (int i = 0; i < count; i++)
         {
             ct.ThrowIfCancellationRequested();
@@ -670,11 +675,15 @@ public class ObservabilityTests : LocalTestingTestBase
                 Value = $"test message {startIndex + i}"
             };
             
-            producer.ProduceAsync(topic, message);
+            // Await the async produce to ensure all messages are queued
+            tasks.Add(producer.ProduceAsync(topic, message));
         }
         
+        // Wait for all produce tasks to complete
+        await Task.WhenAll(tasks);
+        
+        // Flush to ensure all messages are sent
         producer.Flush(TimeSpan.FromSeconds(10));
-        return Task.CompletedTask;
     }
 
     private Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
@@ -695,6 +704,8 @@ public class ObservabilityTests : LocalTestingTestBase
         consumer.Subscribe(topic);
 
         var stopwatch = Stopwatch.StartNew();
+        int consecutiveEmptyPolls = 0;
+        const int maxEmptyPollsBeforeExit = 5; // Exit after 5 consecutive empty polls
         
         while (stopwatch.Elapsed < timeout && consumed.Count < expectedCount && !ct.IsCancellationRequested)
         {
@@ -704,10 +715,19 @@ public class ObservabilityTests : LocalTestingTestBase
             {
                 consumed.Add(result.Message.Value);
                 consumer.Commit(result);
+                consecutiveEmptyPolls = 0; // Reset counter on successful consume
             }
-            else if (consumed.Count > 0 && consumed.Count >= expectedCount)
+            else
             {
-                break;
+                // No message received
+                consecutiveEmptyPolls++;
+                
+                // If we've consumed some messages and had several empty polls, likely done
+                if (consumed.Count > 0 && consecutiveEmptyPolls >= maxEmptyPollsBeforeExit)
+                {
+                    TestContext.WriteLine($"   ℹ️  Exiting consumer after {consecutiveEmptyPolls} consecutive empty polls with {consumed.Count} messages");
+                    break;
+                }
             }
         }
 
