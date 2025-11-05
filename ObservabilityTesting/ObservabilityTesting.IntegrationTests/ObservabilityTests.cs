@@ -228,6 +228,8 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine("═══ Gateway Metrics Validation (During Active Processing) ═══");
             TestContext.WriteLine("NOTE: Continuously checking Prometheus metrics while job is running");
             TestContext.WriteLine("      Waiting for Prometheus to scrape and return non-zero values");
+            TestContext.WriteLine("      Consumer lag may be unavailable during initial collection (expected)");
+            TestContext.WriteLine("      kafka-topic-exporter needs 5-10s to discover new consumer groups");
             
             // Initial delay to allow Prometheus first scrape cycle (1s interval + processing time)
             await Task.Delay(TimeSpan.FromSeconds(3), cts.Token);
@@ -237,6 +239,9 @@ public class ObservabilityTests : LocalTestingTestBase
             
             // Require metrics that should exist during active processing
             // These metrics prove Prometheus is scraping while job is running
+            // NOTE: Consumer lag metrics may NOT be available yet during initial collection
+            //       because kafka-topic-exporter needs time to discover the consumer group.
+            //       This is expected and acceptable - final validation will check consumer lag.
             // Note: Operator.BytesRead/BytesWritten are not available from custom Kafka source
             // Only RecordsIn/RecordsOut are tracked by our custom source implementation
             string[] requiredNonZeroMetrics = new[]
