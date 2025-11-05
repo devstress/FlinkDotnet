@@ -193,16 +193,6 @@ FlinkDotNet provides **100% feature parity** with Apache Flink 1.0-2.1, implemen
   - ✅ Smile Format for Compiled Plans (WI16)
   - ✅ MultiJoin Optimization (WI16)
 
-### Test Coverage
-
-**Total**: 420+ integration tests across all features
-- **Core Features**: 310+ tests (WI6-WI13)
-- **Catalog API**: 54 tests (WI14)
-- **Unified Source API**: 21 tests (WI15, pending NUnit conversion)
-- **Performance & Format**: 35 tests (WI16, pending NUnit conversion)
-
-All integration tests are located in: [LocalTesting/LocalTesting.IntegrationTests/](LocalTesting/LocalTesting.IntegrationTests/)
-
 ## Learn FlinkDotNet
 
 **[LearningCourse](LearningCourse/README.md)** provides a 15-day hands-on course covering:
