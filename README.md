@@ -7,6 +7,7 @@ This repo also provides a comprehensive distributed message-oriented architectur
 [![Build](https://github.com/devstress/FlinkDotnet/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/devstress/FlinkDotnet/actions/workflows/unit-tests.yml)
 [![LocalTesting Integration Tests](https://github.com/devstress/FlinkDotnet/actions/workflows/localtesting-integration-tests.yml/badge.svg)](https://github.com/devstress/FlinkDotnet/actions/workflows/localtesting-integration-tests.yml)
 [![Day01 Integration Tests](https://github.com/devstress/FlinkDotnet/actions/workflows/day01-integration-tests.yml/badge.svg)](https://github.com/devstress/FlinkDotnet/actions/workflows/day01-integration-tests.yml)
+[![Observability Integration Tests](https://github.com/devstress/FlinkDotnet/actions/workflows/observability-integration-tests.yml/badge.svg)](https://github.com/devstress/FlinkDotnet/actions/workflows/observability-integration-tests.yml)
 
 <!-- Code Quality - SonarQube -->
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=devstress_flinkdotnet&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=devstress_flinkdotnet)
