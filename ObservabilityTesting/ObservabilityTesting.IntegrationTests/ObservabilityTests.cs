@@ -353,10 +353,10 @@ public class ObservabilityTests : LocalTestingTestBase
             TestContext.WriteLine();
             
             // STEP 5: Validate Prometheus integration
-            await ValidatePrometheusIntegrationAsync(prometheusEndpoint, cts.Token);
+            await ValidatePrometheusIntegrationAsync(_httpClient!, prometheusEndpoint, cts.Token);
             
             // STEP 6: Validate Grafana configuration
-            await ValidateGrafanaConfigurationAsync(cts.Token);
+            await ValidateGrafanaConfigurationAsync(_httpClient!, cts.Token);
             
             // STEP 7: Validate backpressure detection
             ValidateBackpressureMetrics(metrics);
@@ -1098,25 +1098,36 @@ public class ObservabilityTests : LocalTestingTestBase
         if (consumerOffset.HasValue)
             metrics["Kafka.Consumer.CurrentOffset"] = consumerOffset.Value;
 
+        // Query for consumer lag - use max to get the highest lag across partitions
+        // Filter to only the uppercase-job consumer group used by Test2
+        // Use max instead of sum to avoid -1 values from unavailable partitions affecting the result
         var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "sum(kafka_consumergroup_lag)", ct);
+            "max(kafka_consumergroup_lag{consumergroup=\"uppercase-job\"}) OR on() vector(0)", ct);
         TestContext.WriteLine($"[DEBUG] [TIMING {queryTime:HH:mm:ss.fff}] kafka_consumergroup_lag query returned: {(consumerLag.HasValue ? consumerLag.Value.ToString() : "null")}");
-        if (consumerLag.HasValue)
+        if (consumerLag.HasValue && consumerLag.Value >= 0)
         {
             TestContext.WriteLine($"[DEBUG] Storing Kafka.Consumer.Lag = {consumerLag.Value}");
             metrics["Kafka.Consumer.Lag"] = consumerLag.Value;
         }
         else
         {
-            TestContext.WriteLine("[WARNING] kafka_consumergroup_lag metric not available from Prometheus");
+            if (consumerLag.HasValue && consumerLag.Value < 0)
+            {
+                TestContext.WriteLine($"[WARNING] kafka_consumergroup_lag returned {consumerLag.Value} (negative value indicates unavailable/unknown lag)");
+            }
+            else
+            {
+                TestContext.WriteLine("[WARNING] kafka_consumergroup_lag metric not available from Prometheus");
+            }
             TestContext.WriteLine("[DEBUG] This typically means:");
             TestContext.WriteLine("[DEBUG]   1. Kafka consumer group has not committed any offsets yet");
             TestContext.WriteLine("[DEBUG]   2. kafka-topic-exporter hasn't scraped consumer group info yet");
             TestContext.WriteLine("[DEBUG]   3. Consumer group ID doesn't match expected pattern (expected: 'uppercase-job')");
+            TestContext.WriteLine("[DEBUG]   4. Multiple consumer groups with mixed availability (some return -1)");
         }
 
         var messagesInFlight = await QueryPrometheusMetricAsync(prometheusEndpoint,
-            "abs(sum(kafka_consumergroup_lag))", ct);
+            "abs(max(kafka_consumergroup_lag{consumergroup=\"uppercase-job\"}) OR on() vector(0))", ct);
         if (messagesInFlight.HasValue)
         {
             metrics["Kafka.Topic.MessagesInFlight"] = messagesInFlight.Value;
@@ -1276,12 +1287,11 @@ public class ObservabilityTests : LocalTestingTestBase
         }
     }
 
-    private async Task ValidatePrometheusIntegrationAsync(string prometheusEndpoint, CancellationToken cancellationToken)
+    private static async Task ValidatePrometheusIntegrationAsync(HttpClient httpClient, string prometheusEndpoint, CancellationToken cancellationToken)
     {
         TestContext.WriteLine("═══ Prometheus Integration Validation ═══");
         TestContext.WriteLine($"Prometheus endpoint: {prometheusEndpoint}");
         
-        var httpClient = _httpClient!; // Null-forgiving operator safe after initialization check
         var targetsResponse = await httpClient.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/targets", cancellationToken);
         var activeTargets = targetsResponse?.RootElement.GetProperty("data").GetProperty("activeTargets");
         
@@ -1290,7 +1300,7 @@ public class ObservabilityTests : LocalTestingTestBase
         
         // Validate Kafka metrics are available in Prometheus
         var kafkaMetricsQuery = "flink_taskmanager_job_task_operator_records_out_rate";
-        var queryResponse = await _httpClient!.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/query?query={kafkaMetricsQuery}", cancellationToken);
+        var queryResponse = await httpClient.GetFromJsonAsync<JsonDocument>($"{prometheusEndpoint}/api/v1/query?query={kafkaMetricsQuery}", cancellationToken);
         var resultType = queryResponse?.RootElement.GetProperty("data").GetProperty("resultType").GetString();
         
         Assert.That(resultType, Is.EqualTo("vector"), "Kafka metrics query should return vector results");
@@ -1298,18 +1308,13 @@ public class ObservabilityTests : LocalTestingTestBase
         TestContext.WriteLine();
     }
 
-    private async Task ValidateGrafanaConfigurationAsync(CancellationToken cancellationToken)
+    private static async Task ValidateGrafanaConfigurationAsync(HttpClient httpClient, CancellationToken cancellationToken)
     {
         TestContext.WriteLine("═══ Grafana Configuration Validation ═══");
         var grafanaEndpoint = await GetGrafanaEndpointAsync();
         TestContext.WriteLine($"Grafana endpoint: {grafanaEndpoint}");
         
-        if (_httpClient == null)
-        {
-            throw new InvalidOperationException("HttpClient is not initialized");
-        }
-        
-        var dataSourcesResponse = await _httpClient.GetFromJsonAsync<JsonDocument>($"{grafanaEndpoint}/api/datasources", cancellationToken);
+        var dataSourcesResponse = await httpClient.GetFromJsonAsync<JsonDocument>($"{grafanaEndpoint}/api/datasources", cancellationToken);
         var dataSources = dataSourcesResponse?.RootElement.EnumerateArray().ToList();
         
         Assert.That(dataSources?.Count, Is.GreaterThan(0), "Grafana should have configured data sources");
