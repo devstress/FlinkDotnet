@@ -7,6 +7,11 @@ on:
         description: 'Version to validate (e.g., 1.0.0)'
         required: true
         type: string
+      skip_merge:
+        description: 'Skip creating merge PR to main (useful for testing)'
+        required: false
+        type: boolean
+        default: false
 
 env:
   DOTNET_VERSION: '9.0.x'
@@ -64,8 +69,7 @@ jobs:
           echo "Pulling Docker image from Docker Hub..."
           docker pull ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
-          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION flinkdotnet-gateway:local
-          echo "✅ Docker image pulled from Docker Hub and tagged as latest and flinkdotnet-gateway:local"
+          echo "✅ Docker image pulled from Docker Hub and tagged as latest"
 
       - name: Configure system for optimal performance
         run: |
@@ -117,6 +121,7 @@ jobs:
   merge-to-main:
     name: Merge Release Branch to Main
     needs: [validate-published-packages]
+    if: ${{ !inputs.skip_merge }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

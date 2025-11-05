@@ -23,11 +23,16 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
   </ItemGroup>
 
-  <!-- Initialize SKIP_DOCKER_BUILD property from environment variable -->
-  <!-- This must be evaluated early so BuildGatewayDockerImage target condition can use it -->
-  <PropertyGroup>
-    <SKIP_DOCKER_BUILD Condition="'$(SKIP_DOCKER_BUILD)' == ''">$([System.Environment]::GetEnvironmentVariable('SKIP_DOCKER_BUILD'))</SKIP_DOCKER_BUILD>
-  </PropertyGroup>
+  <!-- Initialize SKIP_DOCKER_BUILD_SETTING property from environment variable -->
+  <!-- Using a different property name to avoid MSBuild automatically reading the environment variable -->
+  <!-- Handle case-insensitive matching for "true" values (true, True, TRUE, etc.) -->
+  <Target Name="NormalizeSKIP_DOCKER_BUILD" BeforeTargets="CheckGatewayDockerImage">
+    <PropertyGroup>
+      <SKIP_DOCKER_BUILD_RAW>$([System.Environment]::GetEnvironmentVariable('SKIP_DOCKER_BUILD'))</SKIP_DOCKER_BUILD_RAW>
+      <!-- Normalize to lowercase by checking common case variations -->
+      <SKIP_DOCKER_BUILD_SETTING Condition="'$(SKIP_DOCKER_BUILD_RAW)' == 'true' OR '$(SKIP_DOCKER_BUILD_RAW)' == 'True' OR '$(SKIP_DOCKER_BUILD_RAW)' == 'TRUE'">true</SKIP_DOCKER_BUILD_SETTING>
+    </PropertyGroup>
+  </Target>
 
   <!-- Build FlinkDotNet JobGateway Docker image during 'dotnet build' only, not during 'dotnet run' or 'dotnet test' -->
   <!-- Skip if SKIP_DOCKER_BUILD is set (for faster test execution) or if running in test mode -->
@@ -36,23 +41,23 @@
   </PropertyGroup>
 
   <Target Name="CheckGatewayDockerImage" BeforeTargets="Build">
-    <!-- Check if Docker image already exists (only if SKIP_DOCKER_BUILD is not already set) -->
+    <!-- Check if Docker image already exists (only if SKIP_DOCKER_BUILD_SETTING is not set to skip) -->
     <Exec Command="docker images -q $(GatewayImageTag) 2&gt;nul || docker images -q $(GatewayImageTag) 2&gt;/dev/null"
           WorkingDirectory="$(MSBuildProjectDirectory)"
           ConsoleToMSBuild="true"
           IgnoreExitCode="true"
           ContinueOnError="true"
-          Condition="'$(SKIP_DOCKER_BUILD)' != 'true'">
+          Condition="'$(SKIP_DOCKER_BUILD_SETTING)' != 'true'">
       <Output TaskParameter="ConsoleOutput" PropertyName="GatewayImageExists" />
     </Exec>
     
     <!-- Set SkipGatewayDockerBuild based on conditions -->
     <PropertyGroup>
-      <SkipGatewayDockerBuild Condition="'$(GatewayImageExists)' != '' OR '$(SKIP_DOCKER_BUILD)' == 'true' OR '$(IsTestProject)' == 'true'">true</SkipGatewayDockerBuild>
+      <SkipGatewayDockerBuild Condition="'$(GatewayImageExists)' != '' OR '$(SKIP_DOCKER_BUILD_SETTING)' == 'true' OR '$(IsTestProject)' == 'true'">true</SkipGatewayDockerBuild>
     </PropertyGroup>
     
     <Message Text="[INFO] Gateway Docker image check: $(GatewayImageTag) - Image exists: $(GatewayImageExists)" Importance="High" Condition="'$(SkipGatewayDockerBuild)' != 'true'" />
-    <Message Text="[INFO] Skipping Gateway Docker image build (SKIP_DOCKER_BUILD=$(SKIP_DOCKER_BUILD), Image exists=$(GatewayImageExists), IsTestProject=$(IsTestProject))" Importance="High" Condition="'$(SkipGatewayDockerBuild)' == 'true'" />
+    <Message Text="[INFO] Skipping Gateway Docker image build (SKIP_DOCKER_BUILD=$(SKIP_DOCKER_BUILD_SETTING), Image exists=$(GatewayImageExists), IsTestProject=$(IsTestProject))" Importance="High" Condition="'$(SkipGatewayDockerBuild)' == 'true'" />
   </Target>
 
   <Target Name="BuildGatewayDockerImage" 
