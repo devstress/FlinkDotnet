@@ -189,6 +189,9 @@ public class ObservabilityTests : LocalTestingTestBase
     {
         PrintTestHeader();
         
+        var testStartTime = DateTime.UtcNow;
+        TestContext.WriteLine($"[TIMING] Test started at: {testStartTime:HH:mm:ss.fff}");
+        
         using var cts = new CancellationTokenSource(TestTimeout);
         const int expectedMessageCount = 10000;
         
@@ -204,14 +207,18 @@ public class ObservabilityTests : LocalTestingTestBase
         try
         {
             // STEP 1: Submit job via Gateway (using container IP for Flink jobs)
+            var jobSubmitTime = DateTime.UtcNow;
             var jobDefinition = FlinkDotNetJobs.CreateUppercaseJobDefinition(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, "comprehensive-test");
             jobId = await SubmitJobViaGatewayAsync(gatewayEndpoint, jobDefinition, cts.Token);
             
             TestContext.WriteLine($"✅ Job submitted: {jobId}");
+            TestContext.WriteLine($"[TIMING] Job submitted at: {jobSubmitTime:HH:mm:ss.fff} (elapsed: {(jobSubmitTime - testStartTime).TotalSeconds:F1}s)");
             await Task.Delay(TimeSpan.FromSeconds(10), cts.Token);
             
             // STEP 2: Start producing messages asynchronously to keep job actively processing
             // This runs in parallel with metrics validation so Prometheus can scrape while messages flow
+            var messageProductionStartTime = DateTime.UtcNow;
+            TestContext.WriteLine($"[TIMING] Starting message production at: {messageProductionStartTime:HH:mm:ss.fff} (elapsed: {(messageProductionStartTime - testStartTime).TotalSeconds:F1}s)");
             var messageProducingTask = StartMessageProductionAsync(
                 inputTopic, expectedMessageCount, ProduceMessagesInBatchAsync, cts.Token);
             
@@ -238,9 +245,14 @@ public class ObservabilityTests : LocalTestingTestBase
                 "TaskManager.Memory.Heap.Used"
             };
             
+            var metricsCollectionStartTime = DateTime.UtcNow;
+            TestContext.WriteLine($"[TIMING] Starting metrics collection at: {metricsCollectionStartTime:HH:mm:ss.fff} (elapsed: {(metricsCollectionStartTime - testStartTime).TotalSeconds:F1}s)");
             var metrics = await PollPrometheusMetricsAsync(
                 gatewayEndpoint, prometheusEndpoint, jobId, 
                 requiredNonZeroMetrics, maxRetries, retryDelayMs, cts.Token);
+            
+            var metricsCollectionEndTime = DateTime.UtcNow;
+            TestContext.WriteLine($"[TIMING] Metrics collected at: {metricsCollectionEndTime:HH:mm:ss.fff} (elapsed: {(metricsCollectionEndTime - testStartTime).TotalSeconds:F1}s)");
             
             // Display collected metrics
             TestContext.WriteLine();
@@ -1054,13 +1066,22 @@ public class ObservabilityTests : LocalTestingTestBase
 
         var consumerOffset = await QueryPrometheusMetricAsync(prometheusEndpoint,
             "sum(kafka_consumergroup_current_offset)", ct);
+        TestContext.WriteLine($"[DEBUG] kafka_consumergroup_current_offset query returned: {(consumerOffset.HasValue ? consumerOffset.Value.ToString() : "null")}");
         if (consumerOffset.HasValue)
             metrics["Kafka.Consumer.CurrentOffset"] = consumerOffset.Value;
 
         var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
             "sum(kafka_consumergroup_lag)", ct);
+        TestContext.WriteLine($"[DEBUG] kafka_consumergroup_lag query returned: {(consumerLag.HasValue ? consumerLag.Value.ToString() : "null")}");
         if (consumerLag.HasValue)
+        {
+            TestContext.WriteLine($"[DEBUG] Storing Kafka.Consumer.Lag = {consumerLag.Value}");
             metrics["Kafka.Consumer.Lag"] = consumerLag.Value;
+        }
+        else
+        {
+            TestContext.WriteLine("[WARNING] kafka_consumergroup_lag metric not available from Prometheus");
+        }
 
         var messagesInFlight = await QueryPrometheusMetricAsync(prometheusEndpoint,
             "abs(sum(kafka_consumergroup_lag))", ct);
