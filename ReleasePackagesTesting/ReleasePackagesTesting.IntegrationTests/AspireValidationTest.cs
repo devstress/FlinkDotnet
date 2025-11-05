@@ -59,8 +59,8 @@ public static class AspireValidationTest
         else
         {
             Console.WriteLine("⚠️  Some services are not responding correctly.");
-            Console.WriteLine("   Please check that the LocalTesting.FlinkSqlAppHost is running.");
-            Console.WriteLine("   Run: dotnet run --project LocalTesting.FlinkSqlAppHost");
+            Console.WriteLine("   Please check that the ObservabilityTesting.FlinkSqlAppHost is running.");
+            Console.WriteLine("   Run: dotnet run --project ObservabilityTesting.FlinkSqlAppHost");
         }
 
         return allPassed ? 0 : 1;

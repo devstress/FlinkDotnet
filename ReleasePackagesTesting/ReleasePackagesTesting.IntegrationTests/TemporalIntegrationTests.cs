@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using LocalTesting.FlinkSqlAppHost;
+using ObservabilityTesting.FlinkSqlAppHost;
 using NUnit.Framework;
 using Temporalio.Activities;
 using Temporalio.Client;

@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Confluent.Kafka;
-using LocalTesting.FlinkSqlAppHost;
+using ObservabilityTesting.FlinkSqlAppHost;
 using NUnit.Framework;
 
 namespace LocalTesting.IntegrationTests;
