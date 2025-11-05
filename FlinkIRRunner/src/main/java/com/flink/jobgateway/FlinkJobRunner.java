@@ -149,11 +149,17 @@ public class FlinkJobRunner {
             props.put("bootstrap.servers", bootstrap);
             props.put("group.id", groupId);
             props.put("auto.offset.reset", orElse(k.startingOffsets, "latest"));
+            // Enable auto-commit for consumer group offset tracking
+            // This allows Kafka to track consumer lag properly
+            props.put("enable.auto.commit", "true");
+            props.put("auto.commit.interval.ms", "1000"); // Commit every 1 second
             
             logger.info("[KAFKA SOURCE] Creating Kafka consumer with properties:");
             logger.info("  - bootstrap.servers: {}", props.getProperty("bootstrap.servers"));
             logger.info("  - group.id: {}", props.getProperty("group.id"));
             logger.info("  - auto.offset.reset: {}", props.getProperty("auto.offset.reset"));
+            logger.info("  - enable.auto.commit: {}", props.getProperty("enable.auto.commit"));
+            logger.info("  - auto.commit.interval.ms: {}", props.getProperty("auto.commit.interval.ms"));
 
             logger.info("[KAFKA SOURCE] Adding source to Flink environment...");
             logger.info("[KAFKA SOURCE] Java equivalent: DataStream<String> stream = env.addSource(new KafkaStringSource(\"{}\", props)).name(\"KafkaSource\");", k.topic);
