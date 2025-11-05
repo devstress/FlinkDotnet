@@ -430,14 +430,16 @@ jobs:
           docker info
           docker ps -a
 
-      - name: Build ObservabilityTesting solution
+      - name: Build ReleasePackagesTesting solution (uses ObservabilityTesting.FlinkSqlAppHost)
         env:
           SKIP_DOCKER_BUILD: "true"
+          RELEASE_VALIDATION_MODE: "PreRelease"
         run: |
-          echo "🔨 Building ObservabilityTesting solution..."
+          echo "🔨 Building ReleasePackagesTesting solution..."
           echo "   SKIP_DOCKER_BUILD=true (using pre-built Docker image from artifacts)"
-          dotnet restore ObservabilityTesting/ObservabilityTesting.sln
-          dotnet build ObservabilityTesting/ObservabilityTesting.sln --configuration Release --no-restore
+          echo "   RELEASE_VALIDATION_MODE=PreRelease (using flinkdotnet-gateway:local image)"
+          dotnet restore ReleasePackagesTesting/ReleasePackagesTesting.sln
+          dotnet build ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-restore
 
       - name: Run Pre-Release Validation Tests
         timeout-minutes: 12
@@ -446,9 +448,10 @@ jobs:
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
           SKIP_DOCKER_BUILD: "true"
+          RELEASE_VALIDATION_MODE: "PreRelease"
         run: |
           echo "=== Running Pre-Release Validation Tests ==="
-          dotnet test ObservabilityTesting/ObservabilityTesting.IntegrationTests --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -691,8 +694,7 @@ jobs:
           echo "Pulling Docker image from Docker Hub..."
           docker pull ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
-          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION flinkdotnet-gateway:local
-          echo "✅ Docker image pulled from Docker Hub and tagged as latest and flinkdotnet-gateway:local"
+          echo "✅ Docker image pulled from Docker Hub and tagged as latest"
 
       - name: Configure system for optimal performance
         run: |
@@ -711,14 +713,16 @@ jobs:
           docker info
           docker ps -a
 
-      - name: Build ObservabilityTesting solution
+      - name: Build ReleasePackagesTesting solution (uses ObservabilityTesting.FlinkSqlAppHost)
         env:
           SKIP_DOCKER_BUILD: "true"
+          RELEASE_VALIDATION_MODE: "PostRelease"
         run: |
-          echo "🔨 Building ObservabilityTesting solution..."
+          echo "🔨 Building ReleasePackagesTesting solution..."
           echo "   SKIP_DOCKER_BUILD=true (using published Docker image from Docker Hub)"
-          dotnet restore ObservabilityTesting/ObservabilityTesting.sln
-          dotnet build ObservabilityTesting/ObservabilityTesting.sln --configuration Release --no-restore
+          echo "   RELEASE_VALIDATION_MODE=PostRelease (using devstress/flinkdotnet:latest image)"
+          dotnet restore ReleasePackagesTesting/ReleasePackagesTesting.sln
+          dotnet build ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-restore
 
       - name: Run Post-Release Validation Tests
         timeout-minutes: 12
@@ -727,9 +731,10 @@ jobs:
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
           SKIP_DOCKER_BUILD: "true"
+          RELEASE_VALIDATION_MODE: "PostRelease"
         run: |
           echo "=== Running Post-Release Validation Tests ==="
-          dotnet test ObservabilityTesting/ObservabilityTesting.IntegrationTests --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+          dotnet test ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
