@@ -410,7 +410,8 @@ jobs:
           VERSION=${{ needs.calculate-version.outputs.new_version }}
           gunzip -c ./docker/jobgateway-$VERSION.tar.gz | docker load
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
-          echo "Loaded Docker image for version $VERSION and tagged as latest"
+          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION flinkdotnet-gateway:local
+          echo "Loaded Docker image for version $VERSION and tagged as latest and flinkdotnet-gateway:local"
 
       - name: Configure system for optimal performance
         run: |
@@ -429,9 +430,14 @@ jobs:
           docker info
           docker ps -a
 
-      - name: Build ReleasePackagesTesting solution
+      - name: Build ReleasePackagesTesting solution (uses ObservabilityTesting.FlinkSqlAppHost)
+        env:
+          SKIP_DOCKER_BUILD: "true"
+          RELEASE_VALIDATION_MODE: "PreRelease"
         run: |
           echo "🔨 Building ReleasePackagesTesting solution..."
+          echo "   SKIP_DOCKER_BUILD=true (using pre-built Docker image from artifacts)"
+          echo "   RELEASE_VALIDATION_MODE=PreRelease (using flinkdotnet-gateway:local image)"
           dotnet restore ReleasePackagesTesting/ReleasePackagesTesting.sln
           dotnet build ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-restore
 
@@ -441,6 +447,7 @@ jobs:
           DOTNET_ENVIRONMENT: Testing
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          SKIP_DOCKER_BUILD: "true"
           RELEASE_VALIDATION_MODE: "PreRelease"
         run: |
           echo "=== Running Pre-Release Validation Tests ==="
@@ -687,7 +694,7 @@ jobs:
           echo "Pulling Docker image from Docker Hub..."
           docker pull ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
-          echo "✅ Docker image pulled from Docker Hub"
+          echo "✅ Docker image pulled from Docker Hub and tagged as latest"
 
       - name: Configure system for optimal performance
         run: |
@@ -706,9 +713,14 @@ jobs:
           docker info
           docker ps -a
 
-      - name: Build ReleasePackagesTesting solution
+      - name: Build ReleasePackagesTesting solution (uses ObservabilityTesting.FlinkSqlAppHost)
+        env:
+          SKIP_DOCKER_BUILD: "true"
+          RELEASE_VALIDATION_MODE: "PostRelease"
         run: |
           echo "🔨 Building ReleasePackagesTesting solution..."
+          echo "   SKIP_DOCKER_BUILD=true (using published Docker image from Docker Hub)"
+          echo "   RELEASE_VALIDATION_MODE=PostRelease (using devstress/flinkdotnet:latest image)"
           dotnet restore ReleasePackagesTesting/ReleasePackagesTesting.sln
           dotnet build ReleasePackagesTesting/ReleasePackagesTesting.sln --configuration Release --no-restore
 
@@ -718,6 +730,7 @@ jobs:
           DOTNET_ENVIRONMENT: Testing
           ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
           DOCKER_HOST: "unix:///var/run/docker.sock"
+          SKIP_DOCKER_BUILD: "true"
           RELEASE_VALIDATION_MODE: "PostRelease"
         run: |
           echo "=== Running Post-Release Validation Tests ==="

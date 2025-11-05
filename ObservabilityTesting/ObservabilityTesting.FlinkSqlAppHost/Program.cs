@@ -248,11 +248,22 @@ builder.AddContainer("grafana", "grafana/grafana", LatestTag)
 // 7. FlinkDotNet JobGateway - FlinkDotNet job submission endpoint (using pre-built Docker image)
 Console.WriteLine("[INFO] Configuring FlinkDotNet JobGateway from pre-built Docker image...");
 
-const string gatewayImageTag = "flinkdotnet-gateway:local";
+// Determine which Docker image to use based on RELEASE_VALIDATION_MODE
+// - "PostRelease": Use published image from Docker Hub (devstress/flinkdotnet:latest)
+// - "PreRelease" or unset: Use local pre-built image (flinkdotnet-gateway:local)
+string releaseValidationMode = Environment.GetEnvironmentVariable("RELEASE_VALIDATION_MODE") ?? "";
+bool usePublishedImage = releaseValidationMode.Equals("PostRelease", StringComparison.OrdinalIgnoreCase);
+
+string gatewayImageName = usePublishedImage ? "devstress/flinkdotnet" : "flinkdotnet-gateway";
+string gatewayImageTag = usePublishedImage ? "latest" : "local";
+
+Console.WriteLine(usePublishedImage
+    ? $"   [INFO] Using PUBLISHED Docker image: {gatewayImageName}:{gatewayImageTag} (RELEASE_VALIDATION_MODE=PostRelease)"
+    : $"   [INFO] Using LOCAL Docker image: {gatewayImageName}:{gatewayImageTag} (RELEASE_VALIDATION_MODE={releaseValidationMode})");
 
 // Use AddContainer with pre-built image instead of PublishAsDockerFile
 // The Docker image is built as part of the AppHost build process (see .csproj BuildGatewayDockerImage target)
-builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
+builder.AddContainer("flinkdotnet-jobgateway", gatewayImageName, gatewayImageTag)
     .WithHttpEndpoint(targetPort: 8086, name: "gateway-http")
     // Note: Prometheus metrics are exposed on the same port (8086) via /metrics endpoint
     // No separate metrics port needed - prometheus-net.AspNetCore uses the main HTTP server
@@ -268,7 +279,7 @@ builder.AddContainer("flinkdotnet-jobgateway", gatewayImageTag)
     .WaitFor(prometheus)  // Ensure Prometheus is ready to scrape Gateway metrics
     .WithLifetime(ContainerLifetime.Persistent);
 
-Console.WriteLine($"   [INFO] FlinkDotNet JobGateway will use pre-built Docker image: {gatewayImageTag}");
+Console.WriteLine($"   [INFO] FlinkDotNet JobGateway configured with Docker image: {gatewayImageName}:{gatewayImageTag}");
 
 Console.WriteLine("[INFO] All services configured successfully");
 Console.WriteLine($"   - Kafka: Port {Ports.KafkaExternalPort}");
