@@ -190,7 +190,7 @@ public class ObservabilityTests : LocalTestingTestBase
         PrintTestHeader();
         
         using var cts = new CancellationTokenSource(TestTimeout);
-        const int expectedMessageCount = 10000;
+        const int expectedMessageCount = 100000;
         
         var inputTopic = $"comprehensive-input-{Guid.NewGuid():N}";
         var outputTopic = $"comprehensive-output-{Guid.NewGuid():N}";
@@ -257,8 +257,8 @@ public class ObservabilityTests : LocalTestingTestBase
             
             // STEP 3: CRITICAL - Verify messages consumed from output topic AFTER checking metrics
             TestContext.WriteLine("═══ KAFKA MESSAGE METRICS VALIDATION (PRIMARY FOCUS) ═══");
-            // Increase timeout for 10,000 messages - give 2 minutes to consume all messages
-            var consumeTimeout = TimeSpan.FromSeconds(120);
+            // Increase timeout for 100,000 messages - give 20 minutes to consume all messages
+            var consumeTimeout = TimeSpan.FromSeconds(1200);
             var consumedMessages = await ConsumeMessagesAsync(outputTopic, expectedMessageCount, consumeTimeout, cts.Token);
             TestContext.WriteLine($"✅ Consumed {consumedMessages.Count} messages from output topic");
             
@@ -866,14 +866,13 @@ public class ObservabilityTests : LocalTestingTestBase
         ValidateCustomMetric(metrics, "Kafka.Consumer.CurrentOffset", "Kafka Consumer Current Offset", requireNonZero: true);
         ValidateCustomMetric(metrics, "Kafka.Topic.MessagesInFlight", "Kafka Messages In Flight", requireNonZero: false);
         ValidateCustomMetric(metrics, "Kafka.Topic.MessageRate", "Kafka Topic Message Rate", requireNonZero: false);
-        // Consumer lag is optional because Kafka exporter returns -1 when lag cannot be determined (e.g., no committed offsets yet)
-        ValidateCustomMetric(metrics, "Kafka.Consumer.Lag", "Kafka Consumer Lag", requireNonZero: false, optional: true);
+        ValidateCustomMetric(metrics, "Kafka.Consumer.Lag", "Kafka Consumer Lag", requireNonZero: false);
         TestContext.WriteLine();
 
         TestContext.WriteLine("✅ COMPREHENSIVE METRICS VALIDATED");
     }
 
-    private static void ValidateCustomMetric(JobMetrics metrics, string metricKey, string metricName, bool requireNonZero = true, bool optional = false)
+    private static void ValidateCustomMetric(JobMetrics metrics, string metricKey, string metricName, bool requireNonZero = true)
     {
         // Try to get the metric from CustomMetrics dictionary
         if (metrics.CustomMetrics.TryGetValue(metricKey, out var metricValue))
@@ -911,19 +910,10 @@ public class ObservabilityTests : LocalTestingTestBase
         }
         else
         {
-            // Metric not found
-            if (optional)
-            {
-                // For optional metrics, log info message and continue
-                TestContext.WriteLine($"   ℹ️  {metricName}: Not available (optional metric)");
-            }
-            else
-            {
-                // FAIL the test since we expect all non-optional metrics to be present
-                Assert.Fail($"{metricName} (key: {metricKey}) was not found in CustomMetrics. " +
-                           $"Expected all comprehensive metrics to be collected. " +
-                           $"Available metrics: {string.Join(", ", metrics.CustomMetrics.Keys)}");
-            }
+            // Metric not found - FAIL the test since we expect all metrics to be present
+            Assert.Fail($"{metricName} (key: {metricKey}) was not found in CustomMetrics. " +
+                       $"Expected all comprehensive metrics to be collected. " +
+                       $"Available metrics: {string.Join(", ", metrics.CustomMetrics.Keys)}");
         }
     }
 
@@ -1144,8 +1134,7 @@ public class ObservabilityTests : LocalTestingTestBase
 
         var consumerLag = await QueryPrometheusMetricAsync(prometheusEndpoint,
             "sum(kafka_consumergroup_lag)", ct);
-        // Only store consumer lag if it's >= 0 (Kafka exporter returns -1 when lag cannot be determined)
-        if (consumerLag.HasValue && consumerLag.Value >= 0)
+        if (consumerLag.HasValue)
             metrics["Kafka.Consumer.Lag"] = consumerLag.Value;
 
         var messagesInFlight = await QueryPrometheusMetricAsync(prometheusEndpoint,
