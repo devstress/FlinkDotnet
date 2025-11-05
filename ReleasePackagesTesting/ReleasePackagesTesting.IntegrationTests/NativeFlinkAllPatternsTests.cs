@@ -315,7 +315,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
             // Fall through to default
         }
 
-        return Task.FromResult($"http://localhost:{LocalTesting.FlinkSqlAppHost.Ports.JobManagerHostPort}/");
+        return Task.FromResult($"http://localhost:{ObservabilityTesting.FlinkSqlAppHost.Ports.JobManagerHostPort}/");
     }
 
     // DTOs for Flink REST API

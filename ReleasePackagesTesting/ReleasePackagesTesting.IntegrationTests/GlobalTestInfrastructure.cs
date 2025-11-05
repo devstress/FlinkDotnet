@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
-using LocalTesting.FlinkSqlAppHost;
+using ObservabilityTesting.FlinkSqlAppHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -53,7 +53,7 @@ public class GlobalTestInfrastructure
 
             // Build and start Aspire application
             Console.WriteLine("🔧 Building Aspire ApplicationHost...");
-            var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.ReleasePackagesTesting_FlinkSqlAppHost>();
+            var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.ObservabilityTesting_FlinkSqlAppHost>();
             Console.WriteLine("🔧 Building application...");
             var app = await appHost.BuildAsync().WaitAsync(DefaultTimeout);
             Console.WriteLine("🔧 Starting application...");

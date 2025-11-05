@@ -4,7 +4,7 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Confluent.Kafka;
 using Confluent.Kafka.Admin;
-using LocalTesting.FlinkSqlAppHost;
+using ObservabilityTesting.FlinkSqlAppHost;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
