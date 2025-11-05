@@ -53,6 +53,8 @@ jobs:
       - name: Wait for NuGet.org indexing
         run: |
           echo "⏳ Waiting 2 minutes for NuGet.org to index the package version ${{ inputs.version }}..."
+          echo "   Note: This is a fixed wait time. If indexing takes longer, the next step will fail."
+          echo "   In that case, wait a few minutes and re-run this workflow."
           sleep 120
 
       - name: Clear NuGet cache

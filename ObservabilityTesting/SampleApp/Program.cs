@@ -155,7 +155,7 @@ namespace SampleApp
             // This approach works with all FlinkDotnet package versions
             IJobClient jobClient = await environment.ExecuteAsync("sample-uppercase-job");
 
-            string? jobId = jobClient?.GetJobId();
+            string? jobId = jobClient.GetJobId();
 
             if (string.IsNullOrEmpty(jobId))
             {
