@@ -25,12 +25,34 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
 
+  <!-- Conditional References: Use PackageReference for release validation, ProjectReference for normal tests -->
+  <!-- This allows the same test project to be used for:
+       1. Normal testing (observability-integration-tests.yml): Uses ProjectReference to build against local source
+       2. Pre-release validation (release workflows): Uses PackageReference from local NuGet feed  
+       3. Post-release validation (release workflows): Uses PackageReference from NuGet.org
+       
+       The mode is controlled by the RELEASE_VALIDATION_MODE environment variable set in GitHub workflows.
+       When RELEASE_VALIDATION_MODE is not set (empty), ProjectReference is used.
+       When RELEASE_VALIDATION_MODE is "PreRelease" or "PostRelease", PackageReference is used.
+  -->
   <ItemGroup>
     <ProjectReference Include="..\ObservabilityTesting.FlinkSqlAppHost\ObservabilityTesting.FlinkSqlAppHost.csproj" />
     <ProjectReference Include="..\SampleApp\SampleApp.csproj" />
+  </ItemGroup>
+
+  <!-- Normal mode: Use ProjectReference (default for observability-integration-tests.yml) -->
+  <!-- When RELEASE_VALIDATION_MODE is not set, use local source code via ProjectReference -->
+  <ItemGroup Condition="'$(RELEASE_VALIDATION_MODE)' == ''">
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" SetConfiguration="Configuration=Release" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" SetConfiguration="Configuration=Release" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" SetConfiguration="Configuration=Release" />
+  </ItemGroup>
+
+  <!-- PreRelease/PostRelease mode: Use PackageReference (for release workflows) -->
+  <!-- When RELEASE_VALIDATION_MODE is set, use NuGet package for validation -->
+  <!-- Wildcard version '*' is intentional - ensures latest available package is used -->
+  <ItemGroup Condition="'$(RELEASE_VALIDATION_MODE)' == 'PreRelease' OR '$(RELEASE_VALIDATION_MODE)' == 'PostRelease'">
+    <PackageReference Include="FlinkDotnet" Version="*" />
   </ItemGroup>
 
   <!-- MSBuild Target: Copy Flink IR Runner JARs to test output directory -->

@@ -13,9 +13,24 @@
     <PackageReference Include="System.Text.Json" Version="9.0.7" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- Conditional References: Use PackageReference for release validation, ProjectReference for normal tests -->
+  <!-- This allows SampleApp to be used in three scenarios:
+       1. Normal testing: Uses ProjectReference to FlinkDotNet source code
+       2. Pre-release validation: Uses PackageReference from local NuGet packages
+       3. Post-release validation: Uses PackageReference from published NuGet.org packages
+       
+       Mode is controlled by RELEASE_VALIDATION_MODE environment variable from GitHub workflows.
+  -->
+  <!-- Normal mode: Use ProjectReference (default for observability-integration-tests.yml) -->
+  <ItemGroup Condition="'$(RELEASE_VALIDATION_MODE)' == ''">
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
+  </ItemGroup>
+
+  <!-- PreRelease/PostRelease mode: Use PackageReference (for release workflows) -->
+  <!-- Wildcard version '*' is intentional - uses latest available package for validation -->
+  <ItemGroup Condition="'$(RELEASE_VALIDATION_MODE)' == 'PreRelease' OR '$(RELEASE_VALIDATION_MODE)' == 'PostRelease'">
+    <PackageReference Include="FlinkDotnet" Version="*" />
   </ItemGroup>
 
 </Project>
