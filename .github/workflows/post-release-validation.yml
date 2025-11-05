@@ -127,14 +127,14 @@ jobs:
         with:
           fetch-depth: 0
           ref: release/v${{ inputs.version }}
-      
+
       - name: Create Pull Request to Main
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=${{ inputs.version }}
           RELEASE_BRANCH="release/v$VERSION"
-          
+
           # Create PR to merge release branch to main
           PR_URL=$(gh pr create \
             --base main \
@@ -147,11 +147,11 @@ jobs:
           - Packages published to NuGet.org
           - Docker image published to Docker Hub
           - GitHub release created with tag v$VERSION
-          
+
           ## Validation
           - ✅ Post-release validation passed
-          
+
           Please review and merge this PR manually. The release branch can be deleted after merge." || echo "PR may already exist")
-          
+
           echo "Created or found PR: $PR_URL"
           echo "Please review and merge the PR manually to complete the release process."
