@@ -69,8 +69,7 @@ jobs:
           echo "Pulling Docker image from Docker Hub..."
           docker pull ${{ env.DOCKER_IMAGE_NAME }}:$VERSION
           docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION ${{ env.DOCKER_IMAGE_NAME }}:latest
-          docker tag ${{ env.DOCKER_IMAGE_NAME }}:$VERSION flinkdotnet-gateway:local
-          echo "✅ Docker image pulled from Docker Hub and tagged as latest and flinkdotnet-gateway:local"
+          echo "✅ Docker image pulled from Docker Hub and tagged as latest"
 
       - name: Configure system for optimal performance
         run: |
