@@ -25,12 +25,22 @@
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
   </ItemGroup>
 
+  <!-- Conditional References: Use PackageReference for release validation, ProjectReference for normal tests -->
   <ItemGroup>
     <ProjectReference Include="..\ObservabilityTesting.FlinkSqlAppHost\ObservabilityTesting.FlinkSqlAppHost.csproj" />
     <ProjectReference Include="..\SampleApp\SampleApp.csproj" />
+  </ItemGroup>
+
+  <!-- Normal mode: Use ProjectReference (default for observability-integration-tests.yml) -->
+  <ItemGroup Condition="'$(RELEASE_VALIDATION_MODE)' == ''">
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" SetConfiguration="Configuration=Release" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj" SetConfiguration="Configuration=Release" />
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" SetConfiguration="Configuration=Release" />
+  </ItemGroup>
+
+  <!-- PreRelease/PostRelease mode: Use PackageReference (for release workflows) -->
+  <ItemGroup Condition="'$(RELEASE_VALIDATION_MODE)' == 'PreRelease' OR '$(RELEASE_VALIDATION_MODE)' == 'PostRelease'">
+    <PackageReference Include="FlinkDotnet" Version="*" />
   </ItemGroup>
 
   <!-- MSBuild Target: Copy Flink IR Runner JARs to test output directory -->

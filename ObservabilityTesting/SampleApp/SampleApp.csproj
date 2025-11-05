@@ -13,9 +13,16 @@
     <PackageReference Include="System.Text.Json" Version="9.0.7" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- Conditional References: Use PackageReference for release validation, ProjectReference for normal tests -->
+  <!-- Normal mode: Use ProjectReference (default for observability-integration-tests.yml) -->
+  <ItemGroup Condition="'$(RELEASE_VALIDATION_MODE)' == ''">
     <ProjectReference Include="..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
     <ProjectReference Include="..\..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj" />
+  </ItemGroup>
+
+  <!-- PreRelease/PostRelease mode: Use PackageReference (for release workflows) -->
+  <ItemGroup Condition="'$(RELEASE_VALIDATION_MODE)' == 'PreRelease' OR '$(RELEASE_VALIDATION_MODE)' == 'PostRelease'">
+    <PackageReference Include="FlinkDotnet" Version="*" />
   </ItemGroup>
 
 </Project>
