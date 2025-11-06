@@ -372,9 +372,15 @@ var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gat
     .WaitFor(sqlGateway);
 
 bool isTesting = Environment.GetEnvironmentVariable("IS_TESTING") == "true";
+Console.WriteLine($"[DEBUG] IS_TESTING environment variable value: '{Environment.GetEnvironmentVariable("IS_TESTING")}', isTesting = {isTesting}");
 if (isTesting)
 {
+    Console.WriteLine("[DEBUG] IS_TESTING=true: Adding gateway HTTP endpoint on port 8086");
     gateway.WithHttpEndpoint(port: 8086, name: "gateway-http");
+}
+else
+{
+    Console.WriteLine("[DEBUG] IS_TESTING is not true: Skipping gateway HTTP endpoint");
 }
 
 
