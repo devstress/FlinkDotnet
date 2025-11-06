@@ -208,96 +208,160 @@
       <MavenAlreadyInstalled Condition="Exists('$(MavenInstallDir)\bin\mvn.cmd') OR Exists('$(MavenInstallDir)/bin/mvn')">true</MavenAlreadyInstalled>
     </PropertyGroup>
 
-    <!-- Skip Maven download if already in PATH (e.g., from GitHub Actions) -->
-    <Message Text="(FlinkDotNet.JobGateway) Maven found in PATH, skipping download."
+    <!-- Check Maven's Java version if Maven found in PATH -->
+    <Message Text="(FlinkDotNet.JobGateway) Maven found in PATH. Checking Java version..."
              Importance="High"
              Condition="'$(MavenNotFound)' != 'true'" />
+    
+    <!-- Get Maven version output (Windows) -->
+    <Exec Command="mvn -version"
+          ContinueOnError="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          IgnoreExitCode="true"
+          Condition="'$(MavenNotFound)' != 'true' AND '$(IsWindows)' == 'true'">
+      <Output TaskParameter="ExitCode" PropertyName="MavenVersionExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="MavenVersionOutput" />
+    </Exec>
 
-    <!-- Download and install Maven if not found in PATH and not already in tools/ (Windows only) -->
-    <Message Text="(FlinkDotNet.JobGateway) Maven not found in PATH. Installing Maven $(MavenVersion) to $(MavenInstallDir)..."
+    <!-- Get Maven version output (Linux/macOS) -->
+    <Exec Command="mvn -version"
+          ContinueOnError="true"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="Low"
+          StandardErrorImportance="Low"
+          IgnoreExitCode="true"
+          Condition="'$(MavenNotFound)' != 'true' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true')">
+      <Output TaskParameter="ExitCode" PropertyName="MavenVersionExitCode" />
+      <Output TaskParameter="ConsoleOutput" PropertyName="MavenVersionOutput" />
+    </Exec>
+
+    <!-- Parse Maven's Java version from output -->
+    <PropertyGroup Condition="'$(MavenNotFound)' != 'true' AND '$(MavenVersionExitCode)' == '0'">
+      <!-- Extract Java version line (contains "Java version:") -->
+      <!-- Example: "Java version: 17.0.17, vendor: Eclipse Adoptium" -->
+      <MavenJavaVersionLine Condition="$(MavenVersionOutput.Contains('Java version:'))">$([System.Text.RegularExpressions.Regex]::Match($(MavenVersionOutput), 'Java version: ([0-9]+)\.([0-9]+)\.([0-9]+)'))</MavenJavaVersionLine>
+      <MavenJavaMajorVersion Condition="'$(MavenJavaVersionLine)' != ''">$([System.Text.RegularExpressions.Regex]::Match($(MavenVersionOutput), 'Java version: ([0-9]+)').Groups[1].Value)</MavenJavaMajorVersion>
+      
+      <!-- Check if Maven's Java version is 17 or higher -->
+      <MavenUsesJdk17OrHigher Condition="'$(MavenJavaMajorVersion)' != '' AND $([MSBuild]::ValueOrDefault('$(MavenJavaMajorVersion)', '0')) &gt;= 17">true</MavenUsesJdk17OrHigher>
+    </PropertyGroup>
+
+    <!-- Log Maven's Java version status -->
+    <Message Text="(FlinkDotNet.JobGateway) Maven is using Java $(MavenJavaMajorVersion) (compatible with FlinkIRRunner)"
              Importance="High"
-             Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
+             Condition="'$(MavenUsesJdk17OrHigher)' == 'true'" />
+    
+    <Message Text="(FlinkDotNet.JobGateway) WARNING: Maven is using Java $(MavenJavaMajorVersion) (requires Java 17+). Will install local Maven with JDK 17."
+             Importance="High"
+             Condition="'$(MavenNotFound)' != 'true' AND '$(MavenUsesJdk17OrHigher)' != 'true' AND '$(MavenJavaMajorVersion)' != ''" />
+    
+    <Message Text="(FlinkDotNet.JobGateway) WARNING: Could not determine Maven's Java version. Will install local Maven with JDK 17."
+             Importance="High"
+             Condition="'$(MavenNotFound)' != 'true' AND '$(MavenJavaMajorVersion)' == ''" />
+
+    <!-- Determine if we need to install local Maven -->
+    <PropertyGroup>
+      <!-- Need local Maven if: not found in PATH, OR found but using wrong Java version, OR version check failed -->
+      <NeedLocalMaven Condition="'$(MavenNotFound)' == 'true' OR '$(MavenUsesJdk17OrHigher)' != 'true'">true</NeedLocalMaven>
+    </PropertyGroup>
+
+    <!-- Download and install Maven if needed -->
+    <Message Text="(FlinkDotNet.JobGateway) Installing Maven $(MavenVersion) to $(MavenInstallDir)..."
+             Importance="High"
+             Condition="'$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
 
     <!-- Create tools directory if it doesn't exist -->
-    <MakeDir Directories="$(ToolsDir)" Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
+    <MakeDir Directories="$(ToolsDir)" 
+             Condition="'$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'" />
 
     <!-- Download Maven ZIP (Windows only - use powershell for Windows PowerShell 5.1 compatibility) -->
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Write-Host 'Downloading Maven from $(MavenDownloadUrl)...'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '$(MavenDownloadUrl)' -OutFile '$(MavenZipPath)' -UseBasicParsing&quot;"
-          Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenZipPath)')"
+          Condition="'$(IsWindows)' == 'true' AND '$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenZipPath)')"
           StandardOutputImportance="High" />
 
     <!-- Extract Maven ZIP (Windows only) -->
     <Message Text="(FlinkDotNet.JobGateway) Extracting Maven to $(ToolsDir)..."
              Importance="High"
-             Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')" />
+             Condition="'$(IsWindows)' == 'true' AND '$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')" />
     
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Expand-Archive -Path '$(MavenZipPath)' -DestinationPath '$(ToolsDir)' -Force&quot;"
-          Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')"
+          Condition="'$(IsWindows)' == 'true' AND '$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')"
           StandardOutputImportance="High" />
 
     <!-- Verify Maven was extracted successfully (Windows) -->
-    <Error Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenInstallDir)\bin\mvn.cmd')"
+    <Error Condition="'$(IsWindows)' == 'true' AND '$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenInstallDir)\bin\mvn.cmd')"
            Text="Maven installation failed. mvn.cmd not found at $(MavenInstallDir)\bin\mvn.cmd" />
+
+    <!-- Download and extract Maven (Linux/macOS) -->
+    <Exec Command="/bin/bash -c &quot;set -euo pipefail; echo 'Downloading Maven from $(MavenDownloadUrl)...'; curl -fSL -o '$(MavenZipPath)' '$(MavenDownloadUrl)'&quot;"
+          Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenZipPath)')"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High" />
+
+    <Message Text="(FlinkDotNet.JobGateway) Extracting Maven to $(ToolsDir)..."
+             Importance="High"
+             Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')" />
+
+    <Exec Command="/bin/bash -c &quot;set -euo pipefail; unzip -q -o '$(MavenZipPath)' -d '$(ToolsDir)'&quot;"
+          Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND Exists('$(MavenZipPath)')"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High" />
+
+    <!-- Verify Maven was extracted successfully (Linux/macOS) -->
+    <Error Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(NeedLocalMaven)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true' AND !Exists('$(MavenInstallDir)/bin/mvn')"
+           Text="Maven installation failed. mvn not found at $(MavenInstallDir)/bin/mvn" />
 
     <Message Text="(FlinkDotNet.JobGateway) Maven successfully installed to $(MavenInstallDir)"
              Importance="High"
-             Condition="'$(IsWindows)' == 'true' AND '$(MavenNotFound)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')" />
+             Condition="'$(NeedLocalMaven)' == 'true' AND (Exists('$(MavenInstallDir)\bin\mvn.cmd') OR Exists('$(MavenInstallDir)/bin/mvn'))" />
 
-    <!-- Error if Maven not found on Linux/macOS (should be pre-installed in CI) -->
-    <Error Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(MavenNotFound)' == 'true' AND '$(MavenAlreadyInstalled)' != 'true'"
-           Text="Maven not found in PATH on Linux/macOS. Please install Maven 3.9.6+ or ensure it's available in PATH. On GitHub Actions, Maven is installed via stCarolas/setup-maven@v4." />
+    <!-- Create Maven wrapper script with JAVA_HOME for local installation -->
+    <PropertyGroup>
+      <MavenWrapperCmd>$(MavenInstallDir)\bin\mvn-jdk17.cmd</MavenWrapperCmd>
+      <MavenWrapperSh>$(MavenInstallDir)/bin/mvn-jdk17.sh</MavenWrapperSh>
+    </PropertyGroup>
+
+    <!-- Create Windows wrapper script -->
+    <WriteLinesToFile File="$(MavenWrapperCmd)"
+                      Lines="@echo off%0d%0aset JAVA_HOME=$(EffectiveJavaHome)%0d%0aset PATH=%JAVA_HOME%\bin;%PATH%%0d%0a&quot;%~dp0mvn.cmd&quot; %*"
+                      Overwrite="true"
+                      Encoding="ASCII"
+                      Condition="'$(IsWindows)' == 'true' AND '$(NeedLocalMaven)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')" />
+
+    <!-- Create Linux/macOS wrapper script -->
+    <WriteLinesToFile File="$(MavenWrapperSh)"
+                      Lines="#!/bin/bash%0aexport JAVA_HOME='$(EffectiveJavaHome)'%0aexport PATH=&quot;$JAVA_HOME/bin:$PATH&quot;%0aexec &quot;$(MavenInstallDir)/bin/mvn&quot; &quot;$@&quot;"
+                      Overwrite="true"
+                      Encoding="UTF-8"
+                      Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(NeedLocalMaven)' == 'true' AND Exists('$(MavenInstallDir)/bin/mvn')" />
+
+    <!-- Make wrapper script executable on Linux/macOS -->
+    <Exec Command="chmod +x '$(MavenWrapperSh)'"
+          Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(NeedLocalMaven)' == 'true' AND Exists('$(MavenWrapperSh)')"
+          StandardOutputImportance="Low" />
 
     <!-- Determine which Maven command to use (cross-platform) -->
     <PropertyGroup>
-      <!-- Windows 'where' command returns multiple matches separated by newlines -->
-      <!-- Just skip parsing 'where' output and use simple approach: mvn.cmd on Windows, mvn on Linux -->
-      <!-- Priority 1: Use mvn.cmd if found in PATH on Windows -->
-      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0' AND '$(IsWindows)' == 'true'">mvn.cmd</MavenCommand>
-      <!-- Priority 2: Use mvn if found in PATH on Linux/macOS -->
-      <MavenCommand Condition="'$(MavenFoundExitCode)' == '0' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true')">mvn</MavenCommand>
-      <!-- Priority 3: Use locally installed Maven if it exists (Windows) -->
+      <!-- Priority 1: Use system Maven if it's using JDK 17+ -->
+      <MavenCommand Condition="'$(MavenUsesJdk17OrHigher)' == 'true' AND '$(IsWindows)' == 'true'">mvn.cmd</MavenCommand>
+      <MavenCommand Condition="'$(MavenUsesJdk17OrHigher)' == 'true' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true')">mvn</MavenCommand>
+      
+      <!-- Priority 2: Use local Maven wrapper if installed (ensures JDK 17) -->
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true' AND Exists('$(MavenWrapperCmd)')">$(MavenWrapperCmd)</MavenCommand>
+      <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(MavenWrapperSh)')">$(MavenWrapperSh)</MavenCommand>
+      
+      <!-- Priority 3: Fallback to local Maven direct (should have wrapper, but just in case) -->
       <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true' AND Exists('$(MavenInstallDir)\bin\mvn.cmd')">$(MavenInstallDir)\bin\mvn.cmd</MavenCommand>
-      <!-- Priority 4: Use locally installed Maven if it exists (Linux/macOS) -->
       <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(MavenInstallDir)/bin/mvn')">$(MavenInstallDir)/bin/mvn</MavenCommand>
-      <!-- Fallback: Use mvn.cmd on Windows, mvn on Linux/macOS -->
+      
+      <!-- Priority 4: Final fallback to system Maven (will set JAVA_HOME in environment during build) -->
       <MavenCommand Condition="'$(MavenCommand)' == '' AND '$(IsWindows)' == 'true'">mvn.cmd</MavenCommand>
       <MavenCommand Condition="'$(MavenCommand)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true')">mvn</MavenCommand>
     </PropertyGroup>
 
-    <!-- Ensure JAVA_HOME is set and valid for Maven (cross-platform) -->
-    <PropertyGroup>
-      <!-- Check if current JAVA_HOME exists (Windows: java.exe, Linux/macOS: java) -->
-      <JavaHomeExists Condition="'$(JAVA_HOME)' != '' AND (('$(IsWindows)' == 'true' AND Exists('$(JAVA_HOME)\bin\java.exe')) OR (('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(JAVA_HOME)/bin/java')))">true</JavaHomeExists>
-      
-      <!-- Check if JAVA_HOME version is compatible (JDK 17+, not JDK 1.8 or older) -->
-      <!-- We check by looking for version indicators in the path or by exclusion of old versions -->
-      <JavaHomeIsOldVersion Condition="'$(JavaHomeExists)' == 'true' AND ($([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk1.8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jdk-8')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('/8/')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('\8\')) OR $([System.String]::Copy('$(JAVA_HOME)').Contains('jre-1.8')))">true</JavaHomeIsOldVersion>
-      
-      <!-- JAVA_HOME is valid only if it exists AND is not an old version -->
-      <JavaHomeIsValid Condition="'$(JavaHomeExists)' == 'true' AND '$(JavaHomeIsOldVersion)' != 'true'">true</JavaHomeIsValid>
-      
-      <!-- If JAVA_HOME is invalid or not set, try to detect Java installation (Windows only) -->
-      <!-- Prioritize JDK 17 for compatibility and stability -->
-      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND Exists('C:\Program Files\Java\jdk-17\bin\java.exe')">C:\Program Files\Java\jdk-17</DetectedJavaHome>
-      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(DetectedJavaHome)' == '' AND Exists('C:\Program Files\Java\jdk-21\bin\java.exe')">C:\Program Files\Java\jdk-21</DetectedJavaHome>
-      <DetectedJavaHome Condition="'$(IsWindows)' == 'true' AND '$(DetectedJavaHome)' == '' AND Exists('C:\Program Files\Java\jdk-25\bin\java.exe')">C:\Program Files\Java\jdk-25</DetectedJavaHome>
-      
-      <!-- Use detected Java if current JAVA_HOME is invalid, otherwise use JAVA_HOME as-is -->
-      <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' == 'true'">$(JAVA_HOME)</EffectiveJavaHome>
-      <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' != ''">$(DetectedJavaHome)</EffectiveJavaHome>
-      <!-- On Linux/macOS, if JAVA_HOME is set but invalid detection failed, still use it (GitHub Actions sets valid paths) -->
-      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(JAVA_HOME)' != ''">$(JAVA_HOME)</EffectiveJavaHome>
-    </PropertyGroup>
-
-    <Message Text="(FlinkDotNet.JobGateway) Using JAVA_HOME: $(EffectiveJavaHome)" Importance="High" Condition="'$(EffectiveJavaHome)' != ''" />
-    <Message Text="(FlinkDotNet.JobGateway) INFO: Using detected Java instead of JAVA_HOME '$(JAVA_HOME)'"
-             Importance="Low"
-             Condition="'$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' != ''" />
-    
-    <Error Condition="'$(EffectiveJavaHome)' == ''"
-           Text="JAVA_HOME is not set correctly and Java could not be auto-detected. Current JAVA_HOME: '$(JAVA_HOME)'. Please set JAVA_HOME to a valid JDK installation or install Java 17+." />
-
-    <!-- Verify Maven works with the effective JAVA_HOME -->
+    <!-- Verify Maven works with JDK 17 -->
     <Message Text="(FlinkDotNet.JobGateway) Verifying Maven installation with Java..." Importance="High" />
     <Exec Command="&quot;$(MavenCommand)&quot; -version"
           StandardOutputImportance="High"
@@ -330,11 +394,21 @@
 
     <!-- Build Java 17 jar for Flink 2.1.0 compatibility -->
     <Message Text="(FlinkDotNet.JobGateway) Building FlinkIRRunner (Java 17 compatibility)..." Importance="High" />
-    <!-- Set JAVA_HOME environment variable for Maven to use correct JDK -->
+    
+    <!-- Maven command execution - wrapper scripts have JAVA_HOME built-in, system Maven needs it set -->
     <PropertyGroup>
-      <MavenJava17Command Condition="'$(IsWindows)' == 'true'">powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$env:JAVA_HOME='$(EffectiveJavaHome)'; $env:PATH='$(EffectiveJavaHome)\bin;' + $env:PATH; $env:MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED'; &amp; '$(MavenCommand)' -B package -DskipTests -Pjava17&quot;</MavenJava17Command>
-      <MavenJava17Command Condition="'$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true'">/bin/bash -c "JAVA_HOME='$(EffectiveJavaHome)' PATH='$(EffectiveJavaHome)/bin:$PATH' MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED' '$(MavenCommand)' -B package -DskipTests -Pjava17"</MavenJava17Command>
+      <!-- If using wrapper script (contains mvn-jdk17), just call it directly -->
+      <UseMavenWrapper Condition="$(MavenCommand.Contains('mvn-jdk17'))">true</UseMavenWrapper>
+      
+      <!-- Windows: Use wrapper or set JAVA_HOME for system Maven -->
+      <MavenJava17Command Condition="'$(IsWindows)' == 'true' AND '$(UseMavenWrapper)' == 'true'">&quot;$(MavenCommand)&quot; -B package -DskipTests -Pjava17</MavenJava17Command>
+      <MavenJava17Command Condition="'$(IsWindows)' == 'true' AND '$(UseMavenWrapper)' != 'true'">powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$env:JAVA_HOME='$(EffectiveJavaHome)'; $env:PATH='$(EffectiveJavaHome)\bin;' + $env:PATH; $env:MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED'; &amp; '$(MavenCommand)' -B package -DskipTests -Pjava17&quot;</MavenJava17Command>
+      
+      <!-- Linux/macOS: Use wrapper or set JAVA_HOME for system Maven -->
+      <MavenJava17Command Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(UseMavenWrapper)' == 'true'">&quot;$(MavenCommand)&quot; -B package -DskipTests -Pjava17</MavenJava17Command>
+      <MavenJava17Command Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(UseMavenWrapper)' != 'true'">/bin/bash -c "JAVA_HOME='$(EffectiveJavaHome)' PATH='$(EffectiveJavaHome)/bin:$PATH' MAVEN_OPTS='--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED' '$(MavenCommand)' -B package -DskipTests -Pjava17"</MavenJava17Command>
     </PropertyGroup>
+    
     <Exec Command="$(MavenJava17Command)"
           WorkingDirectory="$(FlinkIRRunnerDir)"
           StandardOutputImportance="High"
