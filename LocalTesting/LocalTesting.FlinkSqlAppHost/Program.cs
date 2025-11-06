@@ -362,7 +362,7 @@ if (isLearningCourseMode)
 
 sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
-var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
+IResourceBuilder<ProjectResource> gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
     .WithEnvironment("FLINK_RUNNER_JAR_PATH", gatewayJarPath)
     .WithEnvironment("LOG_FILE_PATH", testLogsDir)
@@ -374,9 +374,10 @@ var gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gat
 bool isTesting = Environment.GetEnvironmentVariable("IS_TESTING") == "true";
 if (isTesting)
 {
-    gateway.WithHttpEndpoint(port: 8086, name: "gateway-http");
+    gateway = gateway
+        .WithHttpEndpoint(port: 8086, name: "gateway-http")
+        .WithEnvironment("ASPNETCORE_URLS", "http://localhost:8086");
 }
-
 
 // Temporal PostgreSQL - Database for Temporal server
 // CRITICAL: Must configure PostgreSQL WITHOUT password for Temporal auto-setup compatibility

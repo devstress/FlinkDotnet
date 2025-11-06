@@ -108,11 +108,12 @@
       <AutoInstalledJdkPath>$(ToolsDir)\jdk-17.0.13+11</AutoInstalledJdkPath>
       <AutoInstalledJdkExists Condition="Exists('$(AutoInstalledJdkPath)\bin\java.exe') OR Exists('$(AutoInstalledJdkPath)/bin/java')">true</AutoInstalledJdkExists>
       
-      <!-- Use detected Java if current JAVA_HOME is invalid -->
+      <!-- Prioritize explicit JAVA_HOME when already valid -->
       <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' == 'true'">$(JAVA_HOME)</EffectiveJavaHome>
-      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(DetectedJavaHome)' != ''">$(DetectedJavaHome)</EffectiveJavaHome>
-      <!-- Priority 3: Use auto-installed JDK from Flink.JobGateway -->
+      <!-- Prefer managed JDK 17 installation provided by the build -->
       <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(AutoInstalledJdkExists)' == 'true'">$(AutoInstalledJdkPath)</EffectiveJavaHome>
+      <!-- Fall back to detected Java installations if needed -->
+      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(DetectedJavaHome)' != ''">$(DetectedJavaHome)</EffectiveJavaHome>
       <!-- On Linux/macOS, use JAVA_HOME if set (GitHub Actions sets valid paths) -->
       <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(JAVA_HOME)' != ''">$(JAVA_HOME)</EffectiveJavaHome>
     </PropertyGroup>

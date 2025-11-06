@@ -97,40 +97,59 @@
       <AutoInstalledJdkExists Condition="Exists('$(JdkInstallDir)\bin\java.exe') OR Exists('$(JdkInstallDir)/bin/java')">true</AutoInstalledJdkExists>
     </PropertyGroup>
 
-    <!-- Download and install JDK 17 if no compatible Java found (Windows only) -->
+    <!-- Download and install JDK 17 if no compatible Java found -->
     <Message Text="(FlinkDotNet.JobGateway) No compatible Java found. Installing JDK $(JdkVersion) to $(JdkInstallDir)..."
              Importance="High"
-             Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true'" />
+             Condition="('$(IsWindows)' == 'true' OR '$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(AutoInstalledJdkExists)' != 'true'" />
 
     <!-- Create tools directory if it doesn't exist -->
     <MakeDir Directories="$(ToolsDir)"
-             Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true'" />
+             Condition="('$(IsWindows)' == 'true' OR '$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(AutoInstalledJdkExists)' != 'true'" />
 
     <!-- Download JDK ZIP (Windows only - use powershell for Windows PowerShell 5.1 compatibility) -->
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Write-Host 'Downloading JDK $(JdkVersion) from $(JdkDownloadUrl)...'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri '$(JdkDownloadUrl)' -OutFile '$(JdkZipPath)' -UseBasicParsing&quot;"
-          Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true' AND !Exists('$(JdkZipPath)')"
+          Condition="'$(IsWindows)' == 'true' AND '$(AutoInstalledJdkExists)' != 'true' AND !Exists('$(JdkZipPath)')"
           StandardOutputImportance="High" />
 
     <!-- Extract JDK ZIP (Windows only) -->
     <Message Text="(FlinkDotNet.JobGateway) Extracting JDK to $(ToolsDir)..."
              Importance="High"
-             Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true' AND Exists('$(JdkZipPath)')" />
+             Condition="'$(IsWindows)' == 'true' AND '$(AutoInstalledJdkExists)' != 'true' AND Exists('$(JdkZipPath)')" />
     
     <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Expand-Archive -Path '$(JdkZipPath)' -DestinationPath '$(ToolsDir)' -Force&quot;"
-          Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true' AND Exists('$(JdkZipPath)')"
+          Condition="'$(IsWindows)' == 'true' AND '$(AutoInstalledJdkExists)' != 'true' AND Exists('$(JdkZipPath)')"
           StandardOutputImportance="High" />
 
     <!-- Verify JDK was extracted successfully (Windows) -->
-    <Error Condition="'$(IsWindows)' == 'true' AND '$(JavaHomeIsValid)' != 'true' AND '$(DetectedJavaHome)' == '' AND '$(AutoInstalledJdkExists)' != 'true' AND !Exists('$(JdkInstallDir)\bin\java.exe')"
+    <Error Condition="'$(IsWindows)' == 'true' AND '$(AutoInstalledJdkExists)' != 'true' AND !Exists('$(JdkInstallDir)\bin\java.exe')"
            Text="JDK installation failed. java.exe not found at $(JdkInstallDir)\bin\java.exe" />
 
     <Message Text="(FlinkDotNet.JobGateway) JDK $(JdkVersion) successfully installed to $(JdkInstallDir)"
              Importance="High"
              Condition="'$(IsWindows)' == 'true' AND Exists('$(JdkInstallDir)\bin\java.exe')" />
 
-    <!-- Error if Java not found on Linux/macOS (should be pre-installed in CI) -->
-    <Error Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(JavaHomeIsValid)' != 'true' AND '$(JAVA_HOME)' == ''"
-           Text="Java not found on Linux/macOS. Please install JDK 17+ or ensure JAVA_HOME is set. On GitHub Actions, Java is installed via actions/setup-java@v4." />
+    <!-- Download and extract JDK 17 (Linux/macOS) -->
+    <Exec Command="/bin/bash -c &quot;set -euo pipefail; echo 'Downloading JDK $(JdkVersion) from $(JdkDownloadUrl)...'; curl -fSL -o '$(JdkTarPath)' '$(JdkDownloadUrl)'&quot;"
+          Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(AutoInstalledJdkExists)' != 'true' AND !Exists('$(JdkTarPath)')"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High" />
+
+    <Message Text="(FlinkDotNet.JobGateway) Extracting JDK to $(ToolsDir)..."
+             Importance="High"
+             Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(AutoInstalledJdkExists)' != 'true' AND Exists('$(JdkTarPath)')" />
+
+    <Exec Command="/bin/bash -c &quot;set -euo pipefail; tar -xzf '$(JdkTarPath)' -C '$(ToolsDir)'&quot;"
+          Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(AutoInstalledJdkExists)' != 'true' AND Exists('$(JdkTarPath)')"
+          StandardOutputImportance="High"
+          StandardErrorImportance="High" />
+
+    <!-- Verify JDK was extracted successfully (Linux/macOS) -->
+    <Error Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(AutoInstalledJdkExists)' != 'true' AND !Exists('$(JdkInstallDir)/bin/java')"
+           Text="JDK installation failed. java binary not found at $(JdkInstallDir)/bin/java" />
+
+    <Message Text="(FlinkDotNet.JobGateway) JDK $(JdkVersion) successfully installed to $(JdkInstallDir)"
+             Importance="High"
+             Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND Exists('$(JdkInstallDir)/bin/java')" />
 
     <!-- Re-check if auto-installed JDK exists after installation attempt -->
     <PropertyGroup>
@@ -141,10 +160,10 @@
     <PropertyGroup>
       <!-- Priority 1: Use valid existing JAVA_HOME -->
       <EffectiveJavaHome Condition="'$(JavaHomeIsValid)' == 'true'">$(JAVA_HOME)</EffectiveJavaHome>
-      <!-- Priority 2: Use detected Java installation -->
-      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(DetectedJavaHome)' != ''">$(DetectedJavaHome)</EffectiveJavaHome>
-      <!-- Priority 3: Use auto-installed JDK (re-check after installation) -->
+      <!-- Priority 2: Prefer managed JDK 17 installation -->
       <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(AutoInstalledJdkExists)' == 'true'">$(JdkInstallDir)</EffectiveJavaHome>
+      <!-- Priority 3: Use other detected Java installations as fallback -->
+      <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND '$(DetectedJavaHome)' != ''">$(DetectedJavaHome)</EffectiveJavaHome>
       <!-- Priority 4: On Linux/macOS, use JAVA_HOME even if validation failed (GitHub Actions sets valid paths) -->
       <EffectiveJavaHome Condition="'$(EffectiveJavaHome)' == '' AND ('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(JAVA_HOME)' != ''">$(JAVA_HOME)</EffectiveJavaHome>
     </PropertyGroup>
