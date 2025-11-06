@@ -334,7 +334,7 @@
     <WriteLinesToFile File="$(MavenWrapperSh)"
                       Lines="#!/bin/bash%0aexport JAVA_HOME='$(EffectiveJavaHome)'%0aexport PATH=&quot;$JAVA_HOME/bin:$PATH&quot;%0aexec &quot;$(MavenInstallDir)/bin/mvn&quot; &quot;$@&quot;"
                       Overwrite="true"
-                      Encoding="UTF-8"
+                      Encoding="ASCII"
                       Condition="('$(IsLinux)' == 'true' OR '$(IsMacOS)' == 'true') AND '$(NeedLocalMaven)' == 'true' AND Exists('$(MavenInstallDir)/bin/mvn')" />
 
     <!-- Make wrapper script executable on Linux/macOS -->
