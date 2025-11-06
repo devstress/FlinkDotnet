@@ -19,6 +19,7 @@ public class GlobalTestInfrastructure
 
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
     private static string? _previousLearningCourseMode;
+    private static string? _previousIsTestingMode;
 
     public static DistributedApplication? AppHost
     {
@@ -54,12 +55,19 @@ public class GlobalTestInfrastructure
 
         try
         {
+            // Save previous environment variable values for restoration
             _previousLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE");
+            _previousIsTestingMode = Environment.GetEnvironmentVariable("IS_TESTING");
+
             if (string.Equals(_previousLearningCourseMode, "true", StringComparison.OrdinalIgnoreCase))
             {
                 Console.WriteLine("⚠️ LEARNINGCOURSE=true detected - forcing Aspire integration-test profile.");
             }
             Environment.SetEnvironmentVariable("LEARNINGCOURSE", "false");
+
+            // Set IS_TESTING environment variable to indicate testing mode
+            Environment.SetEnvironmentVariable("IS_TESTING", "true");
+            Console.WriteLine("✅ IS_TESTING=true set for test infrastructure");
 
             // Clean up test-logs directory from previous test runs
             CleanupTestLogsDirectory();
@@ -257,7 +265,10 @@ public class GlobalTestInfrastructure
             }
         }
 
+        // Restore previous environment variable values
         Environment.SetEnvironmentVariable("LEARNINGCOURSE", _previousLearningCourseMode);
+        Environment.SetEnvironmentVariable("IS_TESTING", _previousIsTestingMode);
+        Console.WriteLine("✅ Environment variables restored");
     }
 
     /// <summary>
