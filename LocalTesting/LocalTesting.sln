@@ -8,6 +8,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalTesting.IntegrationTes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.JobGateway", "..\FlinkDotNet\FlinkDotNet.JobGateway\FlinkDotNet.JobGateway.csproj", "{7ABD8F6C-CEA5-AD0A-07DA-5F5D5B28A530}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.Common", "..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj", "{A7E68656-E18B-35A8-84ED-E151C27FD09C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Flink.JobBuilder", "..\FlinkDotNet\Flink.JobBuilder\Flink.JobBuilder.csproj", "{D2368916-E501-5B1D-9635-81D77EFC9ECB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.DataStream", "..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj", "{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,8 +32,23 @@ Global
 		{7ABD8F6C-CEA5-AD0A-07DA-5F5D5B28A530}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7ABD8F6C-CEA5-AD0A-07DA-5F5D5B28A530}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7ABD8F6C-CEA5-AD0A-07DA-5F5D5B28A530}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7E68656-E18B-35A8-84ED-E151C27FD09C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7E68656-E18B-35A8-84ED-E151C27FD09C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7E68656-E18B-35A8-84ED-E151C27FD09C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7E68656-E18B-35A8-84ED-E151C27FD09C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2368916-E501-5B1D-9635-81D77EFC9ECB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2368916-E501-5B1D-9635-81D77EFC9ECB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2368916-E501-5B1D-9635-81D77EFC9ECB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2368916-E501-5B1D-9635-81D77EFC9ECB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CBC518AA-3076-41C1-9F57-03B68E65E970}
 	EndGlobalSection
 EndGlobal
