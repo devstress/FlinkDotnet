@@ -145,3 +145,4 @@ test-results*/
 # Release testing artifacts - built packages and docker images
 packages/
 docker/
+nul

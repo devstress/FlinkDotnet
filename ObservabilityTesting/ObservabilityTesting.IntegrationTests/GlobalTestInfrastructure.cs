@@ -17,7 +17,6 @@ public class GlobalTestInfrastructure
 {
 
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60); // Balanced timeout: enough for TaskManager registration, faster failure detection
-    private static string? _previousLearningCourseMode;
 
     public static DistributedApplication? AppHost
     {
@@ -50,7 +49,6 @@ public class GlobalTestInfrastructure
 
         try
         {
-            _previousLearningCourseMode = Environment.GetEnvironmentVariable("LEARNINGCOURSE");
             // ObservabilityTesting ALWAYS runs in LEARNINGCOURSE mode (Prometheus/Grafana stack required)
             // No environment variable check needed - we force it to true
             Console.WriteLine("✅ Setting LEARNINGCOURSE=true for ObservabilityTesting (always enabled)");
@@ -263,7 +261,8 @@ public class GlobalTestInfrastructure
             }
         }
 
-        Environment.SetEnvironmentVariable("LEARNINGCOURSE", _previousLearningCourseMode);
+        // Remove environment variable
+        Environment.SetEnvironmentVariable("LEARNINGCOURSE", null);
     }
 
     /// <summary>
