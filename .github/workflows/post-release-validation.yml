@@ -24,10 +24,22 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
+      - name: Determine checkout reference
+        id: determine-ref
+        run: |
+          # Check if release branch exists on remote
+          if git ls-remote --heads origin release/v${{ inputs.version }} | grep -q release/v${{ inputs.version }}; then
+            echo "ref=release/v${{ inputs.version }}" >> $GITHUB_OUTPUT
+            echo "Release branch release/v${{ inputs.version }} exists, using it"
+          else
+            echo "ref=main" >> $GITHUB_OUTPUT
+            echo "Release branch release/v${{ inputs.version }} does not exist, falling back to main"
+          fi
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: release/v${{ inputs.version }}
+          ref: ${{ steps.determine-ref.outputs.ref }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -127,13 +139,27 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Check if release branch exists
+        id: check-branch
+        run: |
+          # Check if release branch exists on remote
+          if git ls-remote --heads origin release/v${{ inputs.version }} | grep -q release/v${{ inputs.version }}; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release branch release/v${{ inputs.version }} exists"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Release branch release/v${{ inputs.version }} does not exist, skipping PR creation"
+          fi
+
       - name: Checkout code
+        if: steps.check-branch.outputs.exists == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: release/v${{ inputs.version }}
 
       - name: Create Pull Request to Main
+        if: steps.check-branch.outputs.exists == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
