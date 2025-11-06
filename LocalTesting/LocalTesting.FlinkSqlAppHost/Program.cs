@@ -376,13 +376,12 @@ Console.WriteLine($"[DEBUG] IS_TESTING environment variable value: '{Environment
 if (isTesting)
 {
     Console.WriteLine("[DEBUG] IS_TESTING=true: Adding gateway HTTP endpoint on port 8086");
-    gateway.WithHttpEndpoint(port: 8086, name: "gateway-http");
+    gateway = gateway.WithHttpEndpoint(port: 8086, name: "gateway-http");
 }
 else
 {
     Console.WriteLine("[DEBUG] IS_TESTING is not true: Skipping gateway HTTP endpoint");
 }
-
 
 // Temporal PostgreSQL - Database for Temporal server
 // CRITICAL: Must configure PostgreSQL WITHOUT password for Temporal auto-setup compatibility
