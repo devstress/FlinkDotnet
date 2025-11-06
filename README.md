@@ -64,10 +64,13 @@ A complete distributed message-oriented architecture for building enterprise str
 
 ```csharp
 var env = Flink.GetExecutionEnvironment();
-var stream = env.FromKafka("orders")
+var stream = env.FromKafka(
+        topic: "orders",
+        bootstrapServers: "localhost:9092",
+        groupId: "order-consumer-group")
     .Filter(order => order.Amount > 100)
     .Map(order => order.ToUpperCase())
-    .SinkToKafka("processed-orders");
+    .SinkToKafka("processed-orders", "localhost:9092");
 
 await env.ExecuteAsync("order-processor");
 ```
