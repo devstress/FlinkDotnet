@@ -362,20 +362,7 @@ if (isLearningCourseMode)
 
 sqlGateway = sqlGateway.WithArgs("/opt/flink/bin/sql-gateway.sh", "start-foreground");
 
-// Flink.JobGateway - Add Flink Job Gateway as .NET project
-// CRITICAL: Using .AddProject() for proper Aspire service discovery and endpoint management
-// JobGateway runs as a host process (not containerized) for reliable endpoint discovery
-// Note: ASPNETCORE_URLS set for LocalTesting mode compatibility; removed for LearningCourse mode
-#pragma warning disable S1481 // Gateway resource is created but not directly referenced - used via Aspire orchestration
-IResourceBuilder<ProjectResource> gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway")
-    .WithHttpEndpoint(port: 8086, name: "gateway-http");
-
-// In LocalTesting mode, explicitly set ASPNETCORE_URLS to ensure proper binding
-// In LearningCourse mode, Aspire's service discovery manages port binding automatically
-if (!isLearningCourse)
-{
-    gateway = gateway.WithEnvironment("ASPNETCORE_URLS", "http://localhost:8086");
-}
+IResourceBuilder<ProjectResource> gateway = builder.AddProject<Projects.FlinkDotNet_JobGateway>("flink-job-gateway");
 
 gateway = gateway
     .WithEnvironment("FLINK_CONNECTOR_PATH", connectorsDir)
@@ -385,7 +372,6 @@ gateway = gateway
     .WithEnvironment("Flink__SqlGateway__BaseUrl", sqlGateway.GetEndpoint("sg-http"))
     .WaitFor(jobManager)
     .WaitFor(sqlGateway);
-#pragma warning restore S1481
 
 // Temporal PostgreSQL - Database for Temporal server
 // CRITICAL: Must configure PostgreSQL WITHOUT password for Temporal auto-setup compatibility
@@ -428,11 +414,10 @@ if (isLearningCourse)
     // Provides state management, caching, and distributed coordination capabilities
     // CRITICAL: Use Bitnami Redis image with ALLOW_EMPTY_PASSWORD for learning exercises
     // This allows exercises to connect with simple "localhost:port" format without authentication
-#pragma warning disable S1481 // Redis resource is created but not directly referenced - used via connection string
-    IResourceBuilder<ContainerResource> redis = builder.AddContainer("redis", "bitnami/redis", LatestTag)
-        .WithHttpEndpoint(targetPort: Ports.RedisHostPort, name: "redis-port")
-        .WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes");  // Disable password requirement for learning
-#pragma warning restore S1481
+
+builder.AddContainer("redis", "bitnami/redis", LatestTag)
+.WithHttpEndpoint(targetPort: Ports.RedisHostPort, name: "redis-port")
+.WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes");  // Disable password requirement for learning
 
     Console.WriteLine("Redis deployed with Aspire-managed host port for LearningCourse exercises");
 
@@ -500,16 +485,10 @@ if (isLearningCourse)
         Console.WriteLine("   [INFO] Kafka metrics dashboard mounted for Grafana");
     }
 
-#pragma warning disable S1481 // Grafana resource is created but not directly referenced - accessed via browser
-    IResourceBuilder<ContainerResource> grafana = grafanaBuilder;
-#pragma warning restore S1481
-
     Console.WriteLine("Grafana deployed with Aspire-managed host port for visualization");
 }
 
-#pragma warning disable S6966 // Await RunAsync instead - Required for Aspire testing framework compatibility
 builder.Build().Run();
-#pragma warning restore S6966
 
 static bool ConfigureContainerRuntime()
 {
