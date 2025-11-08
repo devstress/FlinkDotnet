@@ -15,6 +15,7 @@
 //  limitations under the License.
 
 using FlinkDotNet.JobManager.Activities;
+using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Workflows;
 using Temporalio.Client;
 using Temporalio.Worker;
@@ -24,6 +25,7 @@ namespace FlinkDotNet.JobManager.Services;
 /// <summary>
 /// Hosted service for running Temporal worker that processes workflows and activities.
 /// Manages the lifecycle of the Temporal worker, ensuring graceful startup and shutdown.
+/// Phase 4: Complete implementation with proper dependency injection
 /// </summary>
 public class TemporalWorkerService : IHostedService
 {
@@ -55,9 +57,11 @@ public class TemporalWorkerService : IHostedService
 
         try
         {
-            // Create activity instance with dependencies
+            // Create activity instance with all required dependencies
             TaskExecutionActivity activity = new(
-                this._serviceProvider.GetRequiredService<ILogger<TaskExecutionActivity>>());
+                this._serviceProvider.GetRequiredService<ILogger<TaskExecutionActivity>>(),
+                this._serviceProvider.GetRequiredService<IHttpClientFactory>(),
+                this._serviceProvider.GetRequiredService<IResourceManager>());
 
             // Configure worker with workflows and activities
             TemporalWorkerOptions options = new TemporalWorkerOptions(TaskQueueName)
