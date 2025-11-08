@@ -1,0 +1,139 @@
+name: NativeFlinkDotnet Integration Tests
+
+on:
+  push:
+    paths:
+      - 'NativeFlinkDotnetTesting/**'
+      - 'FlinkDotNet/FlinkDotNet.JobManager/**'
+      - 'FlinkDotNet/FlinkDotNet.TaskManager/**'
+      - '.github/workflows/nativeflinkdotnet-integration-tests.yml'
+  workflow_dispatch:
+
+env:
+  configuration: Release
+
+concurrency:
+  group: nativeflinkdotnet-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nativeflinkdotnet-integration-test:
+    name: Run NativeFlinkDotnet Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET 9.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
+
+      - name: Verify Docker environment
+        run: |
+          echo "=== Verifying Docker environment ==="
+          docker --version
+          docker compose version
+          docker info
+          docker ps -a
+          echo "Docker service status:"
+          sudo systemctl status docker --no-pager || true
+          echo "Starting Docker if not running..."
+          sudo systemctl start docker || true
+          sleep 5
+          docker ps
+          echo "=== Pulling required Docker images ==="
+          docker pull confluentinc/cp-kafka:latest || true
+          docker pull temporalio/auto-setup:latest || true
+          echo "✅ Docker is ready"
+
+      - name: Configure system for optimal performance
+        run: |
+          echo "=== Configuring system for optimal performance ==="
+          sudo sysctl -w vm.max_map_count=262144
+          sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+          sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+          echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+          echo "Current ulimit -n: $(ulimit -n)"
+          echo "Available memory: $(free -h)"
+          echo "CPU info: $(nproc) cores"
+          cat /proc/cpuinfo | grep "model name" | head -1
+
+      - name: Build NativeFlinkDotnet solution
+        run: |
+          echo "🔨 Building NativeFlinkDotnet solution..."
+          dotnet build NativeFlinkDotnetTesting/NativeFlinkDotnetTesting.sln --configuration ${{ env.configuration }} --verbosity minimal
+          echo "✅ Build completed successfully"
+
+      - name: Run NativeFlinkDotnet integration tests
+        run: |
+          echo "🧪 Running NativeFlinkDotnet integration tests..."
+          echo "Architecture: Pure .NET with Temporal (No Java Flink)"
+          echo "Components: JobManager, TaskManager, Temporal, Kafka"
+          
+          dotnet test NativeFlinkDotnetTesting/NativeFlinkDotnetTesting.sln \
+            --configuration ${{ env.configuration }} \
+            --no-build \
+            --logger "console;verbosity=detailed" \
+            --logger "trx;LogFileName=test-results.trx" \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults \
+            --filter "Category=native-dotnet" \
+            -- NUnit.ShowInternalProperties=true
+          
+          echo "✅ Tests completed"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nativeflinkdotnet-test-results
+          path: TestResults/
+          retention-days: 30
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nativeflinkdotnet-test-logs
+          path: NativeFlinkDotnetTesting/test-logs/
+          retention-days: 7
+
+      - name: Publish test results
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: NativeFlinkDotnet Test Results
+          path: 'TestResults/*.trx'
+          reporter: 'dotnet-trx'
+          fail-on-error: false
+
+      - name: Check Docker container logs
+        if: failure()
+        run: |
+          echo "=== Checking Docker container logs ==="
+          docker ps -a
+          echo "=== Kafka logs ==="
+          docker logs $(docker ps -a -q --filter ancestor=confluentinc/cp-kafka:latest) || true
+          echo "=== Temporal logs ==="
+          docker logs $(docker ps -a -q --filter ancestor=temporalio/auto-setup:latest) || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "🧹 Cleaning up Docker containers..."
+          docker ps -a --format "table {{.ID}}\t{{.Names}}\t{{.Status}}" | grep -E "(kafka|temporal)" || true
+          docker stop $(docker ps -a -q --filter ancestor=confluentinc/cp-kafka:latest) 2>/dev/null || true
+          docker stop $(docker ps -a -q --filter ancestor=temporalio/auto-setup:latest) 2>/dev/null || true
+          docker system prune -f --volumes
+          echo "✅ Cleanup completed"
