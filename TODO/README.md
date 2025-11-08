@@ -29,6 +29,9 @@ This document provides an overview of stream processing features implemented in 
 **FlinkDotNet v2 Architecture** (Native FlinkDotNet):
 - **Pure .NET implementation** - no Apache Flink dependencies
 - **Native FlinkDotNet JobManager and TaskManager** written in C# (.NET 9)
+- **Embedded Temporal.IO workers** within JobManager and TaskManager processes
+- **Cassandra state backend** (default for v2) for Temporal persistence and state management
+- **RocksDB support** maintained for v1 feature compatibility
 - Direct distributed stream processing without JVM
 - References Apache Flink concepts and patterns as architectural inspiration
 - Implements distributed, multi-tier message-oriented architecture natively
@@ -66,7 +69,10 @@ Projects using FlinkDotNet v1 (with Apache Flink) can continue to use the patter
 Projects targeting FlinkDotNet v2 benefit from:
 - **Native .NET JobManager**: Job coordination and scheduling in C#
 - **Native .NET TaskManager**: Distributed task execution in .NET
-- **Simplified deployment**: Single .NET application, no JVM required
+- **Embedded Temporal.IO**: State management, resilience, and durable execution integrated within JobManager/TaskManager
+- **Cassandra state backend**: Distributed, highly available state storage (default for v2)
+- **RocksDB compatibility**: Support for v1 features requiring RocksDB state backend
+- **Simplified deployment**: Single .NET application with embedded Temporal workers, no separate containers
 - **Native observability**: Integrated with .NET metrics and diagnostics
 
 ### Backward Compatibility Strategy
@@ -84,10 +90,13 @@ Projects targeting FlinkDotNet v2 benefit from:
 - Features that require native .NET implementation use **`NativeDataStream`** API
 - `NativeDataStream` provides v2-exclusive capabilities:
   - Native .NET JobManager/TaskManager coordination
+  - Embedded Temporal.IO for state management, resilience, and durable execution
+  - Cassandra state backend for distributed, scalable state storage
   - Direct .NET metrics and observability integration
   - Aspire orchestration for local development
   - Native Temporal workflow integration
   - Pure .NET distributed state management
+  - RocksDB state backend (for v1 feature compatibility)
   
 **Exception Handling for v2-Only Features**:
 - Attempting to use `NativeDataStream` with v1 (Apache Flink) throws `NotSupportedException`
@@ -149,16 +158,19 @@ FlinkDotNet v2 implements a **native distributed message-oriented architecture**
 │  │  • State mgmt    │        │  • State management     │     │
 │  │  • Checkpointing │        │  • Stream processing    │     │
 │  │  • Back pressure │        │  • Parallelism          │     │
+│  │  • Temporal.IO   │        │  • Temporal.IO          │     │
+│  │    (embedded)    │        │    (embedded)           │     │
 │  └──────────────────┘        └─────────────────────────┘     │
 └────────────────────────────────────────────────────────────────┘
                         │
                         ▼
 ┌────────────────────────────────────────────────────────────────┐
-│           Workflow Orchestration (Temporal)                     │
-│  • Durable workflow execution                                  │
-│  • Long-running process coordination                           │
-│  • Distributed transaction management                          │
-│  • Failure recovery and retry logic                            │
+│     State Backend Layer (Cassandra - v2 Default)               │
+│  • Temporal.IO persistence backend                            │
+│  • Distributed state storage                                  │
+│  • High availability and replication                          │
+│  • Billion-scale state management                             │
+│  • RocksDB available for v1 compatibility                     │
 └────────────────────────────────────────────────────────────────┘
                         │
                         ▼
@@ -186,21 +198,38 @@ FlinkDotNet v2 implements a **native distributed message-oriented architecture**
   - Checkpoint management
   - Failure recovery
   - Back pressure coordination
+  - **Embedded Temporal.IO worker**: State management, resilience, and durable execution integrated within JobManager
   
 - **FlinkDotNet TaskManager Cluster (Data Plane)**:
   - Native .NET distributed task execution
   - Parallel operator execution
-  - Distributed state management
+  - Distributed state management with **Cassandra** (default for v2) and **RocksDB** (v1 compatibility)
   - Stream processing at scale
   - Dynamic parallelism adjustment
+  - **Embedded Temporal.IO worker**: Durable task execution and state persistence
 
 **Note**: FlinkDotNet provides a complete native .NET implementation of distributed stream processing. It does **not** use Apache Flink directly, but instead implements its own JobManager and TaskManager components in pure .NET, inspired by Apache Flink's architecture.
 
-#### 3. Temporal - Durable Workflow Orchestration
-- **Long-running workflows**: Coordinate complex multi-step processes
-- **Guaranteed execution**: Survive failures and restarts
-- **Distributed coordination**: Manage processes across services
-- **Retry and compensation**: Built-in failure handling
+**State Management Strategy**:
+- **FlinkDotNet v1**: Uses **RocksDB** for local state storage (Apache Flink compatibility)
+- **FlinkDotNet v2**: Uses **Cassandra** as the default state backend for Temporal.IO, providing:
+  - Distributed, highly available state storage
+  - Native Temporal.IO persistence backend
+  - Scalable state management for billions of events per second
+  - Resilience through replication and fault tolerance
+
+**Temporal Integration**:
+- **Temporal.IO is embedded** within JobManager and TaskManager processes (not a separate container)
+- Provides state management, resilience, and durable execution capabilities
+- Cassandra serves as Temporal's persistence layer in v2
+- Enables long-running workflows and guaranteed task execution
+
+#### 3. Apache Cassandra - Distributed State Backend (v2 Default)
+- **Temporal.IO persistence**: Default backend for Temporal state storage in FlinkDotNet v2
+- **Distributed state management**: Highly available, scalable state storage
+- **Fault tolerance**: Replication and automatic failover
+- **High throughput**: Optimized for write-heavy workloads (billions of state updates/second)
+- **Multi-datacenter support**: Geographic distribution for global deployments
 
 #### 4. Microsoft Aspire - Local Development Orchestration
 - **Container management**: Single-command startup of entire stack
