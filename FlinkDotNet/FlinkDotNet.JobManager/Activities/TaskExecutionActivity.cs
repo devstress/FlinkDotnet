@@ -15,7 +15,6 @@
 // limitations under the License.
 
 using FlinkDotNet.TaskManager.Models;
-using Microsoft.Extensions.Logging;
 using Temporalio.Activities;
 
 namespace FlinkDotNet.JobManager.Activities;

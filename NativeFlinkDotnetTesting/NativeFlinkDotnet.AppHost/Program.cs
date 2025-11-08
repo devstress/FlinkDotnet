@@ -28,7 +28,7 @@ var kafka = builder.AddKafka("kafka")
 Console.WriteLine("[INFO] ✓ Kafka configured");
 
 // Configure Temporal server for workflow orchestration and state management
-var temporal = builder.AddContainer("temporal", "temporalio/auto-setup", "latest")
+_ = builder.AddContainer("temporal", "temporalio/auto-setup", "latest")
     .WithHttpEndpoint(port: 7233, targetPort: 7233, name: "frontend")
     .WithHttpEndpoint(port: 8233, targetPort: 8233, name: "web-ui")
     .WithEnvironment("TEMPORAL_ADDRESS", "0.0.0.0:7233")
@@ -42,8 +42,7 @@ var jobManager = builder.AddProject<Projects.FlinkDotNet_JobManager>("jobmanager
     .WithEnvironment("TEMPORAL_HOST", "temporal")
     .WithEnvironment("TEMPORAL_PORT", "7233")
     .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", kafka.Resource.ConnectionStringExpression)
-    .WithHttpEndpoint(port: 8081, targetPort: 8080, name: "rest-api")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithHttpEndpoint(port: 8081, targetPort: 8080, name: "rest-api");
 
 Console.WriteLine("[INFO] ✓ JobManager configured");
 
@@ -51,17 +50,17 @@ Console.WriteLine("[INFO] ✓ JobManager configured");
 // Start with 2 TaskManager instances, each with 4 slots = 8 total slots
 for (int i = 1; i <= 2; i++)
 {
+    var taskManagerId = "tm-" + i.ToString();
     _ = builder.AddProject<Projects.FlinkDotNet_TaskManager>($"taskmanager-{i}")
         .WithReference(kafka)
         .WithReference(jobManager)
         .WithEnvironment("TEMPORAL_HOST", "temporal")
         .WithEnvironment("TEMPORAL_PORT", "7233")
-        .WithEnvironment("TASKMANAGER_ID", $"tm-{i}")
+        .WithEnvironment("TASKMANAGER_ID", taskManagerId)
         .WithEnvironment("TASKMANAGER_SLOTS", "4")
         .WithEnvironment("JOBMANAGER_HOST", "jobmanager")
         .WithEnvironment("JOBMANAGER_PORT", "8081")
-        .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", kafka.Resource.ConnectionStringExpression)
-        .WithLifetime(ContainerLifetime.Persistent);
+        .WithEnvironment("KAFKA_BOOTSTRAP_SERVERS", kafka.Resource.ConnectionStringExpression);
 
     Console.WriteLine($"[INFO] ✓ TaskManager-{i} configured (4 slots)");
 }

@@ -10,6 +10,8 @@
     <!-- Disable code analysis for test projects -->
     <EnableNETAnalyzers>false</EnableNETAnalyzers>
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <!-- Suppress unused variable warnings and async warnings for test stubs -->
+    <NoWarn>$(NoWarn);S1481;CS1998</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

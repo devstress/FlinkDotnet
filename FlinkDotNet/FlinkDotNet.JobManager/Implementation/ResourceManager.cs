@@ -17,7 +17,6 @@
 using System.Collections.Concurrent;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
-using Microsoft.Extensions.Logging;
 
 namespace FlinkDotNet.JobManager.Implementation;
 
