@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0.
 // See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using FlinkDotNet.JobManager.Controllers;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
