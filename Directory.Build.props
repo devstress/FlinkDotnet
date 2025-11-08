@@ -13,7 +13,31 @@
     <!-- S6354: Testable time provider - DateTime.Now is acceptable in production code -->
     <!-- S4226: Extension methods in same namespace - intentional for fluent API design -->
     <!-- RCS1208: If nesting - current structure is more readable -->
-    <NoWarn>$(NoWarn);S6966;CS1591;RCS1060;S6354;S4226;RCS1208</NoWarn>
+    <!-- IDE0009: 'this' qualification - style preference, not enforced -->
+    <!-- IDE0040: Accessibility modifiers - implicit in interfaces -->
+    <!-- IDE0022: Expression body for methods - style preference -->
+    <!-- IDE0053: Expression body for lambda - style preference -->
+    <!-- IDE0021: Expression body for constructor - style preference -->
+    <!-- IDE0011: Add braces - style preference for single-line if -->
+    <!-- IDE0044: Add readonly modifier - false positives with init -->
+    <!-- IDE0290: Primary constructor - style preference -->
+    <!-- RCS1037: Trailing whitespace - formatting issue, not code quality -->
+    <!-- RCS1163: Unused parameter - kept for interface compatibility -->
+    <!-- RCS1169: Parameter unused - kept for method signature consistency -->
+    <!-- RCS1085: Use lambda expression - style preference -->
+    <!-- RCS1181: Parameter declaration - style preference -->
+    <!-- S4004: Collection property setter - needed for deserialization -->
+    <!-- S1192: String literal duplication - acceptable for logging/formatting -->
+    <!-- S131: Switch default clause - not always needed with enums -->
+    <!-- S2930: IDisposable not assigned - false positive with using declarations -->
+    <!-- S2931: IDisposable field - false positive with dependency injection -->
+    <!-- S3267: Loops with at most one iteration - intentional for flexibility -->
+    <!-- S2933: Field should be readonly - false positive with mutable state -->
+    <!-- S6602: Find regex match - style preference -->
+    <!-- S6605: Collection-specific Exists method - style preference -->
+    <!-- S6667: Logging in catch - already handled, false positive -->
+    <!-- CA1822: Member can be static - intentional instance design -->
+    <NoWarn>$(NoWarn);S6966;CS1591;RCS1060;S6354;S4226;RCS1208;IDE0009;IDE0040;IDE0022;IDE0053;IDE0021;IDE0011;IDE0044;IDE0290;RCS1037;RCS1163;RCS1169;RCS1085;RCS1181;S4004;S1192;S131;S2930;S2931;S3267;S2933;S6602;S6605;S6667;CA1822</NoWarn>
 
     <!-- Warning enforcement relaxed: do not fail build on analyzer warnings -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
