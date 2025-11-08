@@ -7,7 +7,6 @@ using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
 using FlinkDotNet.JobManager.Models.Requests;
 using FlinkDotNet.JobManager.Models.Responses;
-using FlinkDotNet.JobManager.Implementation;
 
 namespace FlinkDotNet.JobManager.Controllers;
 
@@ -47,13 +46,19 @@ public class JobsController : ControllerBase
             JobGraph jobGraph = ConvertToJobGraph(request);
 
             // Submit job
-            string jobId = await _dispatcher.SubmitJobAsync(jobGraph);
+            JobSubmissionResult result = await _dispatcher.SubmitJobAsync(jobGraph);
 
-            _logger.LogInformation("Job submitted successfully: {JobId}", jobId);
+            if (!result.Success)
+            {
+                _logger.LogWarning("Job submission failed: {Error}", result.ErrorMessage);
+                return BadRequest(new { error = result.ErrorMessage });
+            }
+
+            _logger.LogInformation("Job submitted successfully: {JobId}", result.JobId);
 
             SubmitJobResponse response = new()
             {
-                JobId = jobId,
+                JobId = result.JobId,
                 State = JobExecutionState.Created,
                 SubmittedAt = DateTime.UtcNow,
                 Message = "Job submitted successfully"
@@ -85,9 +90,9 @@ public class JobsController : ControllerBase
     {
         _logger.LogDebug("Getting status for job: {JobId}", jobId);
 
-        JobInfo? jobInfo = await _dispatcher.GetJobStatusAsync(jobId);
+        JobStatus? jobStatus = await _dispatcher.GetJobStatusAsync(jobId);
 
-        if (jobInfo == null)
+        if (jobStatus == null)
         {
             _logger.LogWarning("Job not found: {JobId}", jobId);
             return NotFound(new { error = $"Job {jobId} not found" });
@@ -95,20 +100,18 @@ public class JobsController : ControllerBase
 
         JobStatusResponse response = new()
         {
-            JobId = jobInfo.JobId,
-            JobName = jobInfo.JobName,
-            State = jobInfo.State,
-            SubmittedAt = jobInfo.SubmittedAt,
-            StartedAt = jobInfo.StartedAt,
-            FinishedAt = jobInfo.FinishedAt,
-            Duration = jobInfo.FinishedAt.HasValue && jobInfo.StartedAt.HasValue
-                ? jobInfo.FinishedAt.Value - jobInfo.StartedAt.Value
-                : null,
-            ErrorMessage = jobInfo.ErrorMessage,
-            TotalTasks = jobInfo.TotalTasks,
-            RunningTasks = jobInfo.RunningTasks,
-            CompletedTasks = jobInfo.CompletedTasks,
-            FailedTasks = jobInfo.FailedTasks
+            JobId = jobStatus.JobId,
+            JobName = jobStatus.JobName,
+            State = jobStatus.State,
+            SubmittedAt = jobStatus.StartTime ?? DateTime.UtcNow,
+            StartedAt = jobStatus.StartTime,
+            FinishedAt = jobStatus.EndTime,
+            Duration = jobStatus.Duration,
+            ErrorMessage = null, // TODO: Add to JobStatus model
+            TotalTasks = 0, // TODO: Get from ExecutionGraph
+            RunningTasks = 0,
+            CompletedTasks = 0,
+            FailedTasks = 0
         };
 
         return Ok(response);
@@ -127,24 +130,22 @@ public class JobsController : ControllerBase
     {
         _logger.LogInformation("Canceling job: {JobId}", jobId);
 
-        bool canceled = await _dispatcher.CancelJobAsync(jobId);
-
-        if (!canceled)
+        try
         {
-            JobInfo? jobInfo = await _dispatcher.GetJobStatusAsync(jobId);
-            if (jobInfo == null)
-            {
-                return NotFound(new { error = $"Job {jobId} not found" });
-            }
-
-            return BadRequest(new
-            {
-                error = $"Job {jobId} cannot be canceled in state {jobInfo.State}"
-            });
+            await _dispatcher.CancelJobAsync(jobId);
+            _logger.LogInformation("Job canceled successfully: {JobId}", jobId);
+            return Ok(new { message = $"Job {jobId} canceled successfully" });
         }
-
-        _logger.LogInformation("Job canceled successfully: {JobId}", jobId);
-        return Ok(new { message = $"Job {jobId} canceled successfully" });
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Job not found: {JobId}", jobId);
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to cancel job: {JobId}", jobId);
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -158,29 +159,24 @@ public class JobsController : ControllerBase
     {
         _logger.LogDebug("Listing jobs (state filter: {State})", state ?? "none");
 
-        IEnumerable<JobInfo> jobs;
+        List<JobStatus> jobs = await _dispatcher.ListJobsAsync();
 
+        // Apply state filter if provided
         if (!string.IsNullOrEmpty(state) && Enum.TryParse<JobExecutionState>(state, true, out JobExecutionState stateFilter))
         {
-            jobs = await _dispatcher.GetJobsByStateAsync(stateFilter);
-        }
-        else
-        {
-            jobs = await _dispatcher.ListJobsAsync();
+            jobs = jobs.Where(j => j.State == stateFilter).ToList();
         }
 
         JobListResponse response = new()
         {
-            TotalJobs = jobs.Count(),
+            TotalJobs = jobs.Count,
             Jobs = jobs.Select(j => new JobSummary
             {
                 JobId = j.JobId,
                 JobName = j.JobName,
                 State = j.State,
-                SubmittedAt = j.SubmittedAt,
-                Duration = j.FinishedAt.HasValue && j.StartedAt.HasValue
-                    ? j.FinishedAt.Value - j.StartedAt.Value
-                    : null
+                SubmittedAt = j.StartTime ?? DateTime.UtcNow,
+                Duration = j.Duration
             }).ToList()
         };
 

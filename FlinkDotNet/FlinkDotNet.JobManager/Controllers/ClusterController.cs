@@ -41,7 +41,7 @@ public class ClusterController : ControllerBase
     {
         _logger.LogDebug("Getting cluster overview");
 
-        IEnumerable<JobInfo> jobs = await _dispatcher.ListJobsAsync();
+        List<JobStatus> jobs = await _dispatcher.ListJobsAsync();
 
         ClusterOverviewResponse response = new()
         {
@@ -68,7 +68,7 @@ public class ClusterController : ControllerBase
         _logger.LogDebug("Listing TaskManagers");
 
         IEnumerable<string> taskManagerIds = _resourceManager.GetRegisteredTaskManagers();
-        List<TaskManagerInfo> taskManagers = new();
+        List<Models.Responses.TaskManagerInfo> taskManagers = new();
 
         foreach (string tmId in taskManagerIds)
         {
@@ -78,7 +78,7 @@ public class ClusterController : ControllerBase
                 .Where(s => s.TaskManagerId == tmId);
 
             // TODO: Get actual registration and heartbeat times from ResourceManager
-            taskManagers.Add(new TaskManagerInfo
+            taskManagers.Add(new Models.Responses.TaskManagerInfo
             {
                 TaskManagerId = tmId,
                 TotalSlots = allSlots.Count(),

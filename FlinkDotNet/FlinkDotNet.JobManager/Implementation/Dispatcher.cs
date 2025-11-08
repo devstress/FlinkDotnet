@@ -25,7 +25,9 @@ public class Dispatcher : IDispatcher
     /// <summary>
     /// Submit a new job for execution.
     /// </summary>
+#pragma warning disable CS1998 // Async method lacks 'await' operators
     public async Task<JobSubmissionResult> SubmitJobAsync(JobGraph jobGraph, CancellationToken cancellationToken = default)
+#pragma warning restore CS1998
     {
         if (jobGraph == null)
             throw new ArgumentNullException(nameof(jobGraph));

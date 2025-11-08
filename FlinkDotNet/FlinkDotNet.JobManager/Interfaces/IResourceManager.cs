@@ -60,4 +60,16 @@ public interface IResourceManager
     /// </summary>
     /// <returns>Number of available slots across all TaskManagers</returns>
     Task<int> GetAvailableSlotsAsync();
+
+    /// <summary>
+    /// Get all available slots (synchronous)
+    /// </summary>
+    /// <returns>Collection of available task slots</returns>
+    IEnumerable<TaskSlot> GetAvailableSlots();
+
+    /// <summary>
+    /// Get all task slots across all TaskManagers (synchronous)
+    /// </summary>
+    /// <returns>Collection of all task slots</returns>
+    IEnumerable<TaskSlot> GetAllSlots();
 }

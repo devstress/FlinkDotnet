@@ -164,6 +164,42 @@ public class ResourceManager : IResourceManager
         int totalAvailable = this._taskManagers.Values.Sum(tm => tm.AvailableSlots);
         return Task.FromResult(totalAvailable);
     }
+
+    /// <inheritdoc/>
+    public IEnumerable<TaskSlot> GetAvailableSlots()
+    {
+        List<TaskSlot> availableSlots = new();
+        foreach (KeyValuePair<string, TaskManagerInfo> tm in _taskManagers)
+        {
+            for (int i = 0; i < tm.Value.AvailableSlots; i++)
+            {
+                availableSlots.Add(new TaskSlot
+                {
+                    TaskManagerId = tm.Key,
+                    SlotNumber = i
+                });
+            }
+        }
+        return availableSlots;
+    }
+
+    /// <inheritdoc/>
+    public IEnumerable<TaskSlot> GetAllSlots()
+    {
+        List<TaskSlot> allSlots = new();
+        foreach (KeyValuePair<string, TaskManagerInfo> tm in _taskManagers)
+        {
+            for (int i = 0; i < tm.Value.TotalSlots; i++)
+            {
+                allSlots.Add(new TaskSlot
+                {
+                    TaskManagerId = tm.Key,
+                    SlotNumber = i
+                });
+            }
+        }
+        return allSlots;
+    }
 }
 
 /// <summary>
@@ -208,7 +244,8 @@ public static class ResourceManagerExtensions
     /// </summary>
     public static bool UnregisterTaskManager(this IResourceManager resourceManager, string taskManagerId)
     {
-        return resourceManager.UnregisterTaskManagerAsync(taskManagerId).GetAwaiter().GetResult();
+        resourceManager.UnregisterTaskManagerAsync(taskManagerId).GetAwaiter().GetResult();
+        return true; // Task<T> returns void, assume success if no exception
     }
 
     /// <summary>
@@ -216,8 +253,7 @@ public static class ResourceManagerExtensions
     /// </summary>
     public static IEnumerable<string> GetRegisteredTaskManagers(this IResourceManager resourceManager)
     {
-        // Access internal dictionary via reflection or implement in ResourceManager
-        // For now, return from GetAllSlots
+        // Get from GetAllSlots
         return resourceManager.GetAllSlots()
             .Select(s => s.TaskManagerId)
             .Distinct();
