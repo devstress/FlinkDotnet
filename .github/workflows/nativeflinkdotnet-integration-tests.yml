@@ -4,8 +4,7 @@ on:
   push:
     paths:
       - 'NativeFlinkDotnetTesting/**'
-      - 'FlinkDotNet/FlinkDotNet.JobManager/**'
-      - 'FlinkDotNet/FlinkDotNet.TaskManager/**'
+      - 'FlinkDotNet/**'
       - '.github/workflows/nativeflinkdotnet-integration-tests.yml'
   workflow_dispatch:
 
