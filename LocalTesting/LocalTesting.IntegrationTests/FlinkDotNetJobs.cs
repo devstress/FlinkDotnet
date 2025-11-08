@@ -27,13 +27,13 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         environment.FromKafka(inputTopic, kafka, groupId: "uppercase-job", startingOffsets: "earliest")
             .Map(s => s.ToUpperInvariant())
             .SinkToKafka(outputTopic, kafka);
 
-        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        IJobClient jobClient = await environment.ExecuteAsync(jobName, ct);
 
         return new JobSubmissionResult
         {
@@ -53,13 +53,13 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         environment.FromKafka(inputTopic, kafka, groupId: "filter-job", startingOffsets: "earliest")
             .Filter(s => !string.IsNullOrWhiteSpace(s))
             .SinkToKafka(outputTopic, kafka);
 
-        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        IJobClient jobClient = await environment.ExecuteAsync(jobName, ct);
 
         return new JobSubmissionResult
         {
@@ -79,14 +79,14 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         environment.FromKafka(inputTopic, kafka, groupId: "splitconcat-job", startingOffsets: "earliest")
             .FlatMap(s => s.Split(','))
             .Map(s => s + "-joined")
             .SinkToKafka(outputTopic, kafka);
 
-        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        IJobClient jobClient = await environment.ExecuteAsync(jobName, ct);
 
         return new JobSubmissionResult
         {
@@ -107,14 +107,14 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         // Simple pass-through for timer test (actual timer logic would require more complex windowing)
         environment.FromKafka(inputTopic, kafka, groupId: "timer-job", startingOffsets: "earliest")
             .Map(s => $"[Timed] {s}")
             .SinkToKafka(outputTopic, kafka);
 
-        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        IJobClient jobClient = await environment.ExecuteAsync(jobName, ct);
 
         return new JobSubmissionResult
         {
@@ -135,8 +135,8 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        var sqlStatements = new[]
-        {
+        string[] sqlStatements =
+        [
             $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{inputTopic}',
@@ -155,9 +155,9 @@ public static class FlinkDotNetJobs
                 'value.json.timestamp-format.standard'='ISO-8601'
             )",
             "INSERT INTO output SELECT `key`, `value` FROM input"
-        };
+        ];
 
-        var jobDef = new JobDefinition
+        JobDefinition jobDef = new JobDefinition
         {
             Source = new SqlSourceDefinition
             {
@@ -166,20 +166,21 @@ public static class FlinkDotNetJobs
                 ExecutionMode = "gateway"
             },
             Metadata = new JobMetadata
-            {                JobName = jobName,
+            {
+                JobName = jobName,
                 CreatedAt = DateTime.UtcNow,
                 Version = "1.0"
             }
         };
 
-        var configuration = new ConfigurationBuilder()
+        IConfigurationRoot configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Flink:SqlGateway:BaseUrl"] = sqlGatewayUrl
             })
             .Build();
 
-        var jobManager = new FlinkDotNet.JobGateway.Services.FlinkJobManager(
+        FlinkDotNet.JobGateway.Services.FlinkJobManager jobManager = new FlinkDotNet.JobGateway.Services.FlinkJobManager(
             NullLogger<FlinkDotNet.JobGateway.Services.FlinkJobManager>.Instance,
             configuration,
             new HttpClient());
@@ -198,8 +199,8 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        var sqlStatements = new[]
-        {
+        string[] sqlStatements =
+        [
             $@"CREATE TABLE input ( `key` STRING, `value` STRING ) WITH (
                 'connector'='kafka',
                 'topic'='{inputTopic}',
@@ -218,9 +219,9 @@ public static class FlinkDotNetJobs
                 'value.json.timestamp-format.standard'='ISO-8601'
             )",
             "INSERT INTO output SELECT `key`, UPPER(`value`) as `transformed` FROM input"
-        };
+        ];
 
-        var jobDef = new JobDefinition
+        JobDefinition jobDef = new JobDefinition
         {
             Source = new SqlSourceDefinition
             {
@@ -229,20 +230,21 @@ public static class FlinkDotNetJobs
                 ExecutionMode = "gateway"
             },
             Metadata = new JobMetadata
-            {                JobName = jobName,
+            {
+                JobName = jobName,
                 CreatedAt = DateTime.UtcNow,
                 Version = "1.0"
             }
         };
 
-        var configuration = new ConfigurationBuilder()
+        IConfigurationRoot configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Flink:SqlGateway:BaseUrl"] = sqlGatewayUrl
             })
             .Build();
 
-        var jobManager = new FlinkDotNet.JobGateway.Services.FlinkJobManager(
+        FlinkDotNet.JobGateway.Services.FlinkJobManager jobManager = new FlinkDotNet.JobGateway.Services.FlinkJobManager(
             NullLogger<FlinkDotNet.JobGateway.Services.FlinkJobManager>.Instance,
             configuration,
             new HttpClient());
@@ -260,7 +262,7 @@ public static class FlinkDotNetJobs
         string jobName,
         CancellationToken ct)
     {
-        var environment = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment environment = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         environment.FromKafka(inputTopic, kafka, groupId: "composite-job", startingOffsets: "earliest")
             .FlatMap(s => s.Split(','))
@@ -270,7 +272,7 @@ public static class FlinkDotNetJobs
             .Map(s => $"[Processed] {s}")
             .SinkToKafka(outputTopic, kafka);
 
-        var jobClient = await environment.ExecuteAsync(jobName, ct);
+        IJobClient jobClient = await environment.ExecuteAsync(jobName, ct);
 
         return new JobSubmissionResult
         {

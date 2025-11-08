@@ -2,9 +2,9 @@
 // Licensed under the Apache License, Version 2.0.
 // See LICENSE file in the project root for full license information.
 
+using System.Collections.Concurrent;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
-using System.Collections.Concurrent;
 using Temporalio.Client;
 
 namespace FlinkDotNet.JobManager.Implementation;
@@ -218,13 +218,9 @@ public class JobMaster : IJobMaster
         foreach (JobEdge jobEdge in _jobGraph.Edges)
         {
             // Find source and target execution vertices
-            List<ExecutionVertex> sourceVertices = executionGraph.ExecutionVertices
-                .Where(v => v.JobVertexId == jobEdge.SourceVertexId)
-                .ToList();
+            List<ExecutionVertex> sourceVertices = [.. executionGraph.ExecutionVertices.Where(v => v.JobVertexId == jobEdge.SourceVertexId)];
 
-            List<ExecutionVertex> targetVertices = executionGraph.ExecutionVertices
-                .Where(v => v.JobVertexId == jobEdge.TargetVertexId)
-                .ToList();
+            List<ExecutionVertex> targetVertices = [.. executionGraph.ExecutionVertices.Where(v => v.JobVertexId == jobEdge.TargetVertexId)];
 
             // Create edges based on partitioning strategy
             CreateExecutionEdges(executionGraph, sourceVertices, targetVertices, jobEdge.PartitioningStrategy);
@@ -462,10 +458,9 @@ public class JobMaster : IJobMaster
         _logger.LogDebug("Releasing {SlotCount} slots for job {JobId}",
             _executionGraph.ExecutionVertices.Count, _jobId);
 
-        List<string> slotIds = _executionGraph.ExecutionVertices
+        List<string> slotIds = [.. _executionGraph.ExecutionVertices
             .Where(v => v.AssignedSlot != null)
-            .Select(v => v.AssignedSlot!.SlotId)
-            .ToList();
+            .Select(v => v.AssignedSlot!.SlotId)];
 
         foreach (string slotId in slotIds)
         {

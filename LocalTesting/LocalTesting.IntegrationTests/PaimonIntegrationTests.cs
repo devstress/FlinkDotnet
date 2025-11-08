@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.DataStream;
@@ -29,7 +27,7 @@ public class PaimonIntegrationTests
     public void Test1_CatalogIRSchema_SerializesAllCatalogTypes()
     {
         // Part A: Filesystem catalog
-        var filesystemCatalog = new PaimonCatalogDefinition
+        PaimonCatalogDefinition filesystemCatalog = new PaimonCatalogDefinition
         {
             CatalogName = "paimon_filesystem",
             CatalogType = "paimon",
@@ -40,8 +38,8 @@ public class PaimonIntegrationTests
             }
         };
 
-        var json1 = JsonSerializer.Serialize(filesystemCatalog, new JsonSerializerOptions { WriteIndented = true });
-        var deserialized1 = JsonSerializer.Deserialize<PaimonCatalogDefinition>(json1);
+        string json1 = JsonSerializer.Serialize(filesystemCatalog, new JsonSerializerOptions { WriteIndented = true });
+        PaimonCatalogDefinition? deserialized1 = JsonSerializer.Deserialize<PaimonCatalogDefinition>(json1);
 
         Assert.That(deserialized1, Is.Not.Null);
         Assert.That(deserialized1!.CatalogName, Is.EqualTo("paimon_filesystem"));
@@ -51,7 +49,7 @@ public class PaimonIntegrationTests
         Assert.That(deserialized1.Properties["table-default.scan.parallelism"], Is.EqualTo("4"));
 
         // Part B: Hive metastore catalog
-        var hiveCatalog = new PaimonCatalogDefinition
+        PaimonCatalogDefinition hiveCatalog = new PaimonCatalogDefinition
         {
             CatalogName = "paimon_hive",
             CatalogType = "paimon-generic",
@@ -64,8 +62,8 @@ public class PaimonIntegrationTests
             }
         };
 
-        var json2 = JsonSerializer.Serialize(hiveCatalog, new JsonSerializerOptions { WriteIndented = true });
-        var deserialized2 = JsonSerializer.Deserialize<PaimonCatalogDefinition>(json2);
+        string json2 = JsonSerializer.Serialize(hiveCatalog, new JsonSerializerOptions { WriteIndented = true });
+        PaimonCatalogDefinition? deserialized2 = JsonSerializer.Deserialize<PaimonCatalogDefinition>(json2);
 
         Assert.That(deserialized2, Is.Not.Null);
         Assert.That(deserialized2!.CatalogName, Is.EqualTo("paimon_hive"));
@@ -92,7 +90,7 @@ public class PaimonIntegrationTests
     public void Test2_TableIRSchema_SerializesCompleteDefinition()
     {
         // Arrange - Create table definition with all features
-        var jobDef = new JobDefinition
+        JobDefinition jobDef = new JobDefinition
         {
             Source = new PaimonTableDefinition
             {
@@ -120,20 +118,20 @@ public class PaimonIntegrationTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "Paimon Table Test",
+                JobName = "Paimon Table Test",
                 Version = "1.0"
             }
         };
 
         // Act - Serialize and deserialize
-        var json = JsonSerializer.Serialize(jobDef, new JsonSerializerOptions { WriteIndented = true });
-        var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
+        string json = JsonSerializer.Serialize(jobDef, new JsonSerializerOptions { WriteIndented = true });
+        JobDefinition? deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
 
         // Assert - Structure
         Assert.That(deserialized, Is.Not.Null);
         Assert.That(deserialized!.Source, Is.InstanceOf<PaimonTableDefinition>());
 
-        var tableDef = deserialized.Source as PaimonTableDefinition;
+        PaimonTableDefinition? tableDef = deserialized.Source as PaimonTableDefinition;
         Assert.That(tableDef, Is.Not.Null);
 
         // Assert - Basic properties
@@ -163,16 +161,16 @@ public class PaimonIntegrationTests
 
         // Part B: Test direct manipulation of definition to cover FULLCOMPACTION conversion
         // Create a table and modify its definition to test the ToSql conversion logic
-        var testTable = PaimonTable.Builder("cat", "tbl")
+        PaimonTable testTable = PaimonTable.Builder("cat", "tbl")
             .WithColumn("id", "BIGINT")
             .WithPrimaryKey("id")
             .Build();
-        
+
         // Access and modify the definition to test edge case
-        var testDef = testTable.Definition;
+        PaimonTableDefinition testDef = testTable.Definition;
         testDef.ChangelogProducerMode = "FULLCOMPACTION"; // Set uppercase to test conversion
-        var modifiedTable = new PaimonTable(testDef);
-        var sqlModified = modifiedTable.ToSql();
+        PaimonTable modifiedTable = new PaimonTable(testDef);
+        string sqlModified = modifiedTable.ToSql();
         Assert.That(sqlModified, Does.Contain("'changelog-producer' = 'full-compaction'"));
     }
 
@@ -191,7 +189,7 @@ public class PaimonIntegrationTests
     public void Test3_CatalogAPI_GeneratesCorrectDDL()
     {
         // Part A: Filesystem catalog
-        var filesystemCatalog = PaimonCatalog.Builder("my_catalog")
+        PaimonCatalog filesystemCatalog = PaimonCatalog.Builder("my_catalog")
             .WithWarehouse("file:/tmp/paimon")
             .WithProperty("table-default.scan.parallelism", "4")
             .Build();
@@ -200,14 +198,14 @@ public class PaimonIntegrationTests
         Assert.That(filesystemCatalog.CatalogType, Is.EqualTo("paimon"));
         Assert.That(filesystemCatalog.Warehouse, Is.EqualTo("file:/tmp/paimon"));
 
-        var sql1 = filesystemCatalog.ToSql();
+        string sql1 = filesystemCatalog.ToSql();
         Assert.That(sql1, Does.Contain("CREATE CATALOG my_catalog WITH ("));
         Assert.That(sql1, Does.Contain("'type' = 'paimon'"));
         Assert.That(sql1, Does.Contain("'warehouse' = 'file:/tmp/paimon'"));
         Assert.That(sql1, Does.Contain("'table-default.scan.parallelism' = '4'"));
 
         // Part B: Hive metastore catalog
-        var hiveCatalog = PaimonCatalog.Builder("hive_catalog")
+        PaimonCatalog hiveCatalog = PaimonCatalog.Builder("hive_catalog")
             .WithWarehouse("hdfs://namenode:8020/warehouse")
             .WithHiveMetastore("/path/to/hive/conf")
             .WithHadoopConf("/path/to/hadoop/conf")
@@ -216,7 +214,7 @@ public class PaimonIntegrationTests
         Assert.That(hiveCatalog.Name, Is.EqualTo("hive_catalog"));
         Assert.That(hiveCatalog.CatalogType, Is.EqualTo("paimon-generic"));
 
-        var sql2 = hiveCatalog.ToSql();
+        string sql2 = hiveCatalog.ToSql();
         Assert.That(sql2, Does.Contain("CREATE CATALOG hive_catalog WITH ("));
         Assert.That(sql2, Does.Contain("'type' = 'paimon-generic'"));
         Assert.That(sql2, Does.Contain("'warehouse' = 'hdfs://namenode:8020/warehouse'"));
@@ -252,7 +250,7 @@ public class PaimonIntegrationTests
     public void Test4_TableAPI_GeneratesCorrectDDLForAllConfigurations()
     {
         // Part A: Basic table with primary key
-        var basicTable = PaimonTable.Builder("catalog1", "users")
+        PaimonTable basicTable = PaimonTable.Builder("catalog1", "users")
             .WithColumn("user_id", "BIGINT")
             .WithColumn("name", "STRING")
             .WithColumn("email", "STRING")
@@ -262,7 +260,7 @@ public class PaimonIntegrationTests
         Assert.That(basicTable.CatalogName, Is.EqualTo("catalog1"));
         Assert.That(basicTable.TableName, Is.EqualTo("users"));
 
-        var sql1 = basicTable.ToSql();
+        string sql1 = basicTable.ToSql();
         Assert.That(sql1, Does.Contain("CREATE TABLE catalog1.users ("));
         Assert.That(sql1, Does.Contain("user_id BIGINT"));
         Assert.That(sql1, Does.Contain("name STRING"));
@@ -270,7 +268,7 @@ public class PaimonIntegrationTests
         Assert.That(sql1, Does.Contain("PRIMARY KEY (user_id) NOT ENFORCED"));
 
         // Part B: Partitioned table with buckets
-        var partitionedTable = PaimonTable.Builder("catalog2", "orders")
+        PaimonTable partitionedTable = PaimonTable.Builder("catalog2", "orders")
             .WithColumn("order_id", "BIGINT")
             .WithColumn("user_id", "BIGINT")
             .WithColumn("amount", "DECIMAL(10,2)")
@@ -280,30 +278,30 @@ public class PaimonIntegrationTests
             .WithBuckets(4)
             .Build();
 
-        var sql2 = partitionedTable.ToSql();
+        string sql2 = partitionedTable.ToSql();
         Assert.That(sql2, Does.Contain("PRIMARY KEY (dt, order_id) NOT ENFORCED"));
         Assert.That(sql2, Does.Contain("PARTITIONED BY (dt)"));
         Assert.That(sql2, Does.Contain("'bucket' = '4'"));
 
         // Part C: Test all 4 changelog modes
-        var changelogModes = new[]
-        {
+        (ChangelogProducerMode, string)[] changelogModes =
+        [
             (ChangelogProducerMode.None, "none"),
             (ChangelogProducerMode.Input, "input"),
             (ChangelogProducerMode.Lookup, "lookup"),
             (ChangelogProducerMode.FullCompaction, "full-compaction")
-        };
+        ];
 
-        foreach (var (mode, expectedSql) in changelogModes)
+        foreach ((ChangelogProducerMode mode, string expectedSql) in changelogModes)
         {
-            var table = PaimonTable.Builder("cat", "tbl")
+            PaimonTable table = PaimonTable.Builder("cat", "tbl")
                 .WithColumn("id", "BIGINT")
                 .WithPrimaryKey("id")
                 .WithChangelogMode(mode)
                 .Build();
 
-            var sql = table.ToSql();
-            
+            string sql = table.ToSql();
+
             if (mode == ChangelogProducerMode.None)
             {
                 // None mode should not appear in WITH clause
@@ -316,7 +314,7 @@ public class PaimonIntegrationTests
         }
 
         // Part D: Table with custom properties
-        var tableWithProps = PaimonTable.Builder("catalog3", "events")
+        PaimonTable tableWithProps = PaimonTable.Builder("catalog3", "events")
             .WithColumn("event_id", "BIGINT")
             .WithColumn("event_time", "TIMESTAMP(3)")
             .WithPrimaryKey("event_id")
@@ -325,7 +323,7 @@ public class PaimonIntegrationTests
             .WithProperty("snapshot.time-retained", "1h")
             .Build();
 
-        var sql4 = tableWithProps.ToSql();
+        string sql4 = tableWithProps.ToSql();
         Assert.That(sql4, Does.Contain("'changelog-producer' = 'full-compaction'"));
         Assert.That(sql4, Does.Contain("'full-compaction.delta-commits' = '2'"));
         Assert.That(sql4, Does.Contain("'snapshot.time-retained' = '1h'"));
@@ -375,7 +373,7 @@ public class PaimonIntegrationTests
     public void Test5_CompleteWorkflow_CatalogTableAndOperations()
     {
         // Part A: Create catalog and access definition
-        var catalog = PaimonCatalog.Builder("production")
+        PaimonCatalog catalog = PaimonCatalog.Builder("production")
             .WithWarehouse("s3://my-bucket/warehouse")
             .WithProperty("fs.s3a.access.key", "AKIAIOSFODNN7EXAMPLE")
             .WithProperty("fs.s3a.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
@@ -387,7 +385,7 @@ public class PaimonIntegrationTests
         Assert.That(catalog.Definition.Properties.Count, Is.EqualTo(2));
 
         // Part B: Create complex table
-        var table = PaimonTable.Builder("production", "fact_sales")
+        PaimonTable table = PaimonTable.Builder("production", "fact_sales")
             .WithColumn("sale_id", "BIGINT")
             .WithColumn("product_id", "BIGINT")
             .WithColumn("customer_id", "BIGINT")
@@ -409,7 +407,7 @@ public class PaimonIntegrationTests
         Assert.That(table.Definition.PrimaryKey.Count, Is.EqualTo(3));
         Assert.That(table.Definition.PartitionKeys.Count, Is.EqualTo(2));
 
-        var createSql = table.ToSql();
+        string createSql = table.ToSql();
         Assert.That(createSql, Does.Contain("PRIMARY KEY (dt, region, sale_id) NOT ENFORCED"));
         Assert.That(createSql, Does.Contain("PARTITIONED BY (dt, region)"));
         Assert.That(createSql, Does.Contain("'bucket' = '8'"));
@@ -417,14 +415,14 @@ public class PaimonIntegrationTests
         Assert.That(createSql, Does.Contain("'lookup.cache-file-retention' = '2h'"));
 
         // Part C: Drop table operation
-        var dropTable = table.Drop();
+        PaimonTable dropTable = table.Drop();
         Assert.That(dropTable, Is.Not.Null);
         Assert.That(dropTable.Definition.Operation, Is.EqualTo("DROP"));
         Assert.That(dropTable.Definition.TableName, Is.EqualTo("fact_sales"));
         Assert.That(dropTable.Definition.CatalogName, Is.EqualTo("production"));
 
         // Part D: Verify builder can be reused
-        var anotherTable = PaimonTable.Builder("production", "dim_products")
+        PaimonTable anotherTable = PaimonTable.Builder("production", "dim_products")
             .WithColumn("product_id", "BIGINT")
             .WithColumn("product_name", "STRING")
             .WithColumn("category", "STRING")
@@ -437,33 +435,33 @@ public class PaimonIntegrationTests
 
         // Part E: Test edge cases for branch coverage
         // Test table with only buckets (no changelog mode, no properties)
-        var tableBucketsOnly = PaimonTable.Builder("cat", "buckets_only")
+        PaimonTable tableBucketsOnly = PaimonTable.Builder("cat", "buckets_only")
             .WithColumn("id", "BIGINT")
             .WithPrimaryKey("id")
             .WithBuckets(2)
             .Build();
-        var sqlBucketsOnly = tableBucketsOnly.ToSql();
+        string sqlBucketsOnly = tableBucketsOnly.ToSql();
         Assert.That(sqlBucketsOnly, Does.Contain("'bucket' = '2'"));
         Assert.That(sqlBucketsOnly, Does.Not.Contain("'changelog-producer'"));
 
         // Test table with only properties (no buckets, no changelog mode)
-        var tablePropsOnly = PaimonTable.Builder("cat", "props_only")
+        PaimonTable tablePropsOnly = PaimonTable.Builder("cat", "props_only")
             .WithColumn("id", "BIGINT")
             .WithPrimaryKey("id")
             .WithProperty("compaction.optimization-interval", "5min")
             .Build();
-        var sqlPropsOnly = tablePropsOnly.ToSql();
+        string sqlPropsOnly = tablePropsOnly.ToSql();
         Assert.That(sqlPropsOnly, Does.Contain("'compaction.optimization-interval' = '5min'"));
         Assert.That(sqlPropsOnly, Does.Not.Contain("'bucket'"));
         Assert.That(sqlPropsOnly, Does.Not.Contain("'changelog-producer'"));
 
         // Test table with changelog mode = "none" (should not appear in SQL)
-        var tableNoneMode = PaimonTable.Builder("cat", "none_mode")
+        PaimonTable tableNoneMode = PaimonTable.Builder("cat", "none_mode")
             .WithColumn("id", "BIGINT")
             .WithPrimaryKey("id")
             .WithChangelogMode(ChangelogProducerMode.None)
             .Build();
-        var sqlNoneMode = tableNoneMode.ToSql();
+        string sqlNoneMode = tableNoneMode.ToSql();
         Assert.That(sqlNoneMode, Does.Not.Contain("WITH ("));
         Assert.That(sqlNoneMode, Does.Not.Contain("'changelog-producer'"));
     }

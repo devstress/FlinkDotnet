@@ -26,7 +26,7 @@ public class JobMasterTests
         _mockTemporalClient = new Mock<ITemporalClient>();
         _mockLogger = new Mock<ILogger<JobMaster>>();
         _jobId = "test-job-1";
-        
+
         _jobGraph = new JobGraph
         {
             JobName = "Test Job",
@@ -68,7 +68,7 @@ public class JobMasterTests
             _mockResourceManager.Object,
             _mockTemporalClient.Object,
             _mockLogger.Object);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("jobId");
     }
 
@@ -82,7 +82,7 @@ public class JobMasterTests
             _mockResourceManager.Object,
             _mockTemporalClient.Object,
             _mockLogger.Object);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("jobGraph");
     }
 
@@ -96,7 +96,7 @@ public class JobMasterTests
             null!,
             _mockTemporalClient.Object,
             _mockLogger.Object);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("resourceManager");
     }
 
@@ -110,7 +110,7 @@ public class JobMasterTests
             _mockResourceManager.Object,
             null!,
             _mockLogger.Object);
-        
+
         act.Should().Throw<ArgumentNullException>();
     }
 
@@ -124,7 +124,7 @@ public class JobMasterTests
             _mockResourceManager.Object,
             _mockTemporalClient.Object,
             null!);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("logger");
     }
 

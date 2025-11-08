@@ -1,4 +1,3 @@
-using System;
 using System.Text.Json;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.DataStream;
@@ -28,7 +27,7 @@ public class MaterializedTableTests
     public void Test1_IRSchema_SerializesCompleteDefinition()
     {
         // Arrange - Create materialized table definition with all features
-        var jobDef = new JobDefinition
+        JobDefinition jobDef = new JobDefinition
         {
             Source = new MaterializedTableDefinition
             {
@@ -45,7 +44,7 @@ public class MaterializedTableTests
                 FreshnessInterval = "INTERVAL '3' MINUTE",
                 PrimaryKey = { "ds", "order_id" },
                 PartitionBy = { "ds" },
-                Schema = 
+                Schema =
                 {
                     { "ds", "STRING" },
                     { "order_id", "BIGINT" },
@@ -54,7 +53,7 @@ public class MaterializedTableTests
                 },
                 Operation = "CREATE",
                 ExecutionMode = "gateway",
-                Properties = 
+                Properties =
                 {
                     { "compression", "gzip" },
                     { "format", "parquet" }
@@ -62,20 +61,20 @@ public class MaterializedTableTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "Materialized Table Test",
+                JobName = "Materialized Table Test",
                 Version = "1.0"
             }
         };
 
         // Act - Serialize and deserialize
-        var json = JsonSerializer.Serialize(jobDef, new JsonSerializerOptions { WriteIndented = true });
-        var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
+        string json = JsonSerializer.Serialize(jobDef, new JsonSerializerOptions { WriteIndented = true });
+        JobDefinition? deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
 
         // Assert - Structure
         Assert.That(deserialized, Is.Not.Null);
         Assert.That(deserialized!.Source, Is.InstanceOf<MaterializedTableDefinition>());
 
-        var mtDef = deserialized.Source as MaterializedTableDefinition;
+        MaterializedTableDefinition? mtDef = deserialized.Source as MaterializedTableDefinition;
         Assert.That(mtDef, Is.Not.Null);
         Assert.That(mtDef!.Type, Is.EqualTo("materialized_table"));
         Assert.That(mtDef.TableName, Is.EqualTo("dwd_orders"));
@@ -111,10 +110,10 @@ public class MaterializedTableTests
     public void Test2_CSharpAPI_BuilderCreatesCorrectDefinition()
     {
         // Arrange
-        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         // Act - Build materialized table using fluent API
-        var table = env.CreateMaterializedTable("fact_sales")
+        MaterializedTable table = env.CreateMaterializedTable("fact_sales")
             .WithQuery("SELECT product_id, SUM(quantity) as total_qty FROM sales GROUP BY product_id")
             .WithRefreshMode("FULL")
             .WithFreshness(TimeSpan.FromMinutes(5))
@@ -133,7 +132,7 @@ public class MaterializedTableTests
         Assert.That(table.FreshnessInterval, Is.EqualTo("INTERVAL '5' MINUTE"));
 
         // Assert - IR definition
-        var def = table.Definition;
+        MaterializedTableDefinition def = table.Definition;
         Assert.That(def.TableName, Is.EqualTo("fact_sales"));
         Assert.That(def.Query, Does.Contain("SUM(quantity)"));
         Assert.That(def.RefreshMode, Is.EqualTo("FULL"));
@@ -161,9 +160,9 @@ public class MaterializedTableTests
     public void Test3_SQLGeneration_CreatesValidDDL()
     {
         // Arrange
-        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
-        var table = env.CreateMaterializedTable("dim_products")
+        MaterializedTable table = env.CreateMaterializedTable("dim_products")
             .AddColumn("product_id", "BIGINT")
             .AddColumn("product_name", "STRING")
             .AddColumn("category", "STRING")
@@ -177,7 +176,7 @@ public class MaterializedTableTests
             .Build();
 
         // Act
-        var sql = table.ToSql();
+        string sql = table.ToSql();
 
         // Assert - SQL structure
         Assert.That(sql, Does.Contain("CREATE MATERIALIZED TABLE dim_products"));
@@ -208,30 +207,30 @@ public class MaterializedTableTests
     public void Test4_ManagementOperations_GenerateCorrectSQL()
     {
         // Arrange
-        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
-        var table = env.CreateMaterializedTable("test_table")
+        MaterializedTable table = env.CreateMaterializedTable("test_table")
             .WithQuery("SELECT * FROM source")
             .Build();
 
         // Act & Assert - Suspend
-        var suspendTable = table.Suspend();
-        var suspendSql = suspendTable.ToSql();
+        MaterializedTable suspendTable = table.Suspend();
+        string suspendSql = suspendTable.ToSql();
         Assert.That(suspendSql, Is.EqualTo("ALTER MATERIALIZED TABLE test_table SUSPEND"));
 
         // Act & Assert - Resume
-        var resumeTable = table.Resume();
-        var resumeSql = resumeTable.ToSql();
+        MaterializedTable resumeTable = table.Resume();
+        string resumeSql = resumeTable.ToSql();
         Assert.That(resumeSql, Is.EqualTo("ALTER MATERIALIZED TABLE test_table RESUME"));
 
         // Act & Assert - Refresh Partition
-        var refreshTable = table.RefreshPartition("ds='2024-10-27'");
-        var refreshSql = refreshTable.ToSql();
+        MaterializedTable refreshTable = table.RefreshPartition("ds='2024-10-27'");
+        string refreshSql = refreshTable.ToSql();
         Assert.That(refreshSql, Is.EqualTo("ALTER MATERIALIZED TABLE test_table REFRESH PARTITION (ds='2024-10-27')"));
 
         // Act & Assert - Drop
-        var dropTable = table.Drop();
-        var dropSql = dropTable.ToSql();
+        MaterializedTable dropTable = table.Drop();
+        string dropSql = dropTable.ToSql();
         Assert.That(dropSql, Is.EqualTo("DROP MATERIALIZED TABLE test_table"));
 
         // Assert - Original table unchanged
@@ -253,10 +252,10 @@ public class MaterializedTableTests
     [Test]
     public void Test5_AdvancedFeatures_HandlesDifferentConfigurations()
     {
-        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         // Part A: FULL refresh mode without freshness
-        var fullRefreshTable = env.CreateMaterializedTable("batch_table")
+        MaterializedTable fullRefreshTable = env.CreateMaterializedTable("batch_table")
             .WithQuery("SELECT * FROM batch_source")
             .WithRefreshMode("FULL")
             .Build();
@@ -265,32 +264,32 @@ public class MaterializedTableTests
         Assert.That(fullRefreshTable.Definition.FreshnessInterval, Is.Null);
 
         // Part B: TimeSpan conversions
-        var secondsTable = env.CreateMaterializedTable("t1")
+        MaterializedTable secondsTable = env.CreateMaterializedTable("t1")
             .WithQuery("SELECT 1")
             .WithFreshness(TimeSpan.FromSeconds(30))
             .Build();
         Assert.That(secondsTable.FreshnessInterval, Is.EqualTo("INTERVAL '30' SECOND"));
 
-        var minutesTable = env.CreateMaterializedTable("t2")
+        MaterializedTable minutesTable = env.CreateMaterializedTable("t2")
             .WithQuery("SELECT 1")
             .WithFreshness(TimeSpan.FromMinutes(10))
             .Build();
         Assert.That(minutesTable.FreshnessInterval, Is.EqualTo("INTERVAL '10' MINUTE"));
 
-        var hoursTable = env.CreateMaterializedTable("t3")
+        MaterializedTable hoursTable = env.CreateMaterializedTable("t3")
             .WithQuery("SELECT 1")
             .WithFreshness(TimeSpan.FromHours(2))
             .Build();
         Assert.That(hoursTable.FreshnessInterval, Is.EqualTo("INTERVAL '2' HOUR"));
 
-        var daysTable = env.CreateMaterializedTable("t4")
+        MaterializedTable daysTable = env.CreateMaterializedTable("t4")
             .WithQuery("SELECT 1")
             .WithFreshness(TimeSpan.FromDays(1))
             .Build();
         Assert.That(daysTable.FreshnessInterval, Is.EqualTo("INTERVAL '1' DAY"));
 
         // Part C: Multiple partitions and composite keys
-        var complexTable = env.CreateMaterializedTable("complex")
+        MaterializedTable complexTable = env.CreateMaterializedTable("complex")
             .WithQuery("SELECT year, month, day, id, value FROM data")
             .AddColumn("year", "INT")
             .AddColumn("month", "INT")
@@ -301,7 +300,7 @@ public class MaterializedTableTests
             .WithPartitioning("year", "month", "day")
             .Build();
 
-        var complexSql = complexTable.ToSql();
+        string complexSql = complexTable.ToSql();
         Assert.That(complexSql, Does.Contain("PRIMARY KEY(year, month, day, id) NOT ENFORCED"));
         Assert.That(complexSql, Does.Contain("PARTITIONED BY (year, month, day)"));
 

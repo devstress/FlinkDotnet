@@ -510,7 +510,7 @@ public class FlinkJobGatewayServiceCompleteCoverageTests
         {
             Metadata = new JobMetadata
             {
-                                JobName = "Test Job",
+                JobName = "Test Job",
                 Version = "1.0.0"
             },
             Source = new KafkaSourceDefinition

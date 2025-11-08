@@ -40,7 +40,7 @@ public class FlinkJobManagerCoverageImprovementTests
         this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
         this._mockConfiguration = new Mock<IConfiguration>();
         this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-        
+
         // Setup default handler for unmocked HTTP requests to fail fast
         _ = this._mockHttpMessageHandler
             .Protected()
@@ -49,7 +49,7 @@ public class FlinkJobManagerCoverageImprovementTests
                 ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-        
+
         this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
         {
             BaseAddress = new Uri("http://localhost:8081/"),
@@ -57,7 +57,7 @@ public class FlinkJobManagerCoverageImprovementTests
         };
 
         // Setup IConfiguration to return null by default
-        _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?)null);
+        _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
     }
 
     [TearDown]
@@ -102,7 +102,7 @@ public class FlinkJobManagerCoverageImprovementTests
 
         // Mock empty checkpoints response
         SetupHttpResponse($"/v1/jobs/{jobId}/checkpoints", @"{""latest"":{""completed"":null}}");
-        
+
         // Mock vertex metrics list endpoint (returns empty list - vertex inline metrics are sufficient)
         SetupHttpResponse($"/v1/jobs/{jobId}/vertices/vertex-1/metrics", @"[]");
 
@@ -253,7 +253,7 @@ public class FlinkJobManagerCoverageImprovementTests
 
         SetupHttpResponse($"/v1/jobs/{jobId}", jobDetailsJson);
         SetupHttpResponse($"/v1/jobs/{jobId}/checkpoints", @"{""latest"":{""completed"":null}}");
-        
+
         // Mock vertex metrics list endpoint (returns empty list)
         SetupHttpResponse($"/v1/jobs/{jobId}/vertices/vertex-1/metrics", @"[]");
 

@@ -104,7 +104,7 @@ public class JobDefinitionModelTests
 
         var metadata = new JobMetadata
         {
-                        JobName = "Test Job",
+            JobName = "Test Job",
             CreatedAt = createdAt,
             Version = "1.0.0",
             Parallelism = 8,

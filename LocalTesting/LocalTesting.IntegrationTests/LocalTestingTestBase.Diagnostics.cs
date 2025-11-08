@@ -13,7 +13,7 @@ public abstract partial class LocalTestingTestBase
 {
     protected static async Task CaptureTestNetworkDiagnosticsAsync(string testName, string checkpoint)
     {
-        var checkpointName = $"test-{testName}-{checkpoint}";
+        string checkpointName = $"test-{testName}-{checkpoint}";
         await NetworkDiagnostics.CaptureNetworkDiagnosticsAsync(checkpointName);
     }
 
@@ -25,7 +25,7 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            var flinkContainers = await RunDockerCommandAsync("ps --filter \"name=flink-jobmanager\" --format \"{{.Ports}}\"");
+            string flinkContainers = await RunDockerCommandAsync("ps --filter \"name=flink-jobmanager\" --format \"{{.Ports}}\"");
             TestContext.WriteLine($"🔍 Flink JobManager port mappings: {flinkContainers.Trim()}");
 
             return ExtractFlinkEndpointFromPorts(flinkContainers);
@@ -38,10 +38,10 @@ public abstract partial class LocalTestingTestBase
 
     private static string ExtractFlinkEndpointFromPorts(string flinkContainers)
     {
-        var lines = flinkContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        foreach (var line in lines)
+        string[] lines = flinkContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        foreach (string line in lines)
         {
-            var endpoint = TryExtractPortFromLine(line);
+            string? endpoint = TryExtractPortFromLine(line);
             if (endpoint != null)
                 return endpoint;
         }
@@ -54,7 +54,7 @@ public abstract partial class LocalTestingTestBase
         if (!line.Contains("->8081/tcp"))
             return null;
 
-        var match = Regex.Match(line, @"127\.0\.0\.1:(\d+)->8081");
+        Match match = Regex.Match(line, @"127\.0\.0\.1:(\d+)->8081");
         return match.Success ? $"http://localhost:{match.Groups[1].Value}/" : null;
     }
 
@@ -67,11 +67,11 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-            var logsBuilder = new System.Text.StringBuilder();
+            using HttpClient httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            StringBuilder logsBuilder = new System.Text.StringBuilder();
             logsBuilder.AppendLine("\n========== JobManager Logs ==========");
 
-            var mainLogName = await GetJobManagerLogListAsync(httpClient, flinkEndpoint, logsBuilder);
+            string? mainLogName = await GetJobManagerLogListAsync(httpClient, flinkEndpoint, logsBuilder);
             if (!string.IsNullOrEmpty(mainLogName))
             {
                 await AppendJobManagerLogContentAsync(httpClient, flinkEndpoint, mainLogName, logsBuilder);
@@ -87,8 +87,8 @@ public abstract partial class LocalTestingTestBase
 
     private static async Task<string?> GetJobManagerLogListAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, System.Text.StringBuilder logsBuilder)
     {
-        var logListUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs";
-        var logListResponse = await httpClient.GetAsync(logListUrl);
+        string logListUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs";
+        HttpResponseMessage logListResponse = await httpClient.GetAsync(logListUrl);
 
         if (!logListResponse.IsSuccessStatusCode)
         {
@@ -96,8 +96,8 @@ public abstract partial class LocalTestingTestBase
             return null;
         }
 
-        var logListContent = await logListResponse.Content.ReadAsStringAsync();
-        var logListJson = System.Text.Json.JsonDocument.Parse(logListContent);
+        string logListContent = await logListResponse.Content.ReadAsStringAsync();
+        JsonDocument logListJson = System.Text.Json.JsonDocument.Parse(logListContent);
 
         return ExtractMainLogName(logListJson, logsBuilder);
     }
@@ -105,13 +105,13 @@ public abstract partial class LocalTestingTestBase
     private static string? ExtractMainLogName(System.Text.Json.JsonDocument logListJson, System.Text.StringBuilder logsBuilder)
     {
         string? mainLogName = null;
-        if (logListJson.RootElement.TryGetProperty("logs", out var logs))
+        if (logListJson.RootElement.TryGetProperty("logs", out JsonElement logs))
         {
-            foreach (var logFile in logs.EnumerateArray())
+            foreach (JsonElement logFile in logs.EnumerateArray())
             {
-                if (logFile.TryGetProperty("name", out var name))
+                if (logFile.TryGetProperty("name", out JsonElement name))
                 {
-                    var logName = name.GetString();
+                    string? logName = name.GetString();
                     logsBuilder.AppendLine($"  Available log: {logName}");
 
                     if (logName?.EndsWith(".log") == true)
@@ -126,10 +126,10 @@ public abstract partial class LocalTestingTestBase
 
     private static async Task AppendJobManagerLogContentAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, string mainLogName, System.Text.StringBuilder logsBuilder)
     {
-        var logContentUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs/{mainLogName}";
+        string logContentUrl = $"{flinkEndpoint.TrimEnd('/')}/jobmanager/logs/{mainLogName}";
         try
         {
-            var logResponse = await httpClient.GetAsync(logContentUrl);
+            HttpResponseMessage logResponse = await httpClient.GetAsync(logContentUrl);
             if (logResponse.IsSuccessStatusCode)
             {
                 await AppendLogLines(logResponse, mainLogName, logsBuilder);
@@ -147,9 +147,9 @@ public abstract partial class LocalTestingTestBase
 
     private static async Task AppendLogLines(System.Net.Http.HttpResponseMessage logResponse, string mainLogName, System.Text.StringBuilder logsBuilder)
     {
-        var logContent = await logResponse.Content.ReadAsStringAsync();
-        var lines = logContent.Split('\n');
-        var lastLines = lines.Length > 500 ? lines[^500..] : lines;
+        string logContent = await logResponse.Content.ReadAsStringAsync();
+        string[] lines = logContent.Split('\n');
+        string[] lastLines = lines.Length > 500 ? lines[^500..] : lines;
         logsBuilder.AppendLine($"\n  Last 500 lines of {mainLogName}:");
         logsBuilder.AppendLine(string.Join('\n', lastLines));
     }
@@ -162,14 +162,14 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            var url = $"{flinkEndpoint.TrimEnd('/')}/jobs/{jobId}/exceptions";
+            using HttpClient httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            string url = $"{flinkEndpoint.TrimEnd('/')}/jobs/{jobId}/exceptions";
             TestContext.WriteLine($"🔍 Fetching job exceptions from: {url}");
 
-            var response = await httpClient.GetAsync(url);
+            HttpResponseMessage response = await httpClient.GetAsync(url);
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
+                string content = await response.Content.ReadAsStringAsync();
                 return content;
             }
             else
@@ -191,16 +191,16 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            using var httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            var logsBuilder = new System.Text.StringBuilder();
+            using HttpClient httpClient = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            StringBuilder logsBuilder = new System.Text.StringBuilder();
 
-            var taskManagers = await GetTaskManagerListAsync(httpClient, flinkEndpoint);
+            JsonElement? taskManagers = await GetTaskManagerListAsync(httpClient, flinkEndpoint);
             if (!taskManagers.HasValue)
             {
                 return "Failed to get TaskManager list or no TaskManagers found";
             }
 
-            var tmCount = await ProcessTaskManagersAsync(httpClient, flinkEndpoint, taskManagers.Value, logsBuilder);
+            int tmCount = await ProcessTaskManagersAsync(httpClient, flinkEndpoint, taskManagers.Value, logsBuilder);
 
             return tmCount == 0 ? "No TaskManagers found" : logsBuilder.ToString();
         }
@@ -212,18 +212,18 @@ public abstract partial class LocalTestingTestBase
 
     private static async Task<System.Text.Json.JsonElement?> GetTaskManagerListAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint)
     {
-        var tmListUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers";
-        var tmListResponse = await httpClient.GetAsync(tmListUrl);
+        string tmListUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers";
+        HttpResponseMessage tmListResponse = await httpClient.GetAsync(tmListUrl);
 
         if (!tmListResponse.IsSuccessStatusCode)
         {
             return null;
         }
 
-        var tmListContent = await tmListResponse.Content.ReadAsStringAsync();
-        var tmListJson = System.Text.Json.JsonDocument.Parse(tmListContent);
+        string tmListContent = await tmListResponse.Content.ReadAsStringAsync();
+        JsonDocument tmListJson = System.Text.Json.JsonDocument.Parse(tmListContent);
 
-        if (!tmListJson.RootElement.TryGetProperty("taskmanagers", out var taskManagers))
+        if (!tmListJson.RootElement.TryGetProperty("taskmanagers", out JsonElement taskManagers))
         {
             return null;
         }
@@ -238,11 +238,11 @@ public abstract partial class LocalTestingTestBase
         System.Text.StringBuilder logsBuilder)
     {
         int tmCount = 0;
-        foreach (var tm in taskManagers.EnumerateArray())
+        foreach (JsonElement tm in taskManagers.EnumerateArray())
         {
-            if (tm.TryGetProperty("id", out var tmId))
+            if (tm.TryGetProperty("id", out JsonElement tmId))
             {
-                var taskManagerId = tmId.GetString();
+                string? taskManagerId = tmId.GetString();
                 tmCount++;
                 logsBuilder.AppendLine($"\n========== TaskManager {tmCount} (ID: {taskManagerId}) ==========");
 
@@ -267,19 +267,19 @@ public abstract partial class LocalTestingTestBase
 
     private static async Task AppendTaskManagerLogFilesAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, string? taskManagerId, System.Text.StringBuilder logsBuilder)
     {
-        var logUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/logs";
-        var logResponse = await httpClient.GetAsync(logUrl);
+        string logUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/logs";
+        HttpResponseMessage logResponse = await httpClient.GetAsync(logUrl);
 
         if (logResponse.IsSuccessStatusCode)
         {
-            var logContent = await logResponse.Content.ReadAsStringAsync();
-            var logJson = System.Text.Json.JsonDocument.Parse(logContent);
+            string logContent = await logResponse.Content.ReadAsStringAsync();
+            JsonDocument logJson = System.Text.Json.JsonDocument.Parse(logContent);
 
-            if (logJson.RootElement.TryGetProperty("logs", out var logs))
+            if (logJson.RootElement.TryGetProperty("logs", out JsonElement logs))
             {
-                foreach (var logFile in logs.EnumerateArray())
+                foreach (JsonElement logFile in logs.EnumerateArray())
                 {
-                    if (logFile.TryGetProperty("name", out var name))
+                    if (logFile.TryGetProperty("name", out JsonElement name))
                     {
                         logsBuilder.AppendLine($"  Log file: {name.GetString()}");
                     }
@@ -290,14 +290,14 @@ public abstract partial class LocalTestingTestBase
 
     private static async Task AppendTaskManagerStdoutAsync(System.Net.Http.HttpClient httpClient, string flinkEndpoint, string? taskManagerId, System.Text.StringBuilder logsBuilder)
     {
-        var stdoutUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/stdout";
-        var stdoutResponse = await httpClient.GetAsync(stdoutUrl);
+        string stdoutUrl = $"{flinkEndpoint.TrimEnd('/')}/taskmanagers/{taskManagerId}/stdout";
+        HttpResponseMessage stdoutResponse = await httpClient.GetAsync(stdoutUrl);
 
         if (stdoutResponse.IsSuccessStatusCode)
         {
-            var stdoutContent = await stdoutResponse.Content.ReadAsStringAsync();
-            var lines = stdoutContent.Split('\n');
-            var lastLines = lines.Length > 100 ? lines[^100..] : lines;
+            string stdoutContent = await stdoutResponse.Content.ReadAsStringAsync();
+            string[] lines = stdoutContent.Split('\n');
+            string[] lastLines = lines.Length > 100 ? lines[^100..] : lines;
             logsBuilder.AppendLine($"\n  Last 100 lines of stdout:");
             logsBuilder.AppendLine(string.Join('\n', lastLines));
         }
@@ -312,9 +312,9 @@ public abstract partial class LocalTestingTestBase
         try
         {
             // Get all container names and filter in C# to handle Aspire's random suffixes
-            var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
-            var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            var containerName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            string containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
+            string[] containers = containerNames.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            string? containerName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (string.IsNullOrEmpty(containerName))
             {
@@ -322,7 +322,7 @@ public abstract partial class LocalTestingTestBase
             }
 
             TestContext.WriteLine($"🔍 Getting logs from TaskManager container: {containerName}");
-            var logs = await RunDockerCommandAsync($"logs {containerName} --tail 20 2>&1");
+            string logs = await RunDockerCommandAsync($"logs {containerName} --tail 20 2>&1");
             return $"========== TaskManager Container Logs ({containerName}) - Last 20 Lines ==========\n{logs}";
         }
         catch (Exception ex)
@@ -337,32 +337,32 @@ public abstract partial class LocalTestingTestBase
     /// </summary>
     protected static async Task<string> GetFlinkJobDiagnosticsAsync(string flinkEndpoint, string? jobId = null)
     {
-        var diagnostics = new System.Text.StringBuilder();
+        StringBuilder diagnostics = new System.Text.StringBuilder();
         diagnostics.AppendLine("\n" + new string('=', 80));
         diagnostics.AppendLine("FLINK JOB FAILURE DIAGNOSTICS");
         diagnostics.AppendLine(new string('=', 80));
 
         // 1. Get JobManager logs (most important for job submission failures)
         diagnostics.AppendLine("\n--- JobManager Logs (from Flink REST API) ---");
-        var jmLogs = await GetFlinkJobManagerLogsAsync(flinkEndpoint);
+        string jmLogs = await GetFlinkJobManagerLogsAsync(flinkEndpoint);
         diagnostics.AppendLine(jmLogs);
 
         // 2. Get job exceptions if jobId is provided
         if (!string.IsNullOrEmpty(jobId))
         {
             diagnostics.AppendLine("\n--- Job Exceptions ---");
-            var exceptions = await GetFlinkJobExceptionsAsync(flinkEndpoint, jobId);
+            string exceptions = await GetFlinkJobExceptionsAsync(flinkEndpoint, jobId);
             diagnostics.AppendLine(exceptions);
         }
 
         // 3. Get TaskManager logs from Flink REST API
         diagnostics.AppendLine("\n--- TaskManager Logs (from Flink REST API) ---");
-        var tmLogs = await GetFlinkTaskManagerLogsAsync(flinkEndpoint);
+        string tmLogs = await GetFlinkTaskManagerLogsAsync(flinkEndpoint);
         diagnostics.AppendLine(tmLogs);
 
         // 4. Get TaskManager logs from Docker as fallback/additional info
         diagnostics.AppendLine("\n--- TaskManager Logs (from Docker) ---");
-        var dockerLogs = await GetTaskManagerLogsFromDockerAsync();
+        string dockerLogs = await GetTaskManagerLogsFromDockerAsync();
         diagnostics.AppendLine(dockerLogs);
 
         diagnostics.AppendLine("\n" + new string('=', 80));
@@ -379,12 +379,12 @@ public abstract partial class LocalTestingTestBase
         try
         {
             // Single quick check - no polling needed since containers should already be running
-            var containerInfo = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+            string containerInfo = await RunDockerCommandAsync("ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
 
             if (!string.IsNullOrWhiteSpace(containerInfo))
             {
                 // Check if we only got the header (no actual containers)
-                var lines = containerInfo.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] lines = containerInfo.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
 
                 if (lines.Length <= 1)
                 {
@@ -394,7 +394,7 @@ public abstract partial class LocalTestingTestBase
                     TestContext.WriteLine(containerInfo);
 
                     // Try listing ALL containers including stopped ones for diagnostics
-                    var allContainersInfo = await RunDockerCommandAsync("ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
+                    string allContainersInfo = await RunDockerCommandAsync("ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\"");
                     if (!string.IsNullOrWhiteSpace(allContainersInfo))
                     {
                         TestContext.WriteLine("🔍 All containers (including stopped):");
@@ -434,13 +434,13 @@ public abstract partial class LocalTestingTestBase
                 return;
             }
 
-            using var httpClient = new System.Net.Http.HttpClient();
-            var statusUrl = $"{gatewayBase}api/v1/jobs/{jobId}/status";
-            var response = await httpClient.GetAsync(statusUrl);
+            using HttpClient httpClient = new System.Net.Http.HttpClient();
+            string statusUrl = $"{gatewayBase}api/v1/jobs/{jobId}/status";
+            HttpResponseMessage response = await httpClient.GetAsync(statusUrl);
 
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
+                string content = await response.Content.ReadAsStringAsync();
                 TestContext.WriteLine($"📊 Job status response: {content}");
             }
             else
@@ -464,20 +464,20 @@ public abstract partial class LocalTestingTestBase
             TestContext.WriteLine($"🔍 [Flink Container Debug] {checkpoint}");
 
             // Get ALL container names and filter in C# to handle Aspire's random suffixes
-            var allContainersList = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
-            var allContainers = allContainersList.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            string allContainersList = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
+            string[] allContainers = allContainersList.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
 
-            var flinkContainers = allContainers.Where(name => name.Contains("flink", StringComparison.OrdinalIgnoreCase)).ToList();
+            List<string> flinkContainers = allContainers.Where(name => name.Contains("flink", StringComparison.OrdinalIgnoreCase)).ToList();
 
             TestContext.WriteLine($"🐳 Flink containers found: {string.Join(", ", flinkContainers)}");
 
             // Find JobManager container
-            var jmName = flinkContainers.Find(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            string? jmName = flinkContainers.Find(name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(jmName))
             {
                 TestContext.WriteLine($"📋 Found JobManager container: {jmName}");
-                var jmLogs = await RunDockerCommandAsync($"logs {jmName} --tail 100 2>&1");
+                string jmLogs = await RunDockerCommandAsync($"logs {jmName} --tail 100 2>&1");
                 TestContext.WriteLine($"📋 JobManager logs (last 100 lines):\n{jmLogs}");
             }
             else
@@ -487,12 +487,12 @@ public abstract partial class LocalTestingTestBase
             }
 
             // Find TaskManager container
-            var tmName = flinkContainers.Find(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            string? tmName = flinkContainers.Find(name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(tmName))
             {
                 TestContext.WriteLine($"📋 Found TaskManager container: {tmName}");
-                var tmLogs = await RunDockerCommandAsync($"logs {tmName} --tail 20 2>&1");
+                string tmLogs = await RunDockerCommandAsync($"logs {tmName} --tail 20 2>&1");
                 TestContext.WriteLine($"📋 TaskManager logs (last 20 lines):\n{tmLogs}");
             }
             else
@@ -522,34 +522,34 @@ public abstract partial class LocalTestingTestBase
             TestContext.WriteLine($"🔍 [Flink Job Debug] {checkpoint} - Job ID: {jobId}");
 
             // Get all container names and filter in C# to handle Aspire's random suffixes
-            var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
-            var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            string containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
+            string[] containers = containerNames.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
 
             // Find JobManager container
-            var jmName = Array.Find(containers, name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            string? jmName = Array.Find(containers, name => name.Contains("flink-jobmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(jmName))
             {
                 // Get logs filtered for this specific job
-                var jobLogs = await RunDockerCommandAsync($"logs {jmName} 2>&1");
-                var jobLogLines = jobLogs.Split('\n').Where(line => line.Contains(jobId, StringComparison.OrdinalIgnoreCase)).Take(30);
+                string jobLogs = await RunDockerCommandAsync($"logs {jmName} 2>&1");
+                IEnumerable<string> jobLogLines = jobLogs.Split('\n').Where(line => line.Contains(jobId, StringComparison.OrdinalIgnoreCase)).Take(30);
                 TestContext.WriteLine($"📋 Job-specific logs (last 30 lines):\n{string.Join('\n', jobLogLines)}");
             }
 
             // Find TaskManager container
-            var tmName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            string? tmName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (!string.IsNullOrWhiteSpace(tmName))
             {
                 // Get TaskManager logs and filter locally
-                var allLogs = await RunDockerCommandAsync($"logs {tmName} 2>&1");
+                string allLogs = await RunDockerCommandAsync($"logs {tmName} 2>&1");
 
                 // Check for Kafka-related logs
-                var kafkaLogLines = allLogs.Split('\n').Where(line => line.Contains("kafka", StringComparison.OrdinalIgnoreCase)).Take(20);
+                IEnumerable<string> kafkaLogLines = allLogs.Split('\n').Where(line => line.Contains("kafka", StringComparison.OrdinalIgnoreCase)).Take(20);
                 TestContext.WriteLine($"📋 Kafka-related logs from TaskManager (last 20 lines):\n{string.Join('\n', kafkaLogLines)}");
 
                 // Also check for any error logs
-                var errorLogLines = allLogs.Split('\n').Where(line =>
+                IEnumerable<string> errorLogLines = allLogs.Split('\n').Where(line =>
                     line.Contains("error", StringComparison.OrdinalIgnoreCase) ||
                     line.Contains("exception", StringComparison.OrdinalIgnoreCase) ||
                     line.Contains("fail", StringComparison.OrdinalIgnoreCase)).Take(20);
@@ -573,9 +573,9 @@ public abstract partial class LocalTestingTestBase
             TestContext.WriteLine("🔍 [Kafka Connectivity] Testing from Flink TaskManager container...");
 
             // Get all container names and filter in C# to handle Aspire's random suffixes
-            var containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
-            var containers = containerNames.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            var tmName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
+            string containerNames = await RunDockerCommandAsync("ps --format \"{{.Names}}\"");
+            string[] containers = containerNames.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            string? tmName = Array.Find(containers, name => name.Contains("flink-taskmanager", StringComparison.OrdinalIgnoreCase))?.Trim();
 
             if (string.IsNullOrWhiteSpace(tmName))
             {
@@ -586,19 +586,19 @@ public abstract partial class LocalTestingTestBase
             TestContext.WriteLine($"🐳 Using TaskManager container: {tmName}");
 
             // Test connectivity to kafka:9092
-            var testResult = await RunDockerCommandAsync($"exec {tmName} timeout 2 bash -c 'echo \"test\" | nc -w 1 kafka 9092 && echo \"SUCCESS\" || echo \"FAILED\"' 2>&1");
+            string testResult = await RunDockerCommandAsync($"exec {tmName} timeout 2 bash -c 'echo \"test\" | nc -w 1 kafka 9092 && echo \"SUCCESS\" || echo \"FAILED\"' 2>&1");
             TestContext.WriteLine($"📊 Kafka connectivity (kafka:9092): {testResult.Trim()}");
 
             // Also try to resolve the hostname
-            var dnsResult = await RunDockerCommandAsync($"exec {tmName} getent hosts kafka 2>&1 || echo \"DNS resolution failed\"");
+            string dnsResult = await RunDockerCommandAsync($"exec {tmName} getent hosts kafka 2>&1 || echo \"DNS resolution failed\"");
             TestContext.WriteLine($"📊 DNS resolution for 'kafka': {dnsResult.Trim()}");
 
             // Check if Kafka connectorJARs are present
-            var connectorCheck = await RunDockerCommandAsync($"exec {tmName} ls -lh /opt/flink/lib/*kafka* 2>&1 || echo \"No Kafka connector found\"");
+            string connectorCheck = await RunDockerCommandAsync($"exec {tmName} ls -lh /opt/flink/lib/*kafka* 2>&1 || echo \"No Kafka connector found\"");
             TestContext.WriteLine($"📊 Kafka connector JARs in Flink:\n{connectorCheck.Trim()}");
 
             // Check network settings
-            var networkInfo = await RunDockerCommandAsync($"inspect {tmName} --format '{{{{.NetworkSettings.Networks}}}}'");
+            string networkInfo = await RunDockerCommandAsync($"inspect {tmName} --format '{{{{.NetworkSettings.Networks}}}}'");
             TestContext.WriteLine($"📊 Container network info: {networkInfo.Trim()}");
         }
         catch (Exception ex)

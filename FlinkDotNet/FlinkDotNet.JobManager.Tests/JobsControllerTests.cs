@@ -127,7 +127,7 @@ public class JobsControllerTests
 
         _mockDispatcher
             .Setup(d => d.GetJobStatusAsync(jobId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((JobStatus?)null);
+            .ReturnsAsync((JobStatus?) null);
 
         // Act
         var result = await _controller.GetJobStatus(jobId);

@@ -21,10 +21,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map(new ToUpperInvariantMapFunction());
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -34,10 +34,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map(new ToLowerInvariantMapFunction());
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -47,10 +47,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map(new TrimMapFunction());
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -60,10 +60,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map(new TrimStartMapFunction());
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -73,10 +73,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map(new TrimEndMapFunction());
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -90,10 +90,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map("trim");
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -103,10 +103,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map("ltrim");
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -116,10 +116,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map("rtrim");
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -129,10 +129,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map("trim,upper");
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -142,10 +142,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map("lower,trim");
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -155,10 +155,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map("ltrim,upper");
-            
+
             // Assert
             Assert.That(mapped, Is.Not.Null);
         }
@@ -172,12 +172,12 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var result = stream
                 .Map(new TrimMapFunction())
                 .Map(new ToUpperInvariantMapFunction());
-            
+
             // Assert
             Assert.That(result, Is.Not.Null);
         }
@@ -187,13 +187,13 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var result = stream
                 .Map("ltrim")
                 .Map("upper")
                 .Map("rtrim");
-            
+
             // Assert
             Assert.That(result, Is.Not.Null);
         }
@@ -207,11 +207,11 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var mapped = stream.Map(new ToUpperInvariantMapFunction());
             var result = mapped.SinkToKafka("output-topic", "localhost:9092");
-            
+
             // Assert
             Assert.That(result, Is.Not.Null);
         }
@@ -221,13 +221,13 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var stream = this._env.FromKafka("input-topic", "localhost:9092", "test-group", "earliest");
-            
+
             // Act
             var result = stream
                 .Map(new TrimMapFunction())
                 .Map(new ToLowerInvariantMapFunction())
                 .SinkToKafka("output-topic", "localhost:9092");
-            
+
             // Assert
             Assert.That(result, Is.Not.Null);
         }
@@ -241,10 +241,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mapFunc = new ToUpperInvariantMapFunction();
-            
+
             // Act
             var result = mapFunc.Map("hello world");
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("HELLO WORLD"));
         }
@@ -254,10 +254,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mapFunc = new ToLowerInvariantMapFunction();
-            
+
             // Act
             var result = mapFunc.Map("HELLO WORLD");
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("hello world"));
         }
@@ -267,10 +267,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mapFunc = new TrimMapFunction();
-            
+
             // Act
             var result = mapFunc.Map("  hello world  ");
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("hello world"));
         }
@@ -280,10 +280,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mapFunc = new TrimStartMapFunction();
-            
+
             // Act
             var result = mapFunc.Map("  hello world  ");
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("hello world  "));
         }
@@ -293,10 +293,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mapFunc = new TrimEndMapFunction();
-            
+
             // Act
             var result = mapFunc.Map("  hello world  ");
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("  hello world"));
         }
@@ -310,10 +310,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mapFunc = new ToUpperInvariantMapFunction();
-            
+
             // Act
             var result = mapFunc.Map(null!);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo(string.Empty));
         }
@@ -323,10 +323,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             var mapFunc = new TrimMapFunction();
-            
+
             // Act
             var result = mapFunc.Map(null!);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo(string.Empty));
         }

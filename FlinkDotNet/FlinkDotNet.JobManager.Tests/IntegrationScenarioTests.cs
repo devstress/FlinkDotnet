@@ -26,11 +26,11 @@ public class IntegrationScenarioTests
         _mockResourceLogger = new Mock<ILogger<ResourceManager>>();
         _mockTemporalClient = new Mock<ITemporalClient>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
-        
+
         _mockLoggerFactory
             .Setup(lf => lf.CreateLogger(It.IsAny<string>()))
             .Returns(new Mock<ILogger>().Object);
-        
+
         _resourceManager = new ResourceManager(_mockResourceLogger.Object);
         _dispatcher = new Dispatcher(
             _resourceManager,
@@ -108,7 +108,7 @@ public class IntegrationScenarioTests
         await _resourceManager.RegisterTaskManagerAsync("tm-1", 4);
         var jobGraph = CreateValidJobGraph();
         var submitResult = await _dispatcher.SubmitJobAsync(jobGraph);
-        
+
         await Task.Delay(50);
         var availableBefore = _resourceManager.GetAvailableSlots().Count();
 

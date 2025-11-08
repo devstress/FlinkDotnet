@@ -24,8 +24,8 @@ internal static class TestPrerequisites
         // IMPORTANT: Do NOT use cached value - always re-check to detect newly built JARs
         // The previous caching caused tests to fail even after JARs were built
 
-        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
-        var gatewayProj = Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "FlinkDotNet.JobGateway.csproj");
+        string repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../.."));
+        string gatewayProj = Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "FlinkDotNet.JobGateway.csproj");
 
         if (!ValidateGatewayProjectExists(gatewayProj))
         {
@@ -34,7 +34,7 @@ internal static class TestPrerequisites
 
         try
         {
-            var runnerJarExists = CheckRunnerJarExists(repoRoot);
+            bool runnerJarExists = CheckRunnerJarExists(repoRoot);
             return runnerJarExists;
         }
         catch (Exception ex)
@@ -57,22 +57,22 @@ internal static class TestPrerequisites
 
     private static bool CheckRunnerJarExists(string repoRoot)
     {
-        var candidateNames = new[] { "flink-ir-runner-java17.jar" };
-        var candidateDirs = new[]
-        {
+        string[] candidateNames = ["flink-ir-runner-java17.jar"];
+        string[] candidateDirs =
+        [
             // Check Gateway build output directories first (where MSBuild copies JARs)
             Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "bin", "Release", "net9.0"),
             Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "bin", "Debug", "net9.0"),
             // Then check Maven build locations
             Path.Combine(repoRoot, "FlinkIRRunner", "target"),
             Path.Combine(repoRoot, "FlinkDotNet", "FlinkDotNet.JobGateway", "FlinkIRRunner", "target")
-        };
+        ];
 
-        foreach (var dir in candidateDirs)
+        foreach (string? dir in candidateDirs)
         {
-            foreach (var name in candidateNames)
+            foreach (string? name in candidateNames)
             {
-                var full = Path.Combine(dir, name);
+                string full = Path.Combine(dir, name);
                 if (File.Exists(full))
                 {
                     return true;
@@ -104,7 +104,7 @@ internal static class TestPrerequisites
     {
         try
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = runtimeCommand,
                 RedirectStandardOutput = true,
@@ -128,7 +128,7 @@ internal static class TestPrerequisites
                 psi.ArgumentList.Add("{{.Version}}");
             }
 
-            using var process = Process.Start(psi);
+            using Process? process = Process.Start(psi);
             if (process == null)
             {
                 return false;
@@ -149,12 +149,12 @@ internal static class TestPrerequisites
 
             if (process.ExitCode != 0)
             {
-                var error = process.StandardError.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
                 TestContext.WriteLine($"{runtimeCommand} probe failed with exit code {process.ExitCode}: {error}");
                 return false;
             }
 
-            var output = process.StandardOutput.ReadToEnd().Trim();
+            string output = process.StandardOutput.ReadToEnd().Trim();
             if (string.IsNullOrEmpty(output) || string.Equals(output, "null", StringComparison.OrdinalIgnoreCase))
             {
                 TestContext.WriteLine($"{runtimeCommand} probe returned an unexpected payload.");

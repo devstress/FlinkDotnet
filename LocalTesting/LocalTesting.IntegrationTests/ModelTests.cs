@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.DataStream;
@@ -29,24 +27,24 @@ public class ModelTests
     public void Test1_IRSchema_SerializesCompleteDefinition()
     {
         // Arrange - Create model definition with all features
-        var jobDef = new JobDefinition
+        JobDefinition jobDef = new JobDefinition
         {
             Source = new ModelDefinition
             {
                 ModelName = "sentiment_analyzer",
-                InputSchema = 
+                InputSchema =
                 {
                     { "text", "STRING" },
                     { "context", "STRING" }
                 },
-                OutputSchema = 
+                OutputSchema =
                 {
                     { "sentiment", "STRING" },
                     { "confidence", "DOUBLE" },
                     { "score", "DOUBLE" }
                 },
                 Provider = "openai",
-                Properties = 
+                Properties =
                 {
                     { "task", "classification" },
                     { "openai.model", "gpt-4" },
@@ -58,20 +56,20 @@ public class ModelTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "Model Test",
+                JobName = "Model Test",
                 Version = "1.0"
             }
         };
 
         // Act - Serialize and deserialize
-        var json = JsonSerializer.Serialize(jobDef, new JsonSerializerOptions { WriteIndented = true });
-        var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
+        string json = JsonSerializer.Serialize(jobDef, new JsonSerializerOptions { WriteIndented = true });
+        JobDefinition? deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
 
         // Assert - Structure
         Assert.That(deserialized, Is.Not.Null);
         Assert.That(deserialized!.Source, Is.InstanceOf<ModelDefinition>());
 
-        var modelDef = deserialized.Source as ModelDefinition;
+        ModelDefinition? modelDef = deserialized.Source as ModelDefinition;
         Assert.That(modelDef, Is.Not.Null);
         Assert.That(modelDef!.Type, Is.EqualTo("model"));
         Assert.That(modelDef.ModelName, Is.EqualTo("sentiment_analyzer"));
@@ -113,10 +111,10 @@ public class ModelTests
     public void Test2_CSharpAPI_BuilderCreatesCorrectDefinition()
     {
         // Arrange
-        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         // Act - Build model using fluent API
-        var model = env.CreateModel("fraud_detector")
+        Model model = env.CreateModel("fraud_detector")
             .InputColumn("amount", "DOUBLE")
             .InputColumn("location", "STRING")
             .InputColumn("device_id", "STRING")
@@ -144,7 +142,7 @@ public class ModelTests
         Assert.That(model.OutputSchema["risk_score"], Is.EqualTo("DOUBLE"));
 
         // Assert - IR definition
-        var def = model.Definition;
+        ModelDefinition def = model.Definition;
         Assert.That(def.ModelName, Is.EqualTo("fraud_detector"));
         Assert.That(def.Provider, Is.EqualTo("openai"));
         Assert.That(def.Properties["task"], Is.EqualTo("classification"));
@@ -168,9 +166,9 @@ public class ModelTests
     public void Test3_SQLGeneration_CreatesValidDDL()
     {
         // Arrange
-        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
-        var model = env.CreateModel("content_moderator")
+        Model model = env.CreateModel("content_moderator")
             .InputColumn("text", "STRING")
             .InputColumn("image_url", "STRING")
             .OutputColumn("is_appropriate", "BOOLEAN")
@@ -182,7 +180,7 @@ public class ModelTests
             .Build();
 
         // Act
-        var sql = model.ToSql();
+        string sql = model.ToSql();
 
         // Assert - SQL structure
         Assert.That(sql, Does.Contain("CREATE MODEL content_moderator"));
@@ -209,10 +207,10 @@ public class ModelTests
     [Test]
     public void Test4_ProviderConfigurations_SupportMultipleProviders()
     {
-        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         // Part A: OpenAI Provider
-        var openaiModel = env.CreateModel("openai_model")
+        Model openaiModel = env.CreateModel("openai_model")
             .InputColumn("input", "STRING")
             .OutputColumn("output", "STRING")
             .WithProvider("openai")
@@ -223,12 +221,12 @@ public class ModelTests
 
         Assert.That(openaiModel.Provider, Is.EqualTo("openai"));
         Assert.That(openaiModel.Definition.Properties["openai.model"], Is.EqualTo("gpt-4"));
-        var openaiSql = openaiModel.ToSql();
+        string openaiSql = openaiModel.ToSql();
         Assert.That(openaiSql, Does.Contain("'provider' = 'openai'"));
         Assert.That(openaiSql, Does.Contain("'openai.model' = 'gpt-4'"));
 
         // Part B: Azure OpenAI Provider
-        var azureModel = env.CreateModel("azure_model")
+        Model azureModel = env.CreateModel("azure_model")
             .InputColumn("query", "STRING")
             .OutputColumn("response", "STRING")
             .WithProvider("azure_openai")
@@ -239,12 +237,12 @@ public class ModelTests
 
         Assert.That(azureModel.Provider, Is.EqualTo("azure_openai"));
         Assert.That(azureModel.Definition.Properties["azure.deployment"], Is.EqualTo("gpt-4"));
-        var azureSql = azureModel.ToSql();
+        string azureSql = azureModel.ToSql();
         Assert.That(azureSql, Does.Contain("'provider' = 'azure_openai'"));
         Assert.That(azureSql, Does.Contain("'azure.endpoint' = 'https://my-resource.openai.azure.com'"));
 
         // Part C: Custom REST API Provider
-        var customModel = env.CreateModel("custom_model")
+        Model customModel = env.CreateModel("custom_model")
             .InputColumn("data", "STRING")
             .OutputColumn("result", "STRING")
             .WithProvider("custom")
@@ -256,7 +254,7 @@ public class ModelTests
 
         Assert.That(customModel.Provider, Is.EqualTo("custom"));
         Assert.That(customModel.Definition.Properties["endpoint"], Is.EqualTo("https://my-api.example.com/predict"));
-        var customSql = customModel.ToSql();
+        string customSql = customModel.ToSql();
         Assert.That(customSql, Does.Contain("'provider' = 'custom'"));
         Assert.That(customSql, Does.Contain("'endpoint' = 'https://my-api.example.com/predict'"));
 
@@ -279,10 +277,10 @@ public class ModelTests
     [Test]
     public void Test5_ValidationAndEdgeCases_HandlesVariousScenarios()
     {
-        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
 
         // Part A: Different data types
-        var typesModel = env.CreateModel("types_test")
+        Model typesModel = env.CreateModel("types_test")
             .InputColumn("string_col", "STRING")
             .InputColumn("int_col", "INT")
             .InputColumn("bigint_col", "BIGINT")
@@ -295,7 +293,7 @@ public class ModelTests
 
         Assert.That(typesModel.InputSchema, Has.Count.EqualTo(6));
         Assert.That(typesModel.InputSchema["timestamp_col"], Is.EqualTo("TIMESTAMP(3)"));
-        var typesSql = typesModel.ToSql();
+        string typesSql = typesModel.ToSql();
         Assert.That(typesSql, Does.Contain("STRING"));
         Assert.That(typesSql, Does.Contain("INT"));
         Assert.That(typesSql, Does.Contain("BIGINT"));
@@ -304,7 +302,7 @@ public class ModelTests
         Assert.That(typesSql, Does.Contain("TIMESTAMP(3)"));
 
         // Part B: Bulk schema addition
-        var bulkModel = env.CreateModel("bulk_test")
+        Model bulkModel = env.CreateModel("bulk_test")
             .InputColumns(new Dictionary<string, string>
             {
                 { "field1", "STRING" },
@@ -355,29 +353,29 @@ public class ModelTests
         });
 
         // Part D: DROP operation (simple SQL generation)
-        var dropModel = new Model(new ModelDefinition
+        Model dropModel = new Model(new ModelDefinition
         {
             ModelName = "old_model",
             Operation = "DROP"
         });
-        var dropSql = dropModel.ToSql();
+        string dropSql = dropModel.ToSql();
         Assert.That(dropSql, Is.EqualTo("DROP MODEL old_model"));
 
         // Part E: DESCRIBE operation
-        var describeModel = new Model(new ModelDefinition
+        Model describeModel = new Model(new ModelDefinition
         {
             ModelName = "my_model",
             Operation = "DESCRIBE"
         });
-        var describeSql = describeModel.ToSql();
+        string describeSql = describeModel.ToSql();
         Assert.That(describeSql, Is.EqualTo("DESCRIBE MODEL my_model"));
 
         // Part F: SHOW operation
-        var showModel = new Model(new ModelDefinition
+        Model showModel = new Model(new ModelDefinition
         {
             Operation = "SHOW"
         });
-        var showSql = showModel.ToSql();
+        string showSql = showModel.ToSql();
         Assert.That(showSql, Is.EqualTo("SHOW MODELS"));
     }
 

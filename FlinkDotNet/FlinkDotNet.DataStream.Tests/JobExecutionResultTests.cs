@@ -62,7 +62,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var result = new JobExecutionResult
             {
-                                Success = true,
+                Success = true,
                 Error = null
             };
 
@@ -80,7 +80,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var result = new JobExecutionResult
             {
-                                JobName = "Integration Test Job",
+                JobName = "Integration Test Job",
                 Success = false,
                 StartTime = startTime,
                 EndTime = endTime,

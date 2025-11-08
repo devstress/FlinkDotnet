@@ -32,7 +32,7 @@ public class FlinkJobManagerFinalCoverageTests
         this._mockLogger = new Mock<ILogger<FlinkJobManager>>();
         this._mockConfiguration = new Mock<IConfiguration>();
         this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-        
+
         // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
         _ = this._mockHttpMessageHandler
             .Protected()
@@ -41,14 +41,14 @@ public class FlinkJobManagerFinalCoverageTests
                 ItExpr.IsAny<HttpRequestMessage>(),
                 ItExpr.IsAny<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-        
+
         this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
         {
             Timeout = TimeSpan.FromSeconds(1) // Short timeout for unmocked calls
         };
 
         // Setup IConfiguration to return null by default (no environment variables or config)
-        _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?)null);
+        _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
     }
 
     [TearDown]

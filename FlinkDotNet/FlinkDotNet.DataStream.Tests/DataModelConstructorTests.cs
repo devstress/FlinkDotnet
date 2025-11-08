@@ -41,7 +41,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var result = new JobExecutionResult
             {
-                                JobName = "test-job",
+                JobName = "test-job",
                 Success = true
             };
 
@@ -70,7 +70,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var status = new JobStatus
             {
-                                State = "RUNNING",
+                State = "RUNNING",
                 Parallelism = 4
             };
 
@@ -84,7 +84,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var status = new JobStatus
             {
-                                JobName = "name",
+                JobName = "name",
                 State = "RUNNING",
                 Parallelism = 4,
                 MaxParallelism = 128,

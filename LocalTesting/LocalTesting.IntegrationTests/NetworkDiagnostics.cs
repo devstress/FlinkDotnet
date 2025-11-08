@@ -15,8 +15,8 @@ public static class NetworkDiagnostics
     private static string GetLogDirectory()
     {
         // Navigate from bin/Debug|Release/net9.0 to LocalTesting/test-logs
-        var baseDir = AppContext.BaseDirectory;
-        var localTestingRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
+        string baseDir = AppContext.BaseDirectory;
+        string localTestingRoot = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "..", ".."));
         return Path.Combine(localTestingRoot, "test-logs");
     }
 
@@ -31,12 +31,12 @@ public static class NetworkDiagnostics
             // Ensure log directory exists
             Directory.CreateDirectory(LogDirectory);
 
-            var dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
-            var timeStamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
-            var logFileName = $"network.log.{dateStamp}";
-            var logFilePath = Path.Combine(LogDirectory, logFileName);
+            string dateStamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            string timeStamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            string logFileName = $"network.log.{dateStamp}";
+            string logFilePath = Path.Combine(LogDirectory, logFileName);
 
-            var diagnostics = new StringBuilder();
+            StringBuilder diagnostics = new StringBuilder();
             diagnostics.AppendLine();
             diagnostics.AppendLine("╔══════════════════════════════════════════════════════════════");
             diagnostics.AppendLine($"║ Network Diagnostics - {checkpointName}");
@@ -75,7 +75,7 @@ public static class NetworkDiagnostics
         diagnostics.AppendLine();
 
         // Try Docker first
-        var dockerPs = await TryRunCommandAsync("docker", "ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\\t{{.Networks}}\"");
+        string dockerPs = await TryRunCommandAsync("docker", "ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\\t{{.Networks}}\"");
         if (!string.IsNullOrWhiteSpace(dockerPs))
         {
             diagnostics.AppendLine("🐳 Docker Containers:");
@@ -83,7 +83,7 @@ public static class NetworkDiagnostics
             diagnostics.AppendLine();
 
             // Also capture all containers (including stopped)
-            var dockerPsAll = await TryRunCommandAsync("docker", "ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\\t{{.Networks}}\"");
+            string dockerPsAll = await TryRunCommandAsync("docker", "ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\\t{{.Networks}}\"");
             if (!string.IsNullOrWhiteSpace(dockerPsAll))
             {
                 diagnostics.AppendLine("🐳 All Docker Containers (including stopped):");
@@ -94,7 +94,7 @@ public static class NetworkDiagnostics
         else
         {
             // Try Podman as fallback
-            var podmanPs = await TryRunCommandAsync("podman", "ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\\t{{.Networks}}\"");
+            string podmanPs = await TryRunCommandAsync("podman", "ps --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\\t{{.Networks}}\"");
             if (!string.IsNullOrWhiteSpace(podmanPs))
             {
                 diagnostics.AppendLine("🦭 Podman Containers:");
@@ -102,7 +102,7 @@ public static class NetworkDiagnostics
                 diagnostics.AppendLine();
 
                 // Also capture all containers (including stopped)
-                var podmanPsAll = await TryRunCommandAsync("podman", "ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\\t{{.Networks}}\"");
+                string podmanPsAll = await TryRunCommandAsync("podman", "ps -a --format \"table {{.Names}}\\t{{.Status}}\\t{{.Ports}}\\t{{.Networks}}\"");
                 if (!string.IsNullOrWhiteSpace(podmanPsAll))
                 {
                     diagnostics.AppendLine("🦭 All Podman Containers (including stopped):");
@@ -129,7 +129,7 @@ public static class NetworkDiagnostics
         diagnostics.AppendLine();
 
         // Try Docker first
-        var dockerNetworks = await TryRunCommandAsync("docker", "network ls --format \"table {{.Name}}\\t{{.Driver}}\\t{{.Scope}}\"");
+        string dockerNetworks = await TryRunCommandAsync("docker", "network ls --format \"table {{.Name}}\\t{{.Driver}}\\t{{.Scope}}\"");
         if (!string.IsNullOrWhiteSpace(dockerNetworks))
         {
             diagnostics.AppendLine("🐳 Docker Networks:");
@@ -142,7 +142,7 @@ public static class NetworkDiagnostics
         else
         {
             // Try Podman as fallback
-            var podmanNetworks = await TryRunCommandAsync("podman", "network ls --format \"table {{.Name}}\\t{{.Driver}}\"");
+            string podmanNetworks = await TryRunCommandAsync("podman", "network ls --format \"table {{.Name}}\\t{{.Driver}}\"");
             if (!string.IsNullOrWhiteSpace(podmanNetworks))
             {
                 diagnostics.AppendLine("🦭 Podman Networks:");
@@ -165,18 +165,18 @@ public static class NetworkDiagnostics
     /// </summary>
     private static async Task InspectNetworksAsync(StringBuilder diagnostics, string command, string networkList)
     {
-        var lines = networkList.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        string[] lines = networkList.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
         // Skip header line and extract network names
-        var networkNames = lines
+        List<string?> networkNames = lines
             .Skip(1)
-            .Select(line => line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
+            .Select(line => line.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
             .Where(name => !string.IsNullOrWhiteSpace(name))
             .ToList();
 
-        foreach (var networkName in networkNames)
+        foreach (string? networkName in networkNames)
         {
-            var networkInspect = await TryRunCommandAsync(command, $"network inspect {networkName}");
+            string networkInspect = await TryRunCommandAsync(command, $"network inspect {networkName}");
             if (!string.IsNullOrWhiteSpace(networkInspect))
             {
                 diagnostics.AppendLine($"📋 Network Details: {networkName}");
@@ -198,7 +198,7 @@ public static class NetworkDiagnostics
         diagnostics.AppendLine();
 
         // Try to find Aspire-created networks (typically have specific patterns)
-        var dockerNetworks = await TryRunCommandAsync("docker", "network ls --filter \"name=aspire\" --format \"table {{.Name}}\\t{{.Driver}}\\t{{.Scope}}\"");
+        string dockerNetworks = await TryRunCommandAsync("docker", "network ls --filter \"name=aspire\" --format \"table {{.Name}}\\t{{.Driver}}\\t{{.Scope}}\"");
         if (!string.IsNullOrWhiteSpace(dockerNetworks))
         {
             diagnostics.AppendLine("🐳 Aspire Networks (Docker):");
@@ -206,7 +206,7 @@ public static class NetworkDiagnostics
             diagnostics.AppendLine();
         }
 
-        var podmanNetworks = await TryRunCommandAsync("podman", "network ls --filter \"name=aspire\" --format \"table {{.Name}}\\t{{.Driver}}\"");
+        string podmanNetworks = await TryRunCommandAsync("podman", "network ls --filter \"name=aspire\" --format \"table {{.Name}}\\t{{.Driver}}\"");
         if (!string.IsNullOrWhiteSpace(podmanNetworks))
         {
             diagnostics.AppendLine("🦭 Aspire Networks (Podman):");
@@ -215,7 +215,7 @@ public static class NetworkDiagnostics
         }
 
         // Also check for custom networks that might be created by tests
-        var customNetworks = await TryRunCommandAsync("docker", "network ls --filter \"driver=bridge\" --format \"table {{.Name}}\\t{{.Driver}}\\t{{.Scope}}\"");
+        string customNetworks = await TryRunCommandAsync("docker", "network ls --filter \"driver=bridge\" --format \"table {{.Name}}\\t{{.Driver}}\\t{{.Scope}}\"");
         if (!string.IsNullOrWhiteSpace(customNetworks))
         {
             diagnostics.AppendLine("🌉 Bridge Networks:");
@@ -231,7 +231,7 @@ public static class NetworkDiagnostics
     {
         try
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = command,
                 Arguments = arguments,
@@ -241,13 +241,13 @@ public static class NetworkDiagnostics
                 CreateNoWindow = true
             };
 
-            using var process = Process.Start(psi);
+            using Process? process = Process.Start(psi);
             if (process == null)
             {
                 return string.Empty;
             }
 
-            var output = await process.StandardOutput.ReadToEndAsync();
+            string output = await process.StandardOutput.ReadToEndAsync();
             await process.WaitForExitAsync();
 
             // Return output if successful, otherwise return empty
@@ -282,12 +282,12 @@ public static class NetworkDiagnostics
                 return;
             }
 
-            var cutoffDate = DateTime.UtcNow.AddDays(-7);
-            var logFiles = Directory.GetFiles(LogDirectory, "network.log.*")
+            DateTime cutoffDate = DateTime.UtcNow.AddDays(-7);
+            List<string> logFiles = Directory.GetFiles(LogDirectory, "network.log.*")
                 .Where(f => File.GetCreationTime(f) < cutoffDate)
                 .ToList();
 
-            foreach (var file in logFiles)
+            foreach (string? file in logFiles)
             {
                 try
                 {

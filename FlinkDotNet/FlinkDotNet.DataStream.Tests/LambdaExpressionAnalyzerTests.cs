@@ -18,10 +18,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.ToUpper();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("upper"));
         }
@@ -31,10 +31,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.ToUpperInvariant();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("upper"));
         }
@@ -44,10 +44,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.ToLower();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("lower"));
         }
@@ -57,10 +57,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.ToLowerInvariant();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("lower"));
         }
@@ -70,10 +70,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.Trim();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("trim"));
         }
@@ -83,10 +83,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.TrimStart();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("ltrim"));
         }
@@ -96,10 +96,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.TrimEnd();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("rtrim"));
         }
@@ -113,10 +113,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.Trim().ToUpper();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("trim,upper"));
         }
@@ -126,10 +126,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.ToLower().Trim();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("lower,trim"));
         }
@@ -139,10 +139,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s.TrimStart().ToUpperInvariant().TrimEnd();
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("ltrim,upper,rtrim"));
         }
@@ -156,10 +156,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<int, int>> lambda = i => i * 2;
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("multiply:$input:2"));
         }
@@ -169,10 +169,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<int, int>> lambda = i => i * i;
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("multiply:$input:$input"));
         }
@@ -182,10 +182,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<int, int>> lambda = i => i + 10;
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("add:$input:10"));
         }
@@ -195,10 +195,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<int, int>> lambda = i => i - 5;
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("subtract:$input:5"));
         }
@@ -208,10 +208,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<int, int>> lambda = i => i / 2;
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("divide:$input:2"));
         }
@@ -221,10 +221,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<int, int>> lambda = i => i % 3;
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("modulo:$input:3"));
         }
@@ -238,10 +238,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, string>> lambda = s => s;
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.EqualTo("identity"));
         }
@@ -251,10 +251,10 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Arrange
             Expression<Func<string, int>> lambda = s => s.Length;
-            
+
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda(lambda);
-            
+
             // Assert
             Assert.That(result, Is.Null);
         }
@@ -264,7 +264,7 @@ namespace FlinkDotNet.DataStream.Tests
         {
             // Act
             var result = LambdaExpressionAnalyzer.AnalyzeLambda<string, string>(null!);
-            
+
             // Assert
             Assert.That(result, Is.Null);
         }

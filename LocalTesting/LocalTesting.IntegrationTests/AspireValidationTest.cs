@@ -19,23 +19,23 @@ public static class AspireValidationTest
         Console.WriteLine("============================================");
         Console.WriteLine();
 
-        var allPassed = true;
+        bool allPassed = true;
 
         // Test 1: Kafka Connectivity
         Console.WriteLine("1. Testing Kafka connectivity...");
-        var kafkaResult = TestKafkaConnectivity();
+        bool kafkaResult = TestKafkaConnectivity();
         LogResult("Kafka", kafkaResult);
         allPassed &= kafkaResult;
 
         // Test 2: Flink JobManager
         Console.WriteLine("\n2. Testing Flink JobManager...");
-        var flinkResult = await TestFlinkJobManager();
+        bool flinkResult = await TestFlinkJobManager();
         LogResult("Flink JobManager", flinkResult);
         allPassed &= flinkResult;
 
         // Test 3: Flink Job Gateway  
         Console.WriteLine("\n3. Testing Flink Job Gateway...");
-        var gatewayResult = await TestFlinkGateway();
+        bool gatewayResult = await TestFlinkGateway();
         LogResult("Flink Job Gateway", gatewayResult);
         allPassed &= gatewayResult;
 
@@ -70,14 +70,14 @@ public static class AspireValidationTest
     {
         try
         {
-            var config = new AdminClientConfig
+            AdminClientConfig config = new AdminClientConfig
             {
                 BootstrapServers = "localhost:9092",
                 SocketTimeoutMs = 5000
             };
 
-            using var admin = new AdminClientBuilder(config).Build();
-            var metadata = admin.GetMetadata(TimeSpan.FromSeconds(3));
+            using IAdminClient admin = new AdminClientBuilder(config).Build();
+            Metadata metadata = admin.GetMetadata(TimeSpan.FromSeconds(3));
 
             if (metadata?.Brokers?.Count > 0)
             {
@@ -101,11 +101,11 @@ public static class AspireValidationTest
     {
         try
         {
-            var response = await _httpClient.GetAsync("http://localhost:8081/v1/overview");
+            HttpResponseMessage response = await _httpClient.GetAsync("http://localhost:8081/v1/overview");
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
-                var hasContent = !string.IsNullOrWhiteSpace(content);
+                string content = await response.Content.ReadAsStringAsync();
+                bool hasContent = !string.IsNullOrWhiteSpace(content);
                 Console.WriteLine($"   ✅ Connected successfully (status: {response.StatusCode}, has content: {hasContent})");
                 return true;
             }
@@ -126,10 +126,10 @@ public static class AspireValidationTest
     {
         try
         {
-            var response = await _httpClient.GetAsync("http://localhost:8086/api/v1/health");
+            HttpResponseMessage response = await _httpClient.GetAsync("http://localhost:8086/api/v1/health");
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
+                string content = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"   ✅ Connected successfully (status: {response.StatusCode})");
                 if (!string.IsNullOrWhiteSpace(content))
                 {
@@ -160,7 +160,7 @@ public static class AspireValidationTest
 
     private static void LogResult(string serviceName, bool success)
     {
-        var status = success ? "✅ PASS" : "❌ FAIL";
+        string status = success ? "✅ PASS" : "❌ FAIL";
         Console.WriteLine($"   {serviceName}: {status}");
     }
 }

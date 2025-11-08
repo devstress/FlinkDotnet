@@ -73,7 +73,7 @@ public class UnifiedSinkV2ConsolidatedTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "Exactly-Once Test",
+                JobName = "Exactly-Once Test",
                 Version = "1.0",
                 Parallelism = 4
             }
@@ -262,7 +262,10 @@ public class UnifiedSinkV2ConsolidatedTests
         // Part A: State snapshot progression
         TestSink sink = new();
         SinkWriterContext context = new()
-        { SubtaskId = 0, NumberOfParallelSubtasks = 1 };
+        {
+            SubtaskId = 0,
+            NumberOfParallelSubtasks = 1
+        };
 
         ISinkWriter<string, string, int> writer = await sink.CreateWriterAsync(context, restoredState: 100);
 
@@ -279,9 +282,15 @@ public class UnifiedSinkV2ConsolidatedTests
         TestSink parallelSink = new();
 
         SinkWriterContext writer1Context = new()
-        { SubtaskId = 0, NumberOfParallelSubtasks = 2 };
+        {
+            SubtaskId = 0,
+            NumberOfParallelSubtasks = 2
+        };
         SinkWriterContext writer2Context = new()
-        { SubtaskId = 1, NumberOfParallelSubtasks = 2 };
+        {
+            SubtaskId = 1,
+            NumberOfParallelSubtasks = 2
+        };
 
         ISinkWriter<string, string, int> writer1 = await parallelSink.CreateWriterAsync(writer1Context, restoredState: 0);
         ISinkWriter<string, string, int> writer2 = await parallelSink.CreateWriterAsync(writer2Context, restoredState: 500);
@@ -467,7 +476,7 @@ public class UnifiedSinkV2ConsolidatedTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "Complete Event Processor",
+                JobName = "Complete Event Processor",
                 Version = "1.0",
                 Parallelism = 4
             }

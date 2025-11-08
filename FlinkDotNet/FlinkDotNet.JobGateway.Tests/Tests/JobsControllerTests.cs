@@ -100,7 +100,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                                        JobName = "Test Job",
+                    JobName = "Test Job",
                     Version = "1.0"
                 },
                 Source = new KafkaSourceDefinition
@@ -187,7 +187,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                                        Version = "1.0"
+                    Version = "1.0"
                 },
                 Source = new SqlSourceDefinition
                 {
@@ -228,7 +228,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                                        Version = "1.0"
+                    Version = "1.0"
                 },
                 Source = new KafkaSourceDefinition { Topic = "test" },
                 Sink = new ConsoleSinkDefinition()
@@ -270,7 +270,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                                        Version = "1.0"
+                    Version = "1.0"
                 },
                 Source = new KafkaSourceDefinition { Topic = "test" },
                 Sink = new ConsoleSinkDefinition()
@@ -328,7 +328,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                                        Version = "1.0"
+                    Version = "1.0"
                 },
                 Source = new FileSourceDefinition
                 {
@@ -374,7 +374,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                                        Version = "1.0"
+                    Version = "1.0"
                 },
                 Source = new HttpSourceDefinition
                 {
@@ -421,7 +421,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                                        Version = "1.0",
+                    Version = "1.0",
                     Parallelism = 4
                 },
                 Source = new DatabaseSourceDefinition

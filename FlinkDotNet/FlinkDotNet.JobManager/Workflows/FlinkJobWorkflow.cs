@@ -83,7 +83,7 @@ public class FlinkJobWorkflow
     public async Task CancelJobSignalAsync()
     {
         _currentState = JobExecutionState.Canceling;
-        
+
         // Cancel all running tasks
         foreach (string taskId in _deployedTasks)
         {
@@ -173,10 +173,10 @@ public class FlinkJobWorkflow
     private async Task MonitorTaskExecutionAsync(string jobId)
     {
         _ = jobId; // Parameter reserved for future use - will be used for monitoring and logging
-        // Monitor task execution and handle failures
-        // This would poll task status or receive updates
-        // Implement fault tolerance and recovery here
-        
+                   // Monitor task execution and handle failures
+                   // This would poll task status or receive updates
+                   // Implement fault tolerance and recovery here
+
         // Simulate task execution
         foreach (string taskId in _deployedTasks)
         {
@@ -200,15 +200,24 @@ public class JobExecutionResult
     /// <summary>
     /// Whether job succeeded
     /// </summary>
-    public bool Success { get; set; }
+    public bool Success
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Final job state
     /// </summary>
-    public JobExecutionState State { get; set; }
+    public JobExecutionState State
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Error message if failed
     /// </summary>
-    public string? ErrorMessage { get; set; }
+    public string? ErrorMessage
+    {
+        get; set;
+    }
 }

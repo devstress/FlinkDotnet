@@ -56,17 +56,26 @@ public class ExecutionGraph
     /// <summary>
     /// Timestamp when job started executing
     /// </summary>
-    public DateTime? StartedAt { get; set; }
+    public DateTime? StartedAt
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Timestamp when job finished
     /// </summary>
-    public DateTime? FinishedAt { get; set; }
+    public DateTime? FinishedAt
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Error message if job failed
     /// </summary>
-    public string? FailureMessage { get; set; }
+    public string? FailureMessage
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -96,22 +105,34 @@ public class ExecutionVertex
     /// <summary>
     /// Parallel subtask index (0 to parallelism-1)
     /// </summary>
-    public int SubtaskIndex { get; set; }
+    public int SubtaskIndex
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Total parallelism of the operator
     /// </summary>
-    public int Parallelism { get; set; }
+    public int Parallelism
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Operator type for this vertex
     /// </summary>
-    public OperatorType OperatorType { get; set; }
+    public OperatorType OperatorType
+    {
+        get; set;
+    }
 
     /// <summary>
     /// TaskManager slot where this task is deployed
     /// </summary>
-    public TaskSlot? AssignedSlot { get; set; }
+    public TaskSlot? AssignedSlot
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Current state of this execution vertex
@@ -126,7 +147,10 @@ public class ExecutionVertex
     /// <summary>
     /// Error message if task failed
     /// </summary>
-    public string? Error { get; set; }
+    public string? Error
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -147,17 +171,26 @@ public class TaskSlot
     /// <summary>
     /// Slot number within the TaskManager
     /// </summary>
-    public int SlotNumber { get; set; }
+    public int SlotNumber
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Whether slot is currently allocated
     /// </summary>
-    public bool IsAllocated { get; set; }
+    public bool IsAllocated
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Job ID that allocated this slot (if allocated)
     /// </summary>
-    public string? AllocatedJobId { get; set; }
+    public string? AllocatedJobId
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -209,5 +242,8 @@ public class ExecutionEdge
     /// <summary>
     /// Partitioning strategy for data distribution
     /// </summary>
-    public PartitioningStrategy PartitioningStrategy { get; set; }
+    public PartitioningStrategy PartitioningStrategy
+    {
+        get; set;
+    }
 }

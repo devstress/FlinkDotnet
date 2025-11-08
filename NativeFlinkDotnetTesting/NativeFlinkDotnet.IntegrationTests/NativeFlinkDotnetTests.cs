@@ -1,7 +1,5 @@
-using NUnit.Framework;
-using Confluent.Kafka;
 using FlinkDotNet.JobManager.Models;
-using FlinkDotNet.JobManager.Interfaces;
+using NUnit.Framework;
 
 namespace NativeFlinkDotnet.IntegrationTests;
 
@@ -13,7 +11,6 @@ namespace NativeFlinkDotnet.IntegrationTests;
 [Category("native-dotnet")]
 public class NativeFlinkDotnetTests
 {
-    private static readonly TimeSpan TestTimeout = TimeSpan.FromMinutes(3);
 
     /// <summary>
     /// Test basic job submission and execution with native JobManager and TaskManager
@@ -22,7 +19,7 @@ public class NativeFlinkDotnetTests
     public async Task Test_BasicJobSubmission_ShouldExecuteSuccessfully()
     {
         // Arrange
-        var jobGraph = new JobGraph
+        JobGraph jobGraph = new JobGraph
         {
             JobName = "Basic Uppercase Job",
             MaxParallelism = 4
@@ -39,7 +36,7 @@ public class NativeFlinkDotnetTests
 
         // Act
         // TODO: Submit job to JobManager via REST API
-        
+
         // Assert
         Assert.Pass("Test structure created - awaiting JobManager implementation");
     }
@@ -51,7 +48,7 @@ public class NativeFlinkDotnetTests
     public async Task Test_XmlMapping_ShouldTransformCorrectly()
     {
         // Arrange - Create job with XML transformation logic
-        var jobGraph = new JobGraph
+        JobGraph jobGraph = new JobGraph
         {
             JobName = "XML Transform Job",
             MaxParallelism = 4
@@ -76,7 +73,7 @@ public class NativeFlinkDotnetTests
     public async Task Test_JsonMapping_ShouldTransformCorrectly()
     {
         // Arrange - Create job with JSON transformation logic
-        var jobGraph = new JobGraph
+        JobGraph jobGraph = new JobGraph
         {
             JobName = "JSON Transform Job",
             MaxParallelism = 4
@@ -101,7 +98,7 @@ public class NativeFlinkDotnetTests
     public async Task Test_TemporalWorkflow_ShouldManageState()
     {
         // Arrange
-        var jobGraph = new JobGraph
+        _ = new JobGraph
         {
             JobName = "Stateful Job",
             MaxParallelism = 4
@@ -109,7 +106,7 @@ public class NativeFlinkDotnetTests
 
         // Act
         // TODO: Execute job with Temporal workflow
-        
+
         // Assert
         Assert.Pass("Temporal workflow test - demonstrates state management");
     }
@@ -121,7 +118,7 @@ public class NativeFlinkDotnetTests
     public async Task Test_DistributedExecution_ShouldUseMultipleTaskManagers()
     {
         // Arrange
-        var jobGraph = new JobGraph
+        JobGraph jobGraph = new JobGraph
         {
             JobName = "Distributed Job",
             MaxParallelism = 8 // Use all 8 slots (2 TaskManagers × 4 slots)
@@ -146,7 +143,7 @@ public class NativeFlinkDotnetTests
     public async Task Test_FaultTolerance_ShouldRecoverFromFailure()
     {
         // Arrange
-        var jobGraph = new JobGraph
+        _ = new JobGraph
         {
             JobName = "Fault Tolerant Job",
             MaxParallelism = 4
@@ -154,7 +151,7 @@ public class NativeFlinkDotnetTests
 
         // Act
         // TODO: Simulate failure and verify recovery via Temporal
-        
+
         // Assert
         Assert.Pass("Fault tolerance test - demonstrates Temporal recovery");
     }

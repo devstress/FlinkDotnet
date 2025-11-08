@@ -1,9 +1,9 @@
 #nullable enable
+using FlinkDotNet.JobGateway.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.Protected;
-using FlinkDotNet.JobGateway.Services;
 using NUnit.Framework;
 
 namespace FlinkDotNet.JobGateway.Tests
@@ -34,7 +34,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Setup IConfiguration to return null by default
             // Tests must explicitly mock any configuration values they need
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string? key) => null);
-            
+
             // Mock FLINK_RUNNER_JAR_PATH to avoid Maven builds during tests
             string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
             if (repoRoot != null)
@@ -49,17 +49,17 @@ namespace FlinkDotNet.JobGateway.Tests
                     this._mockConfiguration.Setup(c => c["FLINK_RUNNER_JAR_PATH"]).Returns(jarPath);
                 }
             }
-            
+
             // Create FRESH HttpClient for each test to avoid BaseAddress modification errors
             // Must dispose any existing HttpClient first to ensure clean state
             this._httpClient?.Dispose();
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-            
+
             // Setup Dispose method to avoid MockException in TearDown
             _ = this._mockHttpMessageHandler
                 .Protected()
                 .Setup("Dispose", ItExpr.IsAny<bool>());
-            
+
             // Setup default handler for unmocked HTTP requests to fail fast
             _ = this._mockHttpMessageHandler
                 .Protected()
@@ -68,7 +68,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
                 .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-            
+
             // Don't set BaseAddress here - FlinkJobManager constructor will set it
             this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {

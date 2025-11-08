@@ -68,12 +68,18 @@ public class JobSubmissionResult
     /// <summary>
     /// Whether submission was successful
     /// </summary>
-    public bool Success { get; set; }
+    public bool Success
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Error message if submission failed
     /// </summary>
-    public string? ErrorMessage { get; set; }
+    public string? ErrorMessage
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -94,17 +100,26 @@ public class JobStatus
     /// <summary>
     /// Current execution state
     /// </summary>
-    public JobExecutionState State { get; set; }
+    public JobExecutionState State
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Job start time
     /// </summary>
-    public DateTime? StartTime { get; set; }
+    public DateTime? StartTime
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Job end time
     /// </summary>
-    public DateTime? EndTime { get; set; }
+    public DateTime? EndTime
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Duration of job execution

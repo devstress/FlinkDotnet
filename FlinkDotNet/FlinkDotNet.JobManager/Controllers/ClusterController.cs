@@ -2,9 +2,9 @@
 // Licensed under the Apache License, Version 2.0.
 // See LICENSE file in the project root for full license information.
 
-using Microsoft.AspNetCore.Mvc;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models.Responses;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FlinkDotNet.JobManager.Controllers;
 
@@ -120,7 +120,10 @@ public class ClusterController(
         catch (Exception ex)
         {
             this._logger.LogError(ex, "Failed to register TaskManager");
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new
+            {
+                error = ex.Message
+            });
         }
     }
 
@@ -140,10 +143,16 @@ public class ClusterController(
 
         if (!unregistered)
         {
-            return NotFound(new { error = $"TaskManager {taskManagerId} not found" });
+            return NotFound(new
+            {
+                error = $"TaskManager {taskManagerId} not found"
+            });
         }
 
-        return Ok(new { message = $"TaskManager {taskManagerId} unregistered successfully" });
+        return Ok(new
+        {
+            message = $"TaskManager {taskManagerId} unregistered successfully"
+        });
     }
 }
 
@@ -155,7 +164,10 @@ public class TaskManagerRegistrationRequest
     /// <summary>
     /// Unique identifier for the TaskManager.
     /// </summary>
-    public required string TaskManagerId { get; set; }
+    public required string TaskManagerId
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of execution slots on this TaskManager.

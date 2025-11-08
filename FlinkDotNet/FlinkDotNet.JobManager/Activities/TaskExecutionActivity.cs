@@ -66,7 +66,10 @@ public class TaskExecutionActivity
             await Task.Delay(TimeSpan.FromSeconds(1)); // Simulate processing
 
             // Send heartbeat periodically for long-running tasks
-            ActivityExecutionContext.Current.Heartbeat(new { Progress = 0.5 });
+            ActivityExecutionContext.Current.Heartbeat(new
+            {
+                Progress = 0.5
+            });
 
             await Task.Delay(TimeSpan.FromSeconds(1)); // Simulate more processing
 
@@ -154,20 +157,32 @@ public class TaskExecutionResult
     /// <summary>
     /// Whether execution succeeded
     /// </summary>
-    public bool Success { get; set; }
+    public bool Success
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of records processed
     /// </summary>
-    public long RecordsProcessed { get; set; }
+    public long RecordsProcessed
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Bytes processed
     /// </summary>
-    public long BytesProcessed { get; set; }
+    public long BytesProcessed
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Error message if failed
     /// </summary>
-    public string? ErrorMessage { get; set; }
+    public string? ErrorMessage
+    {
+        get; set;
+    }
 }
