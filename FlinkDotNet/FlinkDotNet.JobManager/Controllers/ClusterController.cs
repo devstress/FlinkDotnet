@@ -15,21 +15,14 @@ namespace FlinkDotNet.JobManager.Controllers;
 [ApiController]
 [Route("api")]
 [Produces("application/json")]
-public class ClusterController : ControllerBase
+public class ClusterController(
+    IResourceManager resourceManager,
+    IDispatcher dispatcher,
+    ILogger<ClusterController> logger) : ControllerBase
 {
-    private readonly IResourceManager _resourceManager;
-    private readonly IDispatcher _dispatcher;
-    private readonly ILogger<ClusterController> _logger;
-
-    public ClusterController(
-        IResourceManager resourceManager,
-        IDispatcher dispatcher,
-        ILogger<ClusterController> logger)
-    {
-        _resourceManager = resourceManager ?? throw new ArgumentNullException(nameof(resourceManager));
-        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+    private readonly IResourceManager _resourceManager = resourceManager ?? throw new ArgumentNullException(nameof(resourceManager));
+    private readonly IDispatcher _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+    private readonly ILogger<ClusterController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// Get cluster overview with resource and job statistics.
@@ -39,15 +32,15 @@ public class ClusterController : ControllerBase
     [ProducesResponseType(typeof(ClusterOverviewResponse), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetOverview()
     {
-        _logger.LogDebug("Getting cluster overview");
+        this._logger.LogDebug("Getting cluster overview");
 
-        List<JobStatus> jobs = await _dispatcher.ListJobsAsync();
+        List<JobStatus> jobs = await this._dispatcher.ListJobsAsync();
 
         ClusterOverviewResponse response = new()
         {
-            TaskManagers = _resourceManager.GetRegisteredTaskManagers().Count(),
-            TotalSlots = _resourceManager.GetAllSlots().Count(),
-            AvailableSlots = _resourceManager.GetAvailableSlots().Count(),
+            TaskManagers = this._resourceManager.GetRegisteredTaskManagers().Count(),
+            TotalSlots = this._resourceManager.GetAllSlots().Count(),
+            AvailableSlots = this._resourceManager.GetAvailableSlots().Count(),
             RunningJobs = jobs.Count(j => j.State == Models.JobExecutionState.Running),
             FinishedJobs = jobs.Count(j => j.State == Models.JobExecutionState.Finished),
             FailedJobs = jobs.Count(j => j.State == Models.JobExecutionState.Failed),
@@ -105,18 +98,18 @@ public class ClusterController : ControllerBase
     /// <param name="request">TaskManager registration details.</param>
     /// <returns>Registration confirmation.</returns>
     [HttpPost("taskmanagers/register")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult RegisterTaskManager([FromBody] TaskManagerRegistrationRequest request)
     {
         try
         {
-            _logger.LogInformation(
+            this._logger.LogInformation(
                 "Registering TaskManager: {TaskManagerId} with {Slots} slots",
                 request.TaskManagerId,
                 request.NumberOfSlots);
 
-            _resourceManager.RegisterTaskManager(request.TaskManagerId, request.NumberOfSlots);
+            this._resourceManager.RegisterTaskManager(request.TaskManagerId, request.NumberOfSlots);
 
             return Ok(new
             {
@@ -127,7 +120,7 @@ public class ClusterController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to register TaskManager");
+            this._logger.LogError(ex, "Failed to register TaskManager");
             return BadRequest(new { error = ex.Message });
         }
     }
@@ -138,13 +131,13 @@ public class ClusterController : ControllerBase
     /// <param name="taskManagerId">ID of the TaskManager to unregister.</param>
     /// <returns>Unregistration confirmation.</returns>
     [HttpPost("taskmanagers/{taskManagerId}/unregister")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult UnregisterTaskManager(string taskManagerId)
     {
-        _logger.LogInformation("Unregistering TaskManager: {TaskManagerId}", taskManagerId);
+        this._logger.LogInformation("Unregistering TaskManager: {TaskManagerId}", taskManagerId);
 
-        bool unregistered = _resourceManager.UnregisterTaskManager(taskManagerId);
+        bool unregistered = this._resourceManager.UnregisterTaskManager(taskManagerId);
 
         if (!unregistered)
         {

@@ -65,6 +65,15 @@ public class JobVertex
     public string VertexId { get; set; } = Guid.NewGuid().ToString();
 
     /// <summary>
+    /// Name of the vertex (for display and identification)
+    /// </summary>
+    public string Name
+    {
+        get => OperatorName;
+        set => OperatorName = value;
+    }
+
+    /// <summary>
     /// Name of the operator (e.g., "Map", "Filter", "Source")
     /// </summary>
     public string OperatorName { get; set; } = string.Empty;
@@ -78,6 +87,15 @@ public class JobVertex
     /// Operator type identifier
     /// </summary>
     public OperatorType Type { get; set; }
+
+    /// <summary>
+    /// Operator type (alternative property name)
+    /// </summary>
+    public OperatorType OperatorType
+    {
+        get => Type;
+        set => Type = value;
+    }
 
     /// <summary>
     /// Serialized operator logic (lambda expressions, function references)

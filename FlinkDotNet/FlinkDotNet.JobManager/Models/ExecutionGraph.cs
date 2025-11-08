@@ -29,9 +29,19 @@ public class ExecutionGraph
     public string JobId { get; set; } = string.Empty;
 
     /// <summary>
+    /// Job name from JobGraph
+    /// </summary>
+    public string JobName { get; set; } = string.Empty;
+
+    /// <summary>
     /// List of execution vertices (parallel task instances)
     /// </summary>
     public List<ExecutionVertex> ExecutionVertices { get; set; } = new();
+
+    /// <summary>
+    /// List of execution edges (data flow between vertices)
+    /// </summary>
+    public List<ExecutionEdge> ExecutionEdges { get; set; } = new();
 
     /// <summary>
     /// Current state of the job execution
@@ -67,7 +77,16 @@ public class ExecutionVertex
     /// <summary>
     /// Unique identifier for this execution vertex
     /// </summary>
-    public string ExecutionVertexId { get; set; } = Guid.NewGuid().ToString();
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+
+    /// <summary>
+    /// Alternate identifier (for backwards compatibility)
+    /// </summary>
+    public string ExecutionVertexId
+    {
+        get => Id;
+        set => Id = value;
+    }
 
     /// <summary>
     /// Reference to the job vertex this is an instance of
@@ -78,6 +97,16 @@ public class ExecutionVertex
     /// Parallel subtask index (0 to parallelism-1)
     /// </summary>
     public int SubtaskIndex { get; set; }
+
+    /// <summary>
+    /// Total parallelism of the operator
+    /// </summary>
+    public int Parallelism { get; set; }
+
+    /// <summary>
+    /// Operator type for this vertex
+    /// </summary>
+    public OperatorType OperatorType { get; set; }
 
     /// <summary>
     /// TaskManager slot where this task is deployed
@@ -93,6 +122,11 @@ public class ExecutionVertex
     /// Operator name for display
     /// </summary>
     public string OperatorName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Error message if task failed
+    /// </summary>
+    public string? Error { get; set; }
 }
 
 /// <summary>
@@ -100,6 +134,11 @@ public class ExecutionVertex
 /// </summary>
 public class TaskSlot
 {
+    /// <summary>
+    /// Unique slot identifier
+    /// </summary>
+    public string SlotId { get; set; } = Guid.NewGuid().ToString();
+
     /// <summary>
     /// TaskManager identifier hosting this slot
     /// </summary>
@@ -114,6 +153,11 @@ public class TaskSlot
     /// Whether slot is currently allocated
     /// </summary>
     public bool IsAllocated { get; set; }
+
+    /// <summary>
+    /// Job ID that allocated this slot (if allocated)
+    /// </summary>
+    public string? AllocatedJobId { get; set; }
 }
 
 /// <summary>
@@ -136,6 +180,7 @@ public enum ExecutionState
 public enum JobExecutionState
 {
     Created,
+    Deploying,
     Running,
     Failing,
     Failed,
@@ -144,4 +189,25 @@ public enum JobExecutionState
     Finished,
     Restarting,
     Suspended
+}
+
+/// <summary>
+/// Represents a data flow edge between execution vertices
+/// </summary>
+public class ExecutionEdge
+{
+    /// <summary>
+    /// Source execution vertex ID
+    /// </summary>
+    public string SourceExecutionVertexId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Target execution vertex ID
+    /// </summary>
+    public string TargetExecutionVertexId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Partitioning strategy for data distribution
+    /// </summary>
+    public PartitioningStrategy PartitioningStrategy { get; set; }
 }

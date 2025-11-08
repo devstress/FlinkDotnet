@@ -12,15 +12,10 @@ namespace FlinkDotNet.JobManager.Implementation;
 /// Dispatcher manages job submission and lifecycle.
 /// Thread-safe implementation for concurrent job submission.
 /// </summary>
-public class Dispatcher : IDispatcher
+public class Dispatcher(IResourceManager resourceManager) : IDispatcher
 {
     private readonly ConcurrentDictionary<string, JobInfo> _jobs = new();
-    private readonly IResourceManager _resourceManager;
-
-    public Dispatcher(IResourceManager resourceManager)
-    {
-        _resourceManager = resourceManager ?? throw new ArgumentNullException(nameof(resourceManager));
-    }
+    private readonly IResourceManager _resourceManager = resourceManager ?? throw new ArgumentNullException(nameof(resourceManager));
 
     /// <summary>
     /// Submit a new job for execution.
@@ -157,7 +152,7 @@ public class Dispatcher : IDispatcher
         return Task.FromResult(jobs);
     }
 
-    private void ValidateJobGraph(JobGraph jobGraph)
+    private static void ValidateJobGraph(JobGraph jobGraph)
     {
         if (string.IsNullOrWhiteSpace(jobGraph.JobName))
         {
@@ -205,7 +200,7 @@ public class Dispatcher : IDispatcher
         }
     }
 
-    private int CalculateTotalTasks(JobGraph jobGraph)
+    private static int CalculateTotalTasks(JobGraph jobGraph)
     {
         return jobGraph.Vertices.Sum(v => v.Parallelism);
     }
@@ -221,7 +216,7 @@ public class Dispatcher : IDispatcher
 
             // Check if we have enough slots
             int requiredSlots = jobInfo.TotalTasks;
-            int availableSlots = _resourceManager.GetAvailableSlots().Count();
+            int availableSlots = this._resourceManager.GetAvailableSlots().Count();
 
             if (availableSlots < requiredSlots)
             {
