@@ -40,7 +40,7 @@ namespace FlinkDotNet.JobGateway.Tests
             _mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            
+
             // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
             _ = _mockHttpMessageHandler
                 .Protected()
@@ -49,7 +49,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
                 .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-            
+
             _httpClient = new HttpClient(_mockHttpMessageHandler.Object)
             {
                 BaseAddress = new Uri("http://localhost:8081"),
@@ -130,10 +130,10 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 new { id = "numRecordsIn", value = "12345" }
             };
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
 
@@ -192,10 +192,10 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 new { id = "numRecordsOut", value = "67890" }
             };
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
 
@@ -252,10 +252,10 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 new { id = "parallelism", value = "8" }
             };
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
 
@@ -312,10 +312,10 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 new { id = "numRecordsIn", value = "not-a-number" }
             };
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
 
@@ -372,10 +372,10 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 new { id = "numRecordsOut", value = "invalid" }
             };
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
 
@@ -432,10 +432,10 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 new { id = "parallelism", value = "not-an-int" }
             };
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
 
@@ -490,7 +490,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new object[] { }));
-            
+
             // Setup non-success metrics response
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.NotFound, "");
 
@@ -544,7 +544,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Setup metrics discovery endpoint (Flink 2.x) - returns null
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK, "null");
-            
+
             // Setup null/invalid metrics response
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK, "null");
 
@@ -708,7 +708,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                                        JobName = "JAR Job Without Connectors"
+                    JobName = "JAR Job Without Connectors"
                 },
                 Source = new FileSourceDefinition
                 {
@@ -757,7 +757,7 @@ namespace FlinkDotNet.JobGateway.Tests
             {
                 Metadata = new JobMetadata
                 {
-                                        JobName = "Kafka Job"
+                    JobName = "Kafka Job"
                 },
                 Source = new KafkaSourceDefinition
                 {
@@ -827,10 +827,10 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(verticesResponse));
 
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
 
@@ -879,10 +879,10 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(verticesResponse));
 
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
 
@@ -935,10 +935,10 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(verticesResponse));
 
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
 
@@ -990,10 +990,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 new { id = "numRecordsOut", value = "67890" },
                 new { id = "parallelism", value = "8" }
             };
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
 
@@ -1045,10 +1045,10 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(verticesResponse));
 
-                        // Setup metrics discovery endpoint (Flink 2.x) - empty
+            // Setup metrics discovery endpoint (Flink 2.x) - empty
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new object[] { }));
-            
+
             // Setup empty metrics array
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new object[] { }));
@@ -1108,10 +1108,10 @@ namespace FlinkDotNet.JobGateway.Tests
                 new { id = "someOtherMetric", value = "456" },
                 new { id = "numRecordsIn", value = "789" }  // One known metric
             };
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(metricsResponse));
 
@@ -1219,10 +1219,10 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(verticesResponse));
 
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
 
@@ -1275,10 +1275,10 @@ namespace FlinkDotNet.JobGateway.Tests
             SetupHttpResponse($"/v1/jobs/{flinkJobId}", HttpStatusCode.OK,
                 JsonSerializer.Serialize(verticesResponse));
 
-                        // Setup metrics discovery endpoint (Flink 2.x)
+            // Setup metrics discovery endpoint (Flink 2.x)
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
-            
+
             SetupHttpResponse($"/v1/jobs/{flinkJobId}/vertices/{vertexId}/metrics?get=", HttpStatusCode.OK,
                 JsonSerializer.Serialize(new[] { new { id = "numRecordsIn", value = "100" } }));
 

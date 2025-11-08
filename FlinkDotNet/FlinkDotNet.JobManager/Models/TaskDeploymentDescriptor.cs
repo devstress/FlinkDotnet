@@ -23,22 +23,34 @@ public class TaskDeploymentDescriptor
     /// <summary>
     /// Subtask index within the operator parallelism
     /// </summary>
-    public int SubtaskIndex { get; set; }
+    public int SubtaskIndex
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Total parallelism of the operator
     /// </summary>
-    public int Parallelism { get; set; }
+    public int Parallelism
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Operator type to execute
     /// </summary>
-    public OperatorType OperatorType { get; set; }
+    public OperatorType OperatorType
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Assigned task slot
     /// </summary>
-    public TaskSlot? AssignedSlot { get; set; }
+    public TaskSlot? AssignedSlot
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Configuration parameters for the task

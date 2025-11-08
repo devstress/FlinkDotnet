@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Confluent.Kafka;
 using LocalTesting.FlinkSqlAppHost;
@@ -27,7 +27,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             patternName: "Uppercase",
             jobCreator: (input, output, kafka, ct) =>
                 FlinkDotNetJobs.CreateUppercaseJob(input, output, kafka, "gateway-uppercase", ct),
-            inputMessages: new[] { "hello", "world" },
+            inputMessages: ["hello", "world"],
             expectedOutputCount: 2,
             description: "Uppercase transformation via Gateway"
         );
@@ -40,7 +40,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             patternName: "Filter",
             jobCreator: (input, output, kafka, ct) =>
                 FlinkDotNetJobs.CreateFilterJob(input, output, kafka, "gateway-filter", ct),
-            inputMessages: new[] { "keep", "", "this", "", "data" },
+            inputMessages: ["keep", "", "this", "", "data"],
             expectedOutputCount: 3, // Empty strings filtered out
             description: "Filter operation via Gateway"
         );
@@ -53,7 +53,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             patternName: "SplitConcat",
             jobCreator: (input, output, kafka, ct) =>
                 FlinkDotNetJobs.CreateSplitConcatJob(input, output, kafka, "gateway-splitconcat", ct),
-            inputMessages: new[] { "a,b" },
+            inputMessages: ["a,b"],
             expectedOutputCount: 1, // Split and concat produces 1 message
             description: "Split and concat via Gateway"
         );
@@ -66,7 +66,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             patternName: "Timer",
             jobCreator: (input, output, kafka, ct) =>
                 FlinkDotNetJobs.CreateTimerJob(input, output, kafka, "gateway-timer", ct),
-            inputMessages: new[] { "timed1", "timed2" },
+            inputMessages: ["timed1", "timed2"],
             expectedOutputCount: 2,
             description: "Timer functionality via Gateway",
             allowLongerProcessing: true
@@ -76,12 +76,12 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     [Test]
     public async Task Gateway_Pattern5_DirectFlinkSQL_ShouldWork()
     {
-        var sqlGatewayUrl = await GetSqlGatewayEndpointAsync();
+        string sqlGatewayUrl = await GetSqlGatewayEndpointAsync();
         await RunGatewayPatternTest(
             patternName: "DirectFlinkSQL",
             jobCreator: (input, output, kafka, ct) =>
                 FlinkDotNetJobs.CreateDirectFlinkSQLJob(input, output, kafka, sqlGatewayUrl, "gateway-direct-flink-sql", ct),
-            inputMessages: new[] { "{\"key\":\"k1\",\"value\":\"v1\"}" },
+            inputMessages: ["{\"key\":\"k1\",\"value\":\"v1\"}"],
             expectedOutputCount: 1,
             description: "Direct Flink SQL via Gateway",
             usesJson: true
@@ -91,12 +91,12 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     [Test]
     public async Task Gateway_Pattern6_SqlTransform_ShouldWork()
     {
-        var sqlGatewayUrl = await GetSqlGatewayEndpointAsync();
+        string sqlGatewayUrl = await GetSqlGatewayEndpointAsync();
         await RunGatewayPatternTest(
             patternName: "SqlTransform",
             jobCreator: (input, output, kafka, ct) =>
                 FlinkDotNetJobs.CreateSqlTransformJob(input, output, kafka, sqlGatewayUrl, "gateway-sql-transform", ct),
-            inputMessages: new[] { "{\"key\":\"k1\",\"value\":\"test\"}" },
+            inputMessages: ["{\"key\":\"k1\",\"value\":\"test\"}"],
             expectedOutputCount: 1,
             description: "SQL transformation via Gateway",
             usesJson: true
@@ -110,7 +110,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             patternName: "Composite",
             jobCreator: (input, output, kafka, ct) =>
                 FlinkDotNetJobs.CreateCompositeJob(input, output, kafka, "gateway-composite", ct),
-            inputMessages: new[] { "test,data" },
+            inputMessages: ["test,data"],
             expectedOutputCount: 1, // Split and concat produces 1 message
             description: "Composite operations via Gateway",
             allowLongerProcessing: true
@@ -130,19 +130,19 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         bool usesJson = false)
     {
         // Kafka topic names must be lowercase, so ToLowerInvariant is correct here
-        var inputTopic = $"lt.gw.{patternName.ToLowerInvariant()}.input.{TestContext.CurrentContext.Test.ID}";
-        var outputTopic = $"lt.gw.{patternName.ToLowerInvariant()}.output.{TestContext.CurrentContext.Test.ID}";
+        string inputTopic = $"lt.gw.{patternName.ToLowerInvariant()}.input.{TestContext.CurrentContext.Test.ID}";
+        string outputTopic = $"lt.gw.{patternName.ToLowerInvariant()}.output.{TestContext.CurrentContext.Test.ID}";
 
         TestPrerequisites.EnsureDockerAvailable();
 
-        var baseToken = TestContext.CurrentContext.CancellationToken;
-        using var testTimeout = new CancellationTokenSource(TestTimeout);
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
-        var ct = linkedCts.Token;
+        CancellationToken baseToken = TestContext.CurrentContext.CancellationToken;
+        using CancellationTokenSource testTimeout = new CancellationTokenSource(TestTimeout);
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
+        CancellationToken ct = linkedCts.Token;
 
         TestContext.WriteLine($"Starting Gateway Pattern Test: {patternName}");
         TestContext.WriteLine($"Description: {description}");
-        var stopwatch = Stopwatch.StartNew();
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         try
         {
@@ -161,7 +161,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             TestContext.WriteLine($"Input topic: {inputTopic}");
             TestContext.WriteLine($"Output topic: {outputTopic}");
 
-            var submitResult = await jobCreator(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, ct);
+            Flink.JobBuilder.Models.JobSubmissionResult submitResult = await jobCreator(inputTopic, outputTopic, GlobalTestInfrastructure.KafkaContainerIpForFlink!, ct);
 
             TestContext.WriteLine($"Job submission: success={submitResult.Success}, jobId={submitResult.FlinkJobId}");
 
@@ -169,15 +169,15 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             if (!submitResult.Success)
             {
                 TestContext.WriteLine("Job submission failed - retrieving Flink diagnostics...");
-                var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
-                var diagnostics = await GetFlinkJobDiagnosticsAsync(flinkEndpoint, submitResult.FlinkJobId);
+                string flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+                string diagnostics = await GetFlinkJobDiagnosticsAsync(flinkEndpoint, submitResult.FlinkJobId);
                 TestContext.WriteLine(diagnostics);
             }
 
             Assert.That(submitResult.Success, Is.True, $"Job must submit successfully. Error: {submitResult.ErrorMessage}");
 
             // Wait for job to be running
-            var gatewayBase = $"http://localhost:{Ports.GatewayHostPort}/";
+            string gatewayBase = $"http://localhost:{Ports.GatewayHostPort}/";
             await WaitForJobRunningViaGatewayAsync(gatewayBase, submitResult.FlinkJobId!, JobRunTimeout, ct);
             TestContext.WriteLine("Job is RUNNING");
 
@@ -189,8 +189,8 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             await ProduceMessagesAsync(inputTopic, inputMessages, ct, usesJson);
 
             // Consume and verify (reduced timeout for faster tests)
-            var consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(45) : MessageTimeout;
-            var consumed = await ConsumeMessagesAsync(outputTopic, expectedOutputCount, consumeTimeout, ct);
+            TimeSpan consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(45) : MessageTimeout;
+            List<string> consumed = await ConsumeMessagesAsync(outputTopic, expectedOutputCount, consumeTimeout, ct);
 
             TestContext.WriteLine($"Consumed {consumed.Count} messages (expected: {expectedOutputCount})");
 
@@ -214,7 +214,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         if (usesJson)
         {
             // For JSON messages, produce with null key
-            using var producer = new ProducerBuilder<Null, string>(new ProducerConfig
+            using IProducer<Null, string> producer = new ProducerBuilder<Null, string>(new ProducerConfig
             {
                 BootstrapServers = KafkaConnectionString,
                 EnableIdempotence = true,
@@ -227,7 +227,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             .SetErrorHandler((_, _) => { })
             .Build();
 
-            foreach (var message in messages)
+            foreach (string message in messages)
             {
                 await producer.ProduceAsync(topic, new Message<Null, string> { Value = message }, ct);
             }
@@ -237,7 +237,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
         else
         {
             // For simple messages, use string key
-            using var producer = new ProducerBuilder<string, string>(new ProducerConfig
+            using IProducer<string, string> producer = new ProducerBuilder<string, string>(new ProducerConfig
             {
                 BootstrapServers = KafkaConnectionString,
                 EnableIdempotence = true,
@@ -267,7 +267,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
     private Task<List<string>> ConsumeMessagesAsync(string topic, int expectedCount, TimeSpan timeout, CancellationToken ct)
     {
-        var config = new ConsumerConfig
+        ConsumerConfig config = new ConsumerConfig
         {
             BootstrapServers = KafkaConnectionString,
             GroupId = $"lt-gw-pattern-consumer-{Guid.NewGuid()}",
@@ -277,20 +277,20 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
             SecurityProtocol = SecurityProtocol.Plaintext
         };
 
-        var messages = new List<string>();
-        using var consumer = new ConsumerBuilder<Ignore, string>(config)
+        List<string> messages = new List<string>();
+        using IConsumer<Ignore, string> consumer = new ConsumerBuilder<Ignore, string>(config)
             .SetLogHandler((_, _) => { })
             .SetErrorHandler((_, _) => { })
             .Build();
 
         consumer.Subscribe(topic);
-        var deadline = DateTime.UtcNow.Add(timeout);
+        DateTime deadline = DateTime.UtcNow.Add(timeout);
 
         TestContext.WriteLine($"Starting consumption from '{topic}' (timeout: {timeout.TotalSeconds}s)");
 
         while (DateTime.UtcNow < deadline && messages.Count < expectedCount && !ct.IsCancellationRequested)
         {
-            var consumeResult = consumer.Consume(TimeSpan.FromSeconds(1));
+            ConsumeResult<Ignore, string> consumeResult = consumer.Consume(TimeSpan.FromSeconds(1));
             if (consumeResult != null)
             {
                 messages.Add(consumeResult.Message.Value);
@@ -303,16 +303,16 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
     private static async Task WaitForJobRunningViaGatewayAsync(string gatewayBaseUrl, string jobId, TimeSpan timeout, CancellationToken ct)
     {
-        using var http = new HttpClient();
-        var deadline = DateTime.UtcNow.Add(timeout);
-        var attempt = 0;
+        using HttpClient http = new HttpClient();
+        DateTime deadline = DateTime.UtcNow.Add(timeout);
+        int attempt = 0;
 
         TestContext.WriteLine($"Waiting for job {jobId} to reach RUNNING state...");
 
         // For SQL Gateway jobs, also check Flink REST API directly with converted job ID (without hyphens)
         // AND check for any RUNNING jobs as fallback since SQL Gateway creates different job IDs
-        var flinkJobId = jobId.Replace("-", "");
-        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+        string flinkJobId = jobId.Replace("-", "");
+        string flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
 
         while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
         {
@@ -350,13 +350,13 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
     private static async Task<bool> TryCheckGatewayJobStatusAsync(HttpClient http, string gatewayBaseUrl, string jobId, int attempt, CancellationToken ct)
     {
-        var resp = await http.GetAsync($"{gatewayBaseUrl}api/v1/jobs/{jobId}/status", ct);
+        HttpResponseMessage resp = await http.GetAsync($"{gatewayBaseUrl}api/v1/jobs/{jobId}/status", ct);
         if (!resp.IsSuccessStatusCode)
         {
             return false;
         }
 
-        var content = await resp.Content.ReadAsStringAsync(ct);
+        string content = await resp.Content.ReadAsStringAsync(ct);
         if (content.Contains("RUNNING", StringComparison.OrdinalIgnoreCase) ||
             content.Contains("FINISHED", StringComparison.OrdinalIgnoreCase))
         {
@@ -376,13 +376,13 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
     private static async Task<bool> TryCheckFlinkJobStatusAsync(HttpClient http, string flinkEndpoint, string flinkJobId, int attempt, CancellationToken ct)
     {
-        var flinkResp = await http.GetAsync($"{flinkEndpoint}jobs/{flinkJobId}", ct);
+        HttpResponseMessage flinkResp = await http.GetAsync($"{flinkEndpoint}jobs/{flinkJobId}", ct);
         if (!flinkResp.IsSuccessStatusCode)
         {
             return false;
         }
 
-        var flinkContent = await flinkResp.Content.ReadAsStringAsync(ct);
+        string flinkContent = await flinkResp.Content.ReadAsStringAsync(ct);
         if (flinkContent.Contains("\"state\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase) ||
             flinkContent.Contains("\"state\":\"FINISHED\"", StringComparison.OrdinalIgnoreCase))
         {
@@ -402,14 +402,14 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
 
     private static async Task<bool> TryCheckAnyRunningJobAsync(HttpClient http, string flinkEndpoint, int attempt, CancellationToken ct)
     {
-        var allJobsResp = await http.GetAsync($"{flinkEndpoint}jobs", ct);
+        HttpResponseMessage allJobsResp = await http.GetAsync($"{flinkEndpoint}jobs", ct);
         if (!allJobsResp.IsSuccessStatusCode)
         {
             TestContext.WriteLine($"  Attempt {attempt}: No RUNNING jobs found");
             return false;
         }
 
-        var allJobsContent = await allJobsResp.Content.ReadAsStringAsync(ct);
+        string allJobsContent = await allJobsResp.Content.ReadAsStringAsync(ct);
         if (allJobsContent.Contains("\"status\":\"RUNNING\"", StringComparison.OrdinalIgnoreCase))
         {
             TestContext.WriteLine($"Found RUNNING job after {attempt} attempt(s) (fallback check)");
@@ -429,15 +429,15 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     {
         try
         {
-            var sqlGatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-sql-gateway\" --format \"{{.Ports}}\"");
-            var lines = sqlGatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            string sqlGatewayContainers = await RunDockerCommandAsync("ps --filter \"name=flink-sql-gateway\" --format \"{{.Ports}}\"");
+            string[] lines = sqlGatewayContainers.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-            foreach (var line in lines)
+            foreach (string line in lines)
             {
                 // Look for port mapping to 8083 (SQL Gateway's default listener port)
                 if (line.Contains("->8083/tcp"))
                 {
-                    var match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8083");
+                    System.Text.RegularExpressions.Match match = System.Text.RegularExpressions.Regex.Match(line, @"127\.0\.0\.1:(\d+)->8083");
                     if (match.Success)
                     {
                         return $"http://localhost:{match.Groups[1].Value}/";
@@ -455,14 +455,14 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     private static async Task<string> RunDockerCommandAsync(string arguments)
     {
         // Try Docker first, then Podman if Docker fails or returns empty
-        var dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
+        string? dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
         if (!string.IsNullOrWhiteSpace(dockerOutput))
         {
             return dockerOutput;
         }
 
         // Fallback to Podman if Docker didn't return results
-        var podmanOutput = await TryRunContainerCommandAsync("podman", arguments);
+        string? podmanOutput = await TryRunContainerCommandAsync("podman", arguments);
         return podmanOutput ?? string.Empty;
     }
 
@@ -470,7 +470,7 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
     {
         try
         {
-            var psi = new System.Diagnostics.ProcessStartInfo
+            ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = command,
                 Arguments = arguments,
@@ -480,13 +480,13 @@ public class GatewayAllPatternsTests : LocalTestingTestBase
                 CreateNoWindow = true
             };
 
-            using var process = System.Diagnostics.Process.Start(psi);
+            using Process? process = System.Diagnostics.Process.Start(psi);
             if (process == null)
             {
                 return null;
             }
 
-            var output = await process.StandardOutput.ReadToEndAsync();
+            string output = await process.StandardOutput.ReadToEndAsync();
             await process.WaitForExitAsync();
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))

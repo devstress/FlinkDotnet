@@ -13,7 +13,7 @@ public class ValidatorTests
         {
             Metadata = new JobMetadata
             {
-                                Version = "1.0.0",
+                Version = "1.0.0",
                 Parallelism = 4
             },
             Source = new KafkaSourceDefinition
@@ -96,7 +96,7 @@ public class ValidatorTests
         {
             Metadata = new JobMetadata
             {
-                                Version = "1.0",
+                Version = "1.0",
                 Parallelism = 0
             },
             Source = new KafkaSourceDefinition { Topic = "test" },
@@ -116,7 +116,7 @@ public class ValidatorTests
         {
             Metadata = new JobMetadata
             {
-                                Version = "1.0",
+                Version = "1.0",
                 Parallelism = -5
             },
             Source = new KafkaSourceDefinition { Topic = "test" },

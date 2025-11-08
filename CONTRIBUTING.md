@@ -30,11 +30,27 @@ Maintainers are expected to uphold project standards, review contributions, and 
 
 ## Code Formatting and Quality
 
-FlinkDotNet uses `dotnet format` to maintain consistent code style across the project. Before submitting a pull request:
+FlinkDotNet uses `dotnet format` to maintain consistent code style across the project.
 
-### Running Code Formatting
+### Automated Pre-Commit Hook (Recommended)
 
-Format your code using the .NET formatter:
+**The easiest way to ensure proper formatting is to install the pre-commit hook:**
+
+```bash
+# Linux/macOS
+./scripts/install-git-hooks.sh
+
+# Windows
+.\scripts\install-git-hooks.ps1
+```
+
+The pre-commit hook automatically runs `dotnet format` on all changed C# files before each commit, ensuring your code is always properly formatted.
+
+For complete development rules and guidelines, see [TODO/DEVELOPMENT_RULES.md](TODO/DEVELOPMENT_RULES.md).
+
+### Manual Code Formatting
+
+If you prefer not to use the pre-commit hook, you can format your code manually:
 
 ```bash
 # Format the FlinkDotNet solution

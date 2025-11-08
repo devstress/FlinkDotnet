@@ -86,7 +86,10 @@ public class JobVertex
     /// <summary>
     /// Operator type identifier
     /// </summary>
-    public OperatorType Type { get; set; }
+    public OperatorType Type
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Operator type (alternative property name)

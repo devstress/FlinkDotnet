@@ -337,7 +337,7 @@ public class PerformanceConfigModelTests
 
         var metadata = new JobMetadata
         {
-                        StateBackendConfig = stateBackendConfig
+            StateBackendConfig = stateBackendConfig
         };
 
         Assert.That(metadata.StateBackendConfig, Is.Not.Null);
@@ -378,7 +378,7 @@ public class PerformanceConfigModelTests
             },
             Metadata = new JobMetadata
             {
-                                StateBackendConfig = new StateBackendConfig
+                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://bucket/checkpoints",
@@ -632,7 +632,7 @@ public class PerformanceConfigModelTests
 
         var metadata = new JobMetadata
         {
-                        ExecutionPlanConfig = planConfig
+            ExecutionPlanConfig = planConfig
         };
 
         Assert.That(metadata.ExecutionPlanConfig, Is.Not.Null);
@@ -651,7 +651,7 @@ public class PerformanceConfigModelTests
 
         var metadata = new JobMetadata
         {
-                        OptimizerConfig = optimizerConfig
+            OptimizerConfig = optimizerConfig
         };
 
         Assert.That(metadata.OptimizerConfig, Is.Not.Null);
@@ -664,7 +664,7 @@ public class PerformanceConfigModelTests
     {
         var metadata = new JobMetadata
         {
-                        StateBackendConfig = new StateBackendConfig
+            StateBackendConfig = new StateBackendConfig
             {
                 Type = "rocksdb",
                 CheckpointDir = "s3://bucket/checkpoints"
@@ -715,7 +715,7 @@ public class PerformanceConfigModelTests
             },
             Metadata = new JobMetadata
             {
-                                StateBackendConfig = new StateBackendConfig
+                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://production/checkpoints",

@@ -38,7 +38,7 @@ namespace FlinkDotNet.JobGateway.Tests
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            
+
             // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
             _ = this._mockHttpMessageHandler
                 .Protected()
@@ -47,7 +47,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
                 .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-            
+
             this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
                 BaseAddress = new Uri("http://localhost:8081"),
@@ -70,7 +70,7 @@ namespace FlinkDotNet.JobGateway.Tests
             // 1. Environment variable JAR path (FLINK_RUNNER_JAR_PATH)
             // 2. JAR discovery without environment variable
             // 3. Multiple path search (current directory, FlinkIRRunner/target)
-            
+
             // Arrange - Test with environment variable first
             var testJarPath = "/tmp/nonexistent-runner.jar";
             this._mockConfiguration.Setup(c => c["FLINK_RUNNER_JAR_PATH"]).Returns(testJarPath);
@@ -96,7 +96,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert - Should attempt to use JAR path from environment variable
             Assert.That(resultWithEnvVar, Is.Not.Null);
-            
+
             // Verify logger was called with JAR path information
             this._mockLogger.Verify(
                 x => x.Log(
@@ -110,11 +110,11 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Test scenario 2: without environment variable - it will search multiple paths
             // This verifies JAR discovery and multiple path search logic
-            this._mockConfiguration.Setup(c => c["FLINK_RUNNER_JAR_PATH"]).Returns((string?)null);
-            
+            this._mockConfiguration.Setup(c => c["FLINK_RUNNER_JAR_PATH"]).Returns((string?) null);
+
             // Use the same manager instance which already has HttpClient configured
             jobDef.Metadata.JobName = "JAR Search Test";
-            
+
             // Act - Submit without env var (will search multiple paths)
             var resultWithoutEnvVar = await manager.SubmitJobAsync(jobDef);
 

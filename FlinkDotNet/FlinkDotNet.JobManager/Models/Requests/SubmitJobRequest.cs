@@ -12,7 +12,10 @@ public class SubmitJobRequest
     /// <summary>
     /// Name of the job for identification.
     /// </summary>
-    public required string JobName { get; set; }
+    public required string JobName
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Maximum parallelism allowed for this job.
@@ -38,12 +41,18 @@ public class JobVertexRequest
     /// <summary>
     /// Name of the operator.
     /// </summary>
-    public required string OperatorName { get; set; }
+    public required string OperatorName
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Type of operator (source, map, filter, sink, etc.).
     /// </summary>
-    public required string OperatorType { get; set; }
+    public required string OperatorType
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Parallelism for this operator.
@@ -53,7 +62,10 @@ public class JobVertexRequest
     /// <summary>
     /// Operator logic/configuration (serialized).
     /// </summary>
-    public string? OperatorLogic { get; set; }
+    public string? OperatorLogic
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -64,12 +76,18 @@ public class JobEdgeRequest
     /// <summary>
     /// Index of the source vertex in the vertices list.
     /// </summary>
-    public int SourceVertexIndex { get; set; }
+    public int SourceVertexIndex
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Index of the target vertex in the vertices list.
     /// </summary>
-    public int TargetVertexIndex { get; set; }
+    public int TargetVertexIndex
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Partitioning strategy for data distribution.

@@ -26,7 +26,7 @@ public class DispatcherTests
         _mockTemporalClient = new Mock<ITemporalClient>();
         _mockLoggerFactory = new Mock<ILoggerFactory>();
         _mockLogger = new Mock<ILogger<JobMaster>>();
-        
+
         _mockLoggerFactory
             .Setup(lf => lf.CreateLogger(It.IsAny<string>()))
             .Returns(_mockLogger.Object);
@@ -45,7 +45,7 @@ public class DispatcherTests
             null!,
             _mockTemporalClient.Object,
             _mockLoggerFactory.Object);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("resourceManager");
     }
 
@@ -57,7 +57,7 @@ public class DispatcherTests
             _mockResourceManager.Object,
             null!,
             _mockLoggerFactory.Object);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("temporalClient");
     }
 
@@ -69,7 +69,7 @@ public class DispatcherTests
             _mockResourceManager.Object,
             _mockTemporalClient.Object,
             null!);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("loggerFactory");
     }
 
@@ -261,7 +261,7 @@ public class DispatcherTests
         var jobGraph1 = CreateValidJobGraph();
         var jobGraph2 = CreateValidJobGraph();
         var jobGraph3 = CreateValidJobGraph();
-        
+
         await _dispatcher.SubmitJobAsync(jobGraph1);
         await _dispatcher.SubmitJobAsync(jobGraph2);
         await _dispatcher.SubmitJobAsync(jobGraph3);
@@ -296,14 +296,14 @@ public class DispatcherTests
             Parallelism = 2,
             OperatorType = OperatorType.Source
         };
-        
+
         var mapVertex = new JobVertex
         {
             Name = "map",
             Parallelism = 2,
             OperatorType = OperatorType.Map
         };
-        
+
         return new JobGraph
         {
             JobName = $"Test Job {Guid.NewGuid()}",

@@ -421,9 +421,9 @@ if (isLearningCourse)
     // CRITICAL: Use Bitnami Redis image with ALLOW_EMPTY_PASSWORD for learning exercises
     // This allows exercises to connect with simple "localhost:port" format without authentication
 
-builder.AddContainer("redis", "bitnami/redis", LatestTag)
-.WithHttpEndpoint(targetPort: Ports.RedisHostPort, name: "redis-port")
-.WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes");  // Disable password requirement for learning
+    builder.AddContainer("redis", "bitnami/redis", LatestTag)
+    .WithHttpEndpoint(targetPort: Ports.RedisHostPort, name: "redis-port")
+    .WithEnvironment("ALLOW_EMPTY_PASSWORD", "yes");  // Disable password requirement for learning
 
     Console.WriteLine("Redis deployed with Aspire-managed host port for LearningCourse exercises");
 

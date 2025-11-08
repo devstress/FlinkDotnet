@@ -182,7 +182,7 @@ public class FlinkJobGatewayServiceTests
         // Arrange
         var responseJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
         {
-                        FlinkJobId = "flink-123",
+            FlinkJobId = "flink-123",
             Success = true
         });
 
@@ -566,7 +566,7 @@ public class FlinkJobGatewayServiceTests
                 }
                 var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
-                                        FlinkJobId = "flink-retry",
+                    FlinkJobId = "flink-retry",
                     Success = true
                 });
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -632,7 +632,7 @@ public class FlinkJobGatewayServiceTests
                 }
                 var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
-                                        FlinkJobId = "flink-rate",
+                    FlinkJobId = "flink-rate",
                     Success = true
                 });
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -677,7 +677,7 @@ public class FlinkJobGatewayServiceTests
                 }
                 var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
-                                        FlinkJobId = "flink-ready",
+                    FlinkJobId = "flink-ready",
                     Success = true
                 });
                 return new HttpResponseMessage(HttpStatusCode.OK)
@@ -791,7 +791,7 @@ public class FlinkJobGatewayServiceTests
                 }
                 var resultJson = this.SerializeJobSubmissionResult(new JobSubmissionResult
                 {
-                                        FlinkJobId = "flink-exception",
+                    FlinkJobId = "flink-exception",
                     Success = true
                 });
                 return new HttpResponseMessage(HttpStatusCode.OK)

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Text.Json;
 using Flink.JobBuilder.Models;
 using NUnit.Framework;
@@ -28,7 +27,7 @@ public class PerformanceFormatTests
     public void Test1_StateBackendConfig_ValidatesIRSchemaAndSerialization()
     {
         // Part A: RocksDB with Flash SSD profile
-        var flashSsdJob = new JobDefinition
+        JobDefinition flashSsdJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition
@@ -38,7 +37,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                                Version = "1.0",
+                Version = "1.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
@@ -61,13 +60,13 @@ public class PerformanceFormatTests
         };
 
         // Part B: RocksDB with Spinning Disk profile
-        var spinningDiskJob = new JobDefinition
+        JobDefinition spinningDiskJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                                Version = "1.0",
+                Version = "1.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
@@ -84,13 +83,13 @@ public class PerformanceFormatTests
         };
 
         // Part C: Minimal config (defaults)
-        var minimalJob = new JobDefinition
+        JobDefinition minimalJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                                Version = "1.0",
+                Version = "1.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
@@ -100,19 +99,19 @@ public class PerformanceFormatTests
         };
 
         // Act: Serialize and deserialize all three job types
-        var jobs = new[] { flashSsdJob, spinningDiskJob, minimalJob };
-        var deserializedJobs = new List<JobDefinition>();
+        JobDefinition[] jobs = [flashSsdJob, spinningDiskJob, minimalJob];
+        List<JobDefinition> deserializedJobs = new List<JobDefinition>();
 
-        foreach (var job in jobs)
+        foreach (JobDefinition? job in jobs)
         {
-            var json = JsonSerializer.Serialize(job, new JsonSerializerOptions { WriteIndented = true });
-            var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
+            string json = JsonSerializer.Serialize(job, new JsonSerializerOptions { WriteIndented = true });
+            JobDefinition? deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
             Assert.That(deserialized, Is.Not.Null, "Deserialization should succeed");
             deserializedJobs.Add(deserialized!);
         }
 
         // Assert: Flash SSD config
-        var flashSsdConfig = deserializedJobs[0].Metadata.StateBackendConfig;
+        StateBackendConfig? flashSsdConfig = deserializedJobs[0].Metadata.StateBackendConfig;
         Assert.That(flashSsdConfig, Is.Not.Null);
         Assert.That(flashSsdConfig!.Type, Is.EqualTo("rocksdb"));
         Assert.That(flashSsdConfig.CheckpointDir, Is.EqualTo("s3://my-bucket/checkpoints"));
@@ -125,7 +124,7 @@ public class PerformanceFormatTests
         Assert.That(flashSsdConfig.ColumnFamilyOptions!.ContainsKey("blockCacheSize"), Is.True);
 
         // Assert: Spinning Disk config
-        var spinningDiskConfig = deserializedJobs[1].Metadata.StateBackendConfig;
+        StateBackendConfig? spinningDiskConfig = deserializedJobs[1].Metadata.StateBackendConfig;
         Assert.That(spinningDiskConfig, Is.Not.Null);
         Assert.That(spinningDiskConfig!.PredefinedProfile, Is.EqualTo("spinning_disk_optimized"));
         Assert.That(spinningDiskConfig.IncrementalCheckpoints, Is.False);
@@ -133,7 +132,7 @@ public class PerformanceFormatTests
         Assert.That(spinningDiskConfig.DbOptions!.ContainsKey("compactionStyle"), Is.True);
 
         // Assert: Minimal config
-        var minimalConfig = deserializedJobs[2].Metadata.StateBackendConfig;
+        StateBackendConfig? minimalConfig = deserializedJobs[2].Metadata.StateBackendConfig;
         Assert.That(minimalConfig, Is.Not.Null);
         Assert.That(minimalConfig!.Type, Is.EqualTo("rocksdb"));
         Assert.That(minimalConfig.CheckpointDir, Is.EqualTo("file:///tmp/checkpoints"));
@@ -157,7 +156,7 @@ public class PerformanceFormatTests
     public void Test2_AsyncSinkBatching_ValidatesConfiguration()
     {
         // Part A: Size-based batching
-        var sizeBatchingJob = new JobDefinition
+        JobDefinition sizeBatchingJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new UnifiedSinkV2Definition
@@ -185,7 +184,7 @@ public class PerformanceFormatTests
         };
 
         // Part B: Time-based batching
-        var timeBatchingJob = new JobDefinition
+        JobDefinition timeBatchingJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new UnifiedSinkV2Definition
@@ -211,7 +210,7 @@ public class PerformanceFormatTests
         };
 
         // Part C: No batching config (defaults)
-        var noBatchingJob = new JobDefinition
+        JobDefinition noBatchingJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new UnifiedSinkV2Definition
@@ -232,19 +231,19 @@ public class PerformanceFormatTests
         };
 
         // Act: Serialize and deserialize
-        var jobs = new[] { sizeBatchingJob, timeBatchingJob, noBatchingJob };
-        var deserializedJobs = new List<JobDefinition>();
+        JobDefinition[] jobs = [sizeBatchingJob, timeBatchingJob, noBatchingJob];
+        List<JobDefinition> deserializedJobs = new List<JobDefinition>();
 
-        foreach (var job in jobs)
+        foreach (JobDefinition? job in jobs)
         {
-            var json = JsonSerializer.Serialize(job, new JsonSerializerOptions { WriteIndented = true });
-            var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
+            string json = JsonSerializer.Serialize(job, new JsonSerializerOptions { WriteIndented = true });
+            JobDefinition? deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
             Assert.That(deserialized, Is.Not.Null);
             deserializedJobs.Add(deserialized!);
         }
 
         // Assert: Size-based batching
-        var sizeSink = deserializedJobs[0].Sink as UnifiedSinkV2Definition;
+        UnifiedSinkV2Definition? sizeSink = deserializedJobs[0].Sink as UnifiedSinkV2Definition;
         Assert.That(sizeSink, Is.Not.Null);
         Assert.That(sizeSink!.WriterConfig.BatchingConfig, Is.Not.Null);
         Assert.That(sizeSink.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(1000));
@@ -253,14 +252,14 @@ public class PerformanceFormatTests
         Assert.That(sizeSink.WriterConfig.BatchingConfig.MaxBufferedRequests, Is.EqualTo(10000));
 
         // Assert: Time-based batching
-        var timeSink = deserializedJobs[1].Sink as UnifiedSinkV2Definition;
+        UnifiedSinkV2Definition? timeSink = deserializedJobs[1].Sink as UnifiedSinkV2Definition;
         Assert.That(timeSink, Is.Not.Null);
         Assert.That(timeSink!.WriterConfig.BatchingConfig, Is.Not.Null);
         Assert.That(timeSink.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(100));
         Assert.That(timeSink.WriterConfig.BatchingConfig.MaxTimeInBufferMs, Is.EqualTo(1000));
 
         // Assert: No batching config (backward compatibility)
-        var noSink = deserializedJobs[2].Sink as UnifiedSinkV2Definition;
+        UnifiedSinkV2Definition? noSink = deserializedJobs[2].Sink as UnifiedSinkV2Definition;
         Assert.That(noSink, Is.Not.Null);
         Assert.That(noSink!.WriterConfig.BatchingConfig, Is.Null, "Batching config should be optional");
     }
@@ -282,7 +281,7 @@ public class PerformanceFormatTests
     public void Test3_CombinedOptimizations_ValidatesAll4PerformanceFeatures()
     {
         // Part A: Complete job with all performance features
-        var optimizedJob = new JobDefinition
+        JobDefinition optimizedJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition
             {
@@ -327,7 +326,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "High-Performance Event Processor",
+                JobName = "High-Performance Event Processor",
                 Version = "1.0",
                 Parallelism = 8,
                 StateBackendConfig = new StateBackendConfig
@@ -374,7 +373,7 @@ public class PerformanceFormatTests
         };
 
         // Part B: Job without performance configs (backward compatibility)
-        var standardJob = new JobDefinition
+        JobDefinition standardJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output", BootstrapServers = "kafka:9092" },
@@ -382,39 +381,39 @@ public class PerformanceFormatTests
         };
 
         // Act: Serialize and validate
-        var optimizedJson = JsonSerializer.Serialize(optimizedJob, new JsonSerializerOptions { WriteIndented = true });
-        var standardJson = JsonSerializer.Serialize(standardJob, new JsonSerializerOptions { WriteIndented = true });
+        string optimizedJson = JsonSerializer.Serialize(optimizedJob, new JsonSerializerOptions { WriteIndented = true });
+        string standardJson = JsonSerializer.Serialize(standardJob, new JsonSerializerOptions { WriteIndented = true });
 
-        var optimizedDeserialized = JsonSerializer.Deserialize<JobDefinition>(optimizedJson);
-        var standardDeserialized = JsonSerializer.Deserialize<JobDefinition>(standardJson);
+        JobDefinition? optimizedDeserialized = JsonSerializer.Deserialize<JobDefinition>(optimizedJson);
+        JobDefinition? standardDeserialized = JsonSerializer.Deserialize<JobDefinition>(standardJson);
 
         // Assert: Optimized job has ALL 4 features
         Assert.That(optimizedDeserialized, Is.Not.Null);
         Assert.That(optimizedDeserialized!.Metadata.StateBackendConfig, Is.Not.Null);
         Assert.That(optimizedDeserialized.Metadata.ExecutionPlanConfig, Is.Not.Null);
         Assert.That(optimizedDeserialized.Metadata.OptimizerConfig, Is.Not.Null);
-        
+
         // Feature 2: State Backend Configuration
-        var stateConfig = optimizedDeserialized.Metadata.StateBackendConfig;
+        StateBackendConfig? stateConfig = optimizedDeserialized.Metadata.StateBackendConfig;
         Assert.That(stateConfig!.Type, Is.EqualTo("rocksdb"));
         Assert.That(stateConfig.IncrementalCheckpoints, Is.True);
         Assert.That(stateConfig.PredefinedProfile, Is.EqualTo("flash_ssd_optimized"));
 
         // Feature 1: Async Sink Batching
-        var sink = optimizedDeserialized.Sink as UnifiedSinkV2Definition;
+        UnifiedSinkV2Definition? sink = optimizedDeserialized.Sink as UnifiedSinkV2Definition;
         Assert.That(sink, Is.Not.Null);
         Assert.That(sink!.WriterConfig.BatchingConfig, Is.Not.Null);
         Assert.That(sink.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(1000));
         Assert.That(sink.Semantics, Is.EqualTo("exactly-once"));
 
         // Feature 3: Execution Plan Config (Smile Format)
-        var planConfig = optimizedDeserialized.Metadata.ExecutionPlanConfig;
+        ExecutionPlanConfig? planConfig = optimizedDeserialized.Metadata.ExecutionPlanConfig;
         Assert.That(planConfig!.Format, Is.EqualTo("smile"));
         Assert.That(planConfig.EnableCompression, Is.True);
         Assert.That(planConfig.Properties, Is.Not.Null);
 
         // Feature 4: Optimizer Config (MultiJoin Optimization)
-        var optimizerConfig = optimizedDeserialized.Metadata.OptimizerConfig;
+        OptimizerConfig? optimizerConfig = optimizedDeserialized.Metadata.OptimizerConfig;
         Assert.That(optimizerConfig!.EnableMultiJoinOptimization, Is.True);
         Assert.That(optimizerConfig.JoinReorderingStrategy, Is.EqualTo("bushy"));
         Assert.That(optimizerConfig.EnableJoinPredicatePushdown, Is.True);
@@ -425,7 +424,7 @@ public class PerformanceFormatTests
         Assert.That(standardDeserialized!.Metadata.StateBackendConfig, Is.Null, "Config should be optional");
         Assert.That(standardDeserialized.Metadata.ExecutionPlanConfig, Is.Null, "Config should be optional");
         Assert.That(standardDeserialized.Metadata.OptimizerConfig, Is.Null, "Config should be optional");
-        
+
         // Assert: JSON contains ALL 4 performance feature keywords
         Assert.That(optimizedJson, Does.Contain("StateBackendConfig"));
         Assert.That(optimizedJson, Does.Contain("BatchingConfig"));
@@ -452,13 +451,13 @@ public class PerformanceFormatTests
     public void Test4_EdgeCases_ValidatesOptionalConfigsAndDefaults()
     {
         // Part A: State backend types
-        var rocksDbJob = new JobDefinition
+        JobDefinition rocksDbJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                                StateBackendConfig = new StateBackendConfig
+                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://bucket/checkpoints"
@@ -466,13 +465,13 @@ public class PerformanceFormatTests
             }
         };
 
-        var hashmapJob = new JobDefinition
+        JobDefinition hashmapJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                                StateBackendConfig = new StateBackendConfig
+                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "hashmap"
                     // No checkpoint dir needed for hashmap
@@ -480,13 +479,13 @@ public class PerformanceFormatTests
             }
         };
 
-        var filesystemJob = new JobDefinition
+        JobDefinition filesystemJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                                StateBackendConfig = new StateBackendConfig
+                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "filesystem",
                     CheckpointDir = "file:///tmp/checkpoints"
@@ -495,13 +494,13 @@ public class PerformanceFormatTests
         };
 
         // Part B: Empty options dictionaries
-        var emptyOptionsJob = new JobDefinition
+        JobDefinition emptyOptionsJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new KafkaSinkDefinition { Topic = "output" },
             Metadata = new JobMetadata
             {
-                                StateBackendConfig = new StateBackendConfig
+                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://bucket/checkpoints",
@@ -512,7 +511,7 @@ public class PerformanceFormatTests
         };
 
         // Part C: State backend without batching
-        var stateOnlyJob = new JobDefinition
+        JobDefinition stateOnlyJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new UnifiedSinkV2Definition
@@ -526,7 +525,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                                StateBackendConfig = new StateBackendConfig
+                StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
                     CheckpointDir = "s3://bucket/checkpoints"
@@ -535,7 +534,7 @@ public class PerformanceFormatTests
         };
 
         // Part D: Batching without state backend
-        var batchingOnlyJob = new JobDefinition
+        JobDefinition batchingOnlyJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "input" },
             Sink = new UnifiedSinkV2Definition
@@ -556,13 +555,13 @@ public class PerformanceFormatTests
         };
 
         // Act: Serialize and deserialize all jobs
-        var jobs = new[] { rocksDbJob, hashmapJob, filesystemJob, emptyOptionsJob, stateOnlyJob, batchingOnlyJob };
-        var deserializedJobs = new List<JobDefinition>();
+        JobDefinition[] jobs = [rocksDbJob, hashmapJob, filesystemJob, emptyOptionsJob, stateOnlyJob, batchingOnlyJob];
+        List<JobDefinition> deserializedJobs = new List<JobDefinition>();
 
-        foreach (var job in jobs)
+        foreach (JobDefinition? job in jobs)
         {
-            var json = JsonSerializer.Serialize(job);
-            var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
+            string json = JsonSerializer.Serialize(job);
+            JobDefinition? deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
             Assert.That(deserialized, Is.Not.Null, $"Job {job.Metadata.JobName} should deserialize");
             deserializedJobs.Add(deserialized!);
         }
@@ -580,12 +579,12 @@ public class PerformanceFormatTests
 
         // Assert: State backend without batching
         Assert.That(deserializedJobs[4].Metadata.StateBackendConfig, Is.Not.Null);
-        var stateSink = deserializedJobs[4].Sink as UnifiedSinkV2Definition;
+        UnifiedSinkV2Definition? stateSink = deserializedJobs[4].Sink as UnifiedSinkV2Definition;
         Assert.That(stateSink!.WriterConfig.BatchingConfig, Is.Null);
 
         // Assert: Batching without state backend
         Assert.That(deserializedJobs[5].Metadata.StateBackendConfig, Is.Null);
-        var batchSink = deserializedJobs[5].Sink as UnifiedSinkV2Definition;
+        UnifiedSinkV2Definition? batchSink = deserializedJobs[5].Sink as UnifiedSinkV2Definition;
         Assert.That(batchSink!.WriterConfig.BatchingConfig, Is.Not.Null);
         Assert.That(batchSink.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(500));
     }
@@ -605,7 +604,7 @@ public class PerformanceFormatTests
     public void Test5_ProductionScenarios_ValidatesRealWorldConfigurations()
     {
         // Part A: High-Throughput Scenario (maximize throughput, tolerate higher latency)
-        var highThroughputJob = new JobDefinition
+        JobDefinition highThroughputJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition
             {
@@ -651,7 +650,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "High-Throughput Event Processor",
+                JobName = "High-Throughput Event Processor",
                 Version = "1.0",
                 Parallelism = 16,
                 StateBackendConfig = new StateBackendConfig
@@ -676,7 +675,7 @@ public class PerformanceFormatTests
         };
 
         // Part B: Low-Latency Scenario (minimize latency, small batches)
-        var lowLatencyJob = new JobDefinition
+        JobDefinition lowLatencyJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition
             {
@@ -710,7 +709,7 @@ public class PerformanceFormatTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "Low-Latency Stream Processor",
+                JobName = "Low-Latency Stream Processor",
                 Version = "1.0",
                 Parallelism = 4,
                 StateBackendConfig = new StateBackendConfig
@@ -733,15 +732,15 @@ public class PerformanceFormatTests
         };
 
         // Act: Serialize and validate both scenarios
-        var highThroughputJson = JsonSerializer.Serialize(highThroughputJob, new JsonSerializerOptions { WriteIndented = true });
-        var lowLatencyJson = JsonSerializer.Serialize(lowLatencyJob, new JsonSerializerOptions { WriteIndented = true });
+        string highThroughputJson = JsonSerializer.Serialize(highThroughputJob, new JsonSerializerOptions { WriteIndented = true });
+        string lowLatencyJson = JsonSerializer.Serialize(lowLatencyJob, new JsonSerializerOptions { WriteIndented = true });
 
-        var highThroughputDeserialized = JsonSerializer.Deserialize<JobDefinition>(highThroughputJson);
-        var lowLatencyDeserialized = JsonSerializer.Deserialize<JobDefinition>(lowLatencyJson);
+        JobDefinition? highThroughputDeserialized = JsonSerializer.Deserialize<JobDefinition>(highThroughputJson);
+        JobDefinition? lowLatencyDeserialized = JsonSerializer.Deserialize<JobDefinition>(lowLatencyJson);
 
         // Assert: High-throughput configuration
         Assert.That(highThroughputDeserialized, Is.Not.Null);
-        var htSink = highThroughputDeserialized!.Sink as UnifiedSinkV2Definition;
+        UnifiedSinkV2Definition? htSink = highThroughputDeserialized!.Sink as UnifiedSinkV2Definition;
         Assert.That(htSink!.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(5000));
         Assert.That(htSink.WriterConfig.BatchingConfig.MaxBatchSizeInBytes, Is.EqualTo(10 * 1024 * 1024));
         Assert.That(htSink.Semantics, Is.EqualTo("at-least-once"));
@@ -752,7 +751,7 @@ public class PerformanceFormatTests
 
         // Assert: Low-latency configuration
         Assert.That(lowLatencyDeserialized, Is.Not.Null);
-        var ltSink = lowLatencyDeserialized!.Sink as UnifiedSinkV2Definition;
+        UnifiedSinkV2Definition? ltSink = lowLatencyDeserialized!.Sink as UnifiedSinkV2Definition;
         Assert.That(ltSink!.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(10));
         Assert.That(ltSink.WriterConfig.BatchingConfig.MaxTimeInBufferMs, Is.EqualTo(100));
         Assert.That(ltSink.Semantics, Is.EqualTo("exactly-once"));

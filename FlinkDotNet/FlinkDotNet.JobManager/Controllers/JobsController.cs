@@ -2,11 +2,11 @@
 // Licensed under the Apache License, Version 2.0.
 // See LICENSE file in the project root for full license information.
 
-using Microsoft.AspNetCore.Mvc;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
 using FlinkDotNet.JobManager.Models.Requests;
 using FlinkDotNet.JobManager.Models.Responses;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FlinkDotNet.JobManager.Controllers;
 
@@ -51,7 +51,10 @@ public class JobsController : ControllerBase
             if (!result.Success)
             {
                 _logger.LogWarning("Job submission failed: {Error}", result.ErrorMessage);
-                return BadRequest(new { error = result.ErrorMessage });
+                return BadRequest(new
+                {
+                    error = result.ErrorMessage
+                });
             }
 
             _logger.LogInformation("Job submitted successfully: {JobId}", result.JobId);
@@ -69,12 +72,18 @@ public class JobsController : ControllerBase
         catch (ArgumentException ex)
         {
             _logger.LogWarning(ex, "Invalid job submission request");
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new
+            {
+                error = ex.Message
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to submit job");
-            return StatusCode(500, new { error = "Internal server error" });
+            return StatusCode(500, new
+            {
+                error = "Internal server error"
+            });
         }
     }
 
@@ -95,7 +104,10 @@ public class JobsController : ControllerBase
         if (jobStatus == null)
         {
             _logger.LogWarning("Job not found: {JobId}", jobId);
-            return NotFound(new { error = $"Job {jobId} not found" });
+            return NotFound(new
+            {
+                error = $"Job {jobId} not found"
+            });
         }
 
         JobStatusResponse response = new()
@@ -134,17 +146,26 @@ public class JobsController : ControllerBase
         {
             await _dispatcher.CancelJobAsync(jobId);
             _logger.LogInformation("Job canceled successfully: {JobId}", jobId);
-            return Ok(new { message = $"Job {jobId} canceled successfully" });
+            return Ok(new
+            {
+                message = $"Job {jobId} canceled successfully"
+            });
         }
         catch (ArgumentException ex)
         {
             _logger.LogWarning(ex, "Job not found: {JobId}", jobId);
-            return NotFound(new { error = ex.Message });
+            return NotFound(new
+            {
+                error = ex.Message
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to cancel job: {JobId}", jobId);
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new
+            {
+                error = ex.Message
+            });
         }
     }
 
@@ -164,20 +185,20 @@ public class JobsController : ControllerBase
         // Apply state filter if provided
         if (!string.IsNullOrEmpty(state) && Enum.TryParse<JobExecutionState>(state, true, out JobExecutionState stateFilter))
         {
-            jobs = jobs.Where(j => j.State == stateFilter).ToList();
+            jobs = [.. jobs.Where(j => j.State == stateFilter)];
         }
 
         JobListResponse response = new()
         {
             TotalJobs = jobs.Count,
-            Jobs = jobs.Select(j => new JobSummary
+            Jobs = [.. jobs.Select(j => new JobSummary
             {
                 JobId = j.JobId,
                 JobName = j.JobName,
                 State = j.State,
                 SubmittedAt = j.StartTime ?? DateTime.UtcNow,
                 Duration = j.Duration
-            }).ToList()
+            })]
         };
 
         return Ok(response);

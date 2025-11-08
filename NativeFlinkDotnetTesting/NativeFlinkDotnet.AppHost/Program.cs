@@ -21,7 +21,7 @@ Console.WriteLine("[INFO] Building NativeFlinkDotnet AppHost");
 Console.WriteLine("[INFO] Architecture: Pure .NET with Temporal (No Java Flink)");
 
 // Configure Kafka for message streaming
-var kafka = builder.AddKafka("kafka")
+IResourceBuilder<KafkaServerResource> kafka = builder.AddKafka("kafka")
     .WithKafkaUI()
     .WithLifetime(ContainerLifetime.Persistent);
 
@@ -37,7 +37,7 @@ _ = builder.AddContainer("temporal", "temporalio/auto-setup", "latest")
 Console.WriteLine("[INFO] ✓ Temporal server configured");
 
 // Add JobManager - coordinates job execution and resource allocation
-var jobManager = builder.AddProject<Projects.FlinkDotNet_JobManager>("jobmanager")
+IResourceBuilder<ProjectResource> jobManager = builder.AddProject<Projects.FlinkDotNet_JobManager>("jobmanager")
     .WithReference(kafka)
     .WithEnvironment("TEMPORAL_HOST", "temporal")
     .WithEnvironment("TEMPORAL_PORT", "7233")
@@ -50,7 +50,7 @@ Console.WriteLine("[INFO] ✓ JobManager configured");
 // Start with 2 TaskManager instances, each with 4 slots = 8 total slots
 for (int i = 1; i <= 2; i++)
 {
-    var taskManagerId = "tm-" + i.ToString();
+    string taskManagerId = "tm-" + i.ToString();
     _ = builder.AddProject<Projects.FlinkDotNet_TaskManager>($"taskmanager-{i}")
         .WithReference(kafka)
         .WithReference(jobManager)
@@ -82,6 +82,6 @@ static void LogConfiguredPorts()
 static void SetupEnvironment()
 {
     // Set up any required environment variables
-    var aspireEnv = Environment.GetEnvironmentVariable("ASPIRE_ENVIRONMENT");
+    string? aspireEnv = Environment.GetEnvironmentVariable("ASPIRE_ENVIRONMENT");
     Console.WriteLine($"[INFO] ASPIRE_ENVIRONMENT = {aspireEnv ?? "Development"}");
 }

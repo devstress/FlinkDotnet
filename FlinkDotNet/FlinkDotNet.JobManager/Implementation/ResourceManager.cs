@@ -101,7 +101,8 @@ public class ResourceManager : IResourceManager
         // Allocate slots from available TaskManagers
         foreach (KeyValuePair<string, TaskManagerInfo> tm in this._taskManagers)
         {
-            if (remainingSlots == 0) break;
+            if (remainingSlots == 0)
+                break;
 
             TaskManagerInfo info = tm.Value;
             int slotsToAllocate = Math.Min(remainingSlots, info.AvailableSlots);
@@ -281,17 +282,26 @@ internal class TaskManagerInfo
     /// <summary>
     /// Total number of slots
     /// </summary>
-    public int TotalSlots { get; set; }
+    public int TotalSlots
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Currently available slots
     /// </summary>
-    public int AvailableSlots { get; set; }
+    public int AvailableSlots
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Registration timestamp
     /// </summary>
-    public DateTime RegisteredAt { get; set; }
+    public DateTime RegisteredAt
+    {
+        get; set;
+    }
 }
 
 // Extension methods for synchronous API compatibility

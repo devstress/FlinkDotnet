@@ -36,7 +36,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Setup default configuration values
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
-            
+
             // Mock FLINK_RUNNER_JAR_PATH to avoid Maven builds during tests
             string? repoRoot = FindRepoRoot(Environment.CurrentDirectory);
             if (repoRoot != null)
@@ -53,7 +53,7 @@ namespace FlinkDotNet.JobGateway.Tests
             }
 
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            
+
             // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
             _ = this._mockHttpMessageHandler
                 .Protected()
@@ -62,7 +62,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
                 .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-            
+
             this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
                 BaseAddress = new Uri("http://localhost:8081"),
@@ -215,7 +215,7 @@ namespace FlinkDotNet.JobGateway.Tests
 
             // Assert
             Assert.That(jobDef.Operations, Has.Count.EqualTo(1));
-            Assert.That(((MapOperationDefinition)jobDef.Operations[0]).Expression, Is.EqualTo("x => x.ToUpper()"));
+            Assert.That(((MapOperationDefinition) jobDef.Operations[0]).Expression, Is.EqualTo("x => x.ToUpper()"));
         }
 
         [Test]

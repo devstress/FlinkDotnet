@@ -374,7 +374,7 @@ public class JobDefinitionValidatorBatch7Tests
         {
             Metadata = new JobMetadata
             {
-                                Version = ""  // Invalid
+                Version = ""  // Invalid
             },
             Source = new KafkaSourceDefinition
             {
@@ -400,7 +400,7 @@ public class JobDefinitionValidatorBatch7Tests
         {
             Metadata = new JobMetadata
             {
-                                Version = "1.0",
+                Version = "1.0",
                 Parallelism = 0  // Invalid
             },
             Source = new KafkaSourceDefinition
@@ -427,7 +427,7 @@ public class JobDefinitionValidatorBatch7Tests
         {
             Metadata = new JobMetadata
             {
-                                Version = "1.0",
+                Version = "1.0",
                 Parallelism = -5  // Invalid
             },
             Source = new KafkaSourceDefinition
@@ -525,7 +525,7 @@ public class JobDefinitionValidatorBatch7Tests
         {
             Metadata = new JobMetadata
             {
-                                Version = "1.0",
+                Version = "1.0",
                 Parallelism = 4
             },
             Source = new KafkaSourceDefinition

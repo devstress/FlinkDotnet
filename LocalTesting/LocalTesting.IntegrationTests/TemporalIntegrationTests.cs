@@ -28,10 +28,10 @@ public class TemporalIntegrationTests : LocalTestingTestBase
     {
         TestPrerequisites.EnsureDockerAvailable();
 
-        var baseToken = TestContext.CurrentContext.CancellationToken;
-        using var testTimeout = new CancellationTokenSource(TestTimeout);
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
-        var ct = linkedCts.Token;
+        CancellationToken baseToken = TestContext.CurrentContext.CancellationToken;
+        using CancellationTokenSource testTimeout = new CancellationTokenSource(TestTimeout);
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
+        CancellationToken ct = linkedCts.Token;
 
         TestContext.WriteLine("╔══════════════════════════════════════════════════════════════════════════╗");
         TestContext.WriteLine("║  🚀 Temporal + Kafka + FlinkDotNet Integration Test                     ║");
@@ -50,7 +50,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
         TestContext.WriteLine($"✅ Infrastructure:    All services ready from global setup");
         TestContext.WriteLine("");
 
-        var stopwatch = Stopwatch.StartNew();
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         try
         {
@@ -67,16 +67,16 @@ public class TemporalIntegrationTests : LocalTestingTestBase
 
             // Connect to Temporal using discovered endpoint (not hardcoded port)
             TestContext.WriteLine($"📡 Connecting to Temporal at {TemporalEndpoint}");
-            var client = await TemporalClient.ConnectAsync(new TemporalClientConnectOptions
+            TemporalClient client = await TemporalClient.ConnectAsync(new TemporalClientConnectOptions
             {
                 TargetHost = TemporalEndpoint,
                 Namespace = "default",
             });
 
-            var taskQueue = $"order-processing-{TestContext.CurrentContext.Test.ID}";
+            string taskQueue = $"order-processing-{TestContext.CurrentContext.Test.ID}";
             TestContext.WriteLine($"🔧 Creating worker on task queue: {taskQueue}");
 
-            using var worker = new TemporalWorker(
+            using TemporalWorker worker = new TemporalWorker(
                 client,
                 new TemporalWorkerOptions(taskQueue)
                     .AddWorkflow<OrderProcessingOrchestration>()
@@ -88,8 +88,8 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 TestContext.WriteLine("│ Step 1: Initialize Kafka Topics for Order Events                       │");
                 TestContext.WriteLine("└─────────────────────────────────────────────────────────────────────────┘");
 
-                var orderInputTopic = $"order-input-{TestContext.CurrentContext.Test.ID}";
-                var orderEventsTopic = $"order-events-{TestContext.CurrentContext.Test.ID}";
+                string orderInputTopic = $"order-input-{TestContext.CurrentContext.Test.ID}";
+                string orderEventsTopic = $"order-events-{TestContext.CurrentContext.Test.ID}";
 
                 TestContext.WriteLine($"📨 Creating Kafka topics:");
                 TestContext.WriteLine($"   Input Topic:  {orderInputTopic}");
@@ -97,8 +97,8 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 TestContext.WriteLine("");
 
                 // Start complex order processing workflow
-                var orderId = $"ORDER-{Guid.NewGuid().ToString()[..8]}";
-                var workflowId = $"order-workflow-{orderId}";
+                string orderId = $"ORDER-{Guid.NewGuid().ToString()[..8]}";
+                string workflowId = $"order-workflow-{orderId}";
 
                 TestContext.WriteLine("┌─────────────────────────────────────────────────────────────────────────┐");
                 TestContext.WriteLine("│ Step 2: Start Temporal Workflow for Order Orchestration                │");
@@ -108,16 +108,16 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 TestContext.WriteLine($"📋 Task Queue:   {taskQueue}");
                 TestContext.WriteLine("");
 
-                var orderRequest = new OrderRequest
+                OrderRequest orderRequest = new OrderRequest
                 {
                     OrderId = orderId,
                     CustomerId = "CUST-001",
                     Amount = 1500.00m,
-                    Items = new[] { "Product A", "Product B" },
+                    Items = ["Product A", "Product B"],
                     RequiresApproval = true // High-value order needs approval
                 };
 
-                var handle = await client.StartWorkflowAsync(
+                WorkflowHandle<OrderProcessingOrchestration, OrderResult> handle = await client.StartWorkflowAsync(
                     (OrderProcessingOrchestration wf) => wf.ProcessOrderAsync(orderRequest),
                     new WorkflowOptions(id: workflowId, taskQueue: taskQueue)
                     {
@@ -156,7 +156,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 TestContext.WriteLine("");
 
                 TestContext.WriteLine("⏳ Waiting for workflow completion...");
-                var result = await handle.GetResultAsync();
+                OrderResult result = await handle.GetResultAsync();
 
                 TestContext.WriteLine("");
                 TestContext.WriteLine("╔══════════════════════════════════════════════════════════════════════════╗");
@@ -168,7 +168,7 @@ public class TemporalIntegrationTests : LocalTestingTestBase
                 TestContext.WriteLine($"📋 Total Steps:   {result.Steps.Count}");
                 TestContext.WriteLine("");
                 TestContext.WriteLine("Execution Steps:");
-                foreach (var step in result.Steps)
+                foreach (string step in result.Steps)
                 {
                     TestContext.WriteLine($"   ✓ {step}");
                 }
@@ -243,7 +243,7 @@ public class OrderProcessingOrchestration
         steps.Add("Workflow started");
 
         // Step 1: Validate order (synchronous activity)
-        var isValid = await Workflow.ExecuteActivityAsync(
+        bool isValid = await Workflow.ExecuteActivityAsync(
             (OrderActivities act) => act.ValidateOrderAsync(request),
             new ActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10) });
 
@@ -263,7 +263,7 @@ public class OrderProcessingOrchestration
         }
 
         // Step 3: Process payment (with retry logic)
-        var paymentSuccess = await Workflow.ExecuteActivityAsync(
+        bool paymentSuccess = await Workflow.ExecuteActivityAsync(
             (OrderActivities act) => act.ProcessPaymentAsync(request.OrderId, request.Amount),
             new ActivityOptions
             {
@@ -280,7 +280,7 @@ public class OrderProcessingOrchestration
 
         // Step 4: Reserve inventory (parallel activities - Flink can do but not with state management)
         steps.Add("Reserving inventory");
-        var inventoryTasks = request.Items.Select(item =>
+        List<Task<bool>> inventoryTasks = request.Items.Select(item =>
             Workflow.ExecuteActivityAsync(
                 (OrderActivities act) => act.ReserveInventoryAsync(item),
                 new ActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10) })).ToList();
@@ -289,7 +289,7 @@ public class OrderProcessingOrchestration
         steps.Add("Inventory reserved");
 
         // Step 5: Create shipment
-        var shipmentId = await Workflow.ExecuteActivityAsync(
+        string shipmentId = await Workflow.ExecuteActivityAsync(
             (OrderActivities act) => act.CreateShipmentAsync(request.OrderId),
             new ActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10) });
 
@@ -329,7 +329,7 @@ public sealed class OrderActivities
     public Task<bool> ValidateOrderAsync(OrderRequest request)
     {
         // Simulate validation logic
-        var isValid = request.Amount > 0 && request.Items.Length > 0;
+        bool isValid = request.Amount > 0 && request.Items.Length > 0;
         return Task.FromResult(isValid);
     }
 
@@ -354,7 +354,7 @@ public sealed class OrderActivities
     public Task<string> CreateShipmentAsync(string orderId)
     {
         // Simulate shipment creation - orderId used for tracking context
-        var shipmentId = $"SHIP-{Guid.NewGuid().ToString()[..8]}";
+        string shipmentId = $"SHIP-{Guid.NewGuid().ToString()[..8]}";
         _ = orderId; // Acknowledge parameter usage
         return Task.FromResult(shipmentId);
     }

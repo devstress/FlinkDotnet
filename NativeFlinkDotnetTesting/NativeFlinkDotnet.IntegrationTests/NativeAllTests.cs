@@ -10,13 +10,48 @@ namespace NativeFlinkDotnet.IntegrationTests;
 [Category("native-patterns")]
 public class NativeAllPatternsTests
 {
-    [Test] public async Task Pattern1_Uppercase() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Pattern2_Filter() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Pattern3_SplitConcat() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Pattern4_Timer() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Pattern5_SqlTransform() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Pattern6_JsonTransform() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Pattern7_CustomAggregation() { await Task.CompletedTask; Assert.Pass(); }
+    [Test]
+    public async Task Pattern1_Uppercase()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Pattern2_Filter()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Pattern3_SplitConcat()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Pattern4_Timer()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Pattern5_SqlTransform()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Pattern6_JsonTransform()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Pattern7_CustomAggregation()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
 }
 
 /// <summary>
@@ -40,14 +75,54 @@ public class NativeModelTests
 [Category("temporal-integration")]
 public class NativeTemporalTests
 {
-    [Test] public async Task TemporalWorkflow_ExecuteJob() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task TemporalWorkflow_QueryState() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task TemporalWorkflow_CancelSignal() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task TemporalWorkflow_TaskFailure_Recovery() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task TemporalWorkflow_Checkpoint() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task TemporalWorkflow_LongRunning() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task TemporalWorkflow_TaskStateTransitions() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task TemporalWorkflow_ParallelExecution() { await Task.CompletedTask; Assert.Pass(); }
+    [Test]
+    public async Task TemporalWorkflow_ExecuteJob()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task TemporalWorkflow_QueryState()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task TemporalWorkflow_CancelSignal()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task TemporalWorkflow_TaskFailure_Recovery()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task TemporalWorkflow_Checkpoint()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task TemporalWorkflow_LongRunning()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task TemporalWorkflow_TaskStateTransitions()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task TemporalWorkflow_ParallelExecution()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
 }
 
 /// <summary>
@@ -57,15 +132,60 @@ public class NativeTemporalTests
 [Category("resource-management")]
 public class NativeResourceManagementTests
 {
-    [Test] public async Task ResourceManager_RegisterTaskManager() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task ResourceManager_RequestSlots() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task ResourceManager_ReleaseSlots() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task ResourceManager_MultipleTaskManagers() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task ResourceManager_TaskManagerFailure() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task ResourceManager_GetAvailableSlots() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task ResourceManager_UnregisterTaskManager() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task ResourceManager_OversubscribeSlots() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task ResourceManager_ConcurrentAllocation() { await Task.CompletedTask; Assert.Pass(); }
+    [Test]
+    public async Task ResourceManager_RegisterTaskManager()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task ResourceManager_RequestSlots()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task ResourceManager_ReleaseSlots()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task ResourceManager_MultipleTaskManagers()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task ResourceManager_TaskManagerFailure()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task ResourceManager_GetAvailableSlots()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task ResourceManager_UnregisterTaskManager()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task ResourceManager_OversubscribeSlots()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task ResourceManager_ConcurrentAllocation()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
 }
 
 /// <summary>
@@ -75,12 +195,42 @@ public class NativeResourceManagementTests
 [Category("kafka-integration")]
 public class NativeKafkaIntegrationTests
 {
-    [Test] public async Task KafkaSource_ReadMessages() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task KafkaSink_WriteMessages() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task KafkaPipeline_EndToEnd() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task KafkaSource_ParallelConsumption() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task KafkaSource_OffsetManagement() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task KafkaPipeline_Backpressure() { await Task.CompletedTask; Assert.Pass(); }
+    [Test]
+    public async Task KafkaSource_ReadMessages()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task KafkaSink_WriteMessages()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task KafkaPipeline_EndToEnd()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task KafkaSource_ParallelConsumption()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task KafkaSource_OffsetManagement()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task KafkaPipeline_Backpressure()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
 }
 
 /// <summary>
@@ -90,10 +240,40 @@ public class NativeKafkaIntegrationTests
 [Category("performance")]
 public class NativePerformanceTests
 {
-    [Test] public async Task Performance_HighThroughput() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Performance_LowLatency() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Performance_MemoryEfficiency() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Performance_Scalability() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Performance_CpuUtilization() { await Task.CompletedTask; Assert.Pass(); }
-    [Test] public async Task Performance_NetworkEfficiency() { await Task.CompletedTask; Assert.Pass(); }
+    [Test]
+    public async Task Performance_HighThroughput()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Performance_LowLatency()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Performance_MemoryEfficiency()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Performance_Scalability()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Performance_CpuUtilization()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
+    [Test]
+    public async Task Performance_NetworkEfficiency()
+    {
+        await Task.CompletedTask;
+        Assert.Pass();
+    }
 }

@@ -151,7 +151,7 @@ public class JobResultsModelTests
 
         var result = new JobExecutionResult
         {
-                        FlinkJobId = "flink-456",
+            FlinkJobId = "flink-456",
             State = "FINISHED",
             Success = true,
             Error = null,
@@ -241,7 +241,7 @@ public class JobResultsModelTests
 
         var status = new JobStatus
         {
-                        FlinkJobId = "flink-456",
+            FlinkJobId = "flink-456",
             State = "RUNNING",
             StartTime = startTime,
             EndTime = endTime,

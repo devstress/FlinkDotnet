@@ -110,7 +110,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var status = new JobStatus
             {
-                                State = "RUNNING",
+                State = "RUNNING",
                 EndTime = null
             };
 
@@ -124,7 +124,7 @@ namespace FlinkDotNet.DataStream.Tests
             // Arrange & Act
             var status = new JobStatus
             {
-                                State = "FINISHED",
+                State = "FINISHED",
                 Error = null
             };
 
@@ -142,8 +142,8 @@ namespace FlinkDotNet.DataStream.Tests
             // Act
             var status = new JobStatus
             {
-                                FlinkJobId = "job-xyz-123",
-                                JobName = "Complex Streaming Job",
+                FlinkJobId = "job-xyz-123",
+                JobName = "Complex Streaming Job",
                 State = "FAILED",
                 Parallelism = 8,
                 MaxParallelism = 256,

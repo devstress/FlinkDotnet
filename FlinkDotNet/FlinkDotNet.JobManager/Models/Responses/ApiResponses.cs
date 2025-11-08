@@ -12,22 +12,34 @@ public class SubmitJobResponse
     /// <summary>
     /// Unique identifier for the submitted job.
     /// </summary>
-    public required string JobId { get; set; }
+    public required string JobId
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Current state of the job.
     /// </summary>
-    public JobExecutionState State { get; set; }
+    public JobExecutionState State
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Timestamp when the job was submitted.
     /// </summary>
-    public DateTime SubmittedAt { get; set; }
+    public DateTime SubmittedAt
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Message describing the submission result.
     /// </summary>
-    public string? Message { get; set; }
+    public string? Message
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -38,62 +50,98 @@ public class JobStatusResponse
     /// <summary>
     /// Unique identifier for the job.
     /// </summary>
-    public required string JobId { get; set; }
+    public required string JobId
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Name of the job.
     /// </summary>
-    public required string JobName { get; set; }
+    public required string JobName
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Current execution state.
     /// </summary>
-    public JobExecutionState State { get; set; }
+    public JobExecutionState State
+    {
+        get; set;
+    }
 
     /// <summary>
     /// When the job was submitted.
     /// </summary>
-    public DateTime SubmittedAt { get; set; }
+    public DateTime SubmittedAt
+    {
+        get; set;
+    }
 
     /// <summary>
     /// When the job started executing (if started).
     /// </summary>
-    public DateTime? StartedAt { get; set; }
+    public DateTime? StartedAt
+    {
+        get; set;
+    }
 
     /// <summary>
     /// When the job finished (if finished/failed/canceled).
     /// </summary>
-    public DateTime? FinishedAt { get; set; }
+    public DateTime? FinishedAt
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Duration of execution (if finished).
     /// </summary>
-    public TimeSpan? Duration { get; set; }
+    public TimeSpan? Duration
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Error message if job failed.
     /// </summary>
-    public string? ErrorMessage { get; set; }
+    public string? ErrorMessage
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of tasks in the job.
     /// </summary>
-    public int TotalTasks { get; set; }
+    public int TotalTasks
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of running tasks.
     /// </summary>
-    public int RunningTasks { get; set; }
+    public int RunningTasks
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of completed tasks.
     /// </summary>
-    public int CompletedTasks { get; set; }
+    public int CompletedTasks
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of failed tasks.
     /// </summary>
-    public int FailedTasks { get; set; }
+    public int FailedTasks
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -104,7 +152,10 @@ public class JobListResponse
     /// <summary>
     /// Total number of jobs.
     /// </summary>
-    public int TotalJobs { get; set; }
+    public int TotalJobs
+    {
+        get; set;
+    }
 
     /// <summary>
     /// List of jobs.
@@ -120,27 +171,42 @@ public class JobSummary
     /// <summary>
     /// Job identifier.
     /// </summary>
-    public required string JobId { get; set; }
+    public required string JobId
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Job name.
     /// </summary>
-    public required string JobName { get; set; }
+    public required string JobName
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Current state.
     /// </summary>
-    public JobExecutionState State { get; set; }
+    public JobExecutionState State
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Submission timestamp.
     /// </summary>
-    public DateTime SubmittedAt { get; set; }
+    public DateTime SubmittedAt
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Duration (if completed).
     /// </summary>
-    public TimeSpan? Duration { get; set; }
+    public TimeSpan? Duration
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -151,17 +217,26 @@ public class TaskManagerListResponse
     /// <summary>
     /// Total number of registered TaskManagers.
     /// </summary>
-    public int TotalTaskManagers { get; set; }
+    public int TotalTaskManagers
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Total number of available slots.
     /// </summary>
-    public int TotalSlots { get; set; }
+    public int TotalSlots
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of free slots.
     /// </summary>
-    public int FreeSlots { get; set; }
+    public int FreeSlots
+    {
+        get; set;
+    }
 
     /// <summary>
     /// List of TaskManagers.
@@ -177,27 +252,42 @@ public class TaskManagerInfo
     /// <summary>
     /// TaskManager identifier.
     /// </summary>
-    public required string TaskManagerId { get; set; }
+    public required string TaskManagerId
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of slots on this TaskManager.
     /// </summary>
-    public int TotalSlots { get; set; }
+    public int TotalSlots
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of free slots.
     /// </summary>
-    public int FreeSlots { get; set; }
+    public int FreeSlots
+    {
+        get; set;
+    }
 
     /// <summary>
     /// When the TaskManager registered.
     /// </summary>
-    public DateTime RegisteredAt { get; set; }
+    public DateTime RegisteredAt
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Last heartbeat timestamp.
     /// </summary>
-    public DateTime LastHeartbeat { get; set; }
+    public DateTime LastHeartbeat
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -208,35 +298,56 @@ public class ClusterOverviewResponse
     /// <summary>
     /// Number of registered TaskManagers.
     /// </summary>
-    public int TaskManagers { get; set; }
+    public int TaskManagers
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Total slot capacity.
     /// </summary>
-    public int TotalSlots { get; set; }
+    public int TotalSlots
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Available slots.
     /// </summary>
-    public int AvailableSlots { get; set; }
+    public int AvailableSlots
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of running jobs.
     /// </summary>
-    public int RunningJobs { get; set; }
+    public int RunningJobs
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of finished jobs.
     /// </summary>
-    public int FinishedJobs { get; set; }
+    public int FinishedJobs
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of failed jobs.
     /// </summary>
-    public int FailedJobs { get; set; }
+    public int FailedJobs
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Number of canceled jobs.
     /// </summary>
-    public int CanceledJobs { get; set; }
+    public int CanceledJobs
+    {
+        get; set;
+    }
 }

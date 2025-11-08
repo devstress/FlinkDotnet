@@ -4,6 +4,13 @@ This document provides an overview of stream processing features implemented in 
 
 > **Note**: FlinkDotNet v1 supports Apache Flink as explained in the [root README.md](../README.md). We are implementing **native FlinkDotNet (aka FlinkDotNet v2)** for distributed message-oriented/stream processing architecture. The root README.md will be updated about FlinkDotNet v2 when all TODO items are completed.
 
+## 📋 Quick Links
+
+- **[Development Rules](DEVELOPMENT_RULES.md)** - Mandatory rules for contributors (including pre-commit formatting)
+- **[Current Sprint](CURRENT_SPRINT.md)** - Active sprint tasks and priorities
+- **[Implementation Roadmap](IMPLEMENTATION_ROADMAP.md)** - Complete implementation roadmap
+- **[Daily Progress](DAILY_PROGRESS.md)** - Daily progress tracking
+
 ## 🎉 Implementation Complete
 
 **FlinkDotNet has achieved comprehensive coverage of stream processing features** inspired by Apache Flink versions 1.0 to 2.1.0, implemented as a native .NET distributed stream processing engine.

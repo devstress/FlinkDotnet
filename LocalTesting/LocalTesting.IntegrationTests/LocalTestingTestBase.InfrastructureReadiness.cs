@@ -16,7 +16,7 @@ public abstract partial class LocalTestingTestBase
         try
         {
             // Get container details with network information
-            var containerDetails = await RunDockerCommandAsync(
+            string containerDetails = await RunDockerCommandAsync(
                 "ps --filter \"name=kafka\" --format \"{{.Names}} {{.Ports}} {{.Networks}}\" --no-trunc"
             );
 
@@ -26,7 +26,7 @@ public abstract partial class LocalTestingTestBase
             }
 
             // Try alternative container discovery
-            var allContainers = await RunDockerCommandAsync(
+            string allContainers = await RunDockerCommandAsync(
                 "ps --format \"{{.Names}} {{.Ports}} {{.Networks}}\" --no-trunc"
             );
 
@@ -46,7 +46,7 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            using var client = new System.Net.Sockets.TcpClient();
+            using System.Net.Sockets.TcpClient client = new System.Net.Sockets.TcpClient();
             await client.ConnectAsync(host, port);
             return client.Connected;
         }
@@ -62,14 +62,14 @@ public abstract partial class LocalTestingTestBase
     private static async Task<string> RunDockerCommandAsync(string arguments)
     {
         // Try Docker first, then Podman if Docker fails or returns empty
-        var dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
+        string? dockerOutput = await TryRunContainerCommandAsync("docker", arguments);
         if (!string.IsNullOrWhiteSpace(dockerOutput))
         {
             return dockerOutput;
         }
 
         // Fallback to Podman if Docker didn't return results
-        var podmanOutput = await TryRunContainerCommandAsync("podman", arguments);
+        string? podmanOutput = await TryRunContainerCommandAsync("podman", arguments);
         return podmanOutput ?? string.Empty;
     }
 
@@ -77,7 +77,7 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = command,
                 Arguments = arguments,
@@ -87,13 +87,13 @@ public abstract partial class LocalTestingTestBase
                 CreateNoWindow = true
             };
 
-            using var process = Process.Start(psi);
+            using Process? process = Process.Start(psi);
             if (process == null)
             {
                 return null;
             }
 
-            var output = await process.StandardOutput.ReadToEndAsync();
+            string output = await process.StandardOutput.ReadToEndAsync();
             await process.WaitForExitAsync();
 
             if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
@@ -115,15 +115,15 @@ public abstract partial class LocalTestingTestBase
     /// </summary>
     public static async Task WaitForKafkaReadyAsync(string bootstrapServers, TimeSpan timeout, CancellationToken ct)
     {
-        var sw = Stopwatch.StartNew();
-        var attempt = 0;
+        Stopwatch sw = Stopwatch.StartNew();
+        int attempt = 0;
         TestContext.WriteLine($"╔══════════════════════════════════════════════════════════════");
         TestContext.WriteLine($"║ 🔎 [KafkaReady] Connecting to Kafka");
         TestContext.WriteLine($"║ 📡 Bootstrap servers: {bootstrapServers}");
         TestContext.WriteLine($"║ ⏱️  Timeout: {timeout.TotalSeconds}s");
         TestContext.WriteLine($"╚══════════════════════════════════════════════════════════════");
 
-        var bootstrapVariations = await GetBootstrapServerVariationsAsync(bootstrapServers);
+        string[] bootstrapVariations = await GetBootstrapServerVariationsAsync(bootstrapServers);
         TestContext.WriteLine($"🔗 [KafkaReady] Will try connection variations: {string.Join(", ", bootstrapVariations)}");
 
         Exception? lastException = null;
@@ -132,7 +132,7 @@ public abstract partial class LocalTestingTestBase
         {
             attempt++;
 
-            var (connected, exception) = await TryConnectToKafkaAsync(bootstrapVariations, attempt, sw.Elapsed);
+            (bool connected, Exception exception) = await TryConnectToKafkaAsync(bootstrapVariations, attempt, sw.Elapsed);
             if (connected)
                 return;
 
@@ -148,12 +148,12 @@ public abstract partial class LocalTestingTestBase
     {
         Exception? lastException = null;
 
-        foreach (var bootstrap in bootstrapVariations)
+        foreach (string bootstrap in bootstrapVariations)
         {
             try
             {
-                using var admin = CreateKafkaAdminClient(bootstrap);
-                var md = admin.GetMetadata(TimeSpan.FromSeconds(2));
+                using IAdminClient admin = CreateKafkaAdminClient(bootstrap);
+                Metadata md = admin.GetMetadata(TimeSpan.FromSeconds(2));
 
                 if (md?.Brokers?.Count > 0)
                 {
@@ -205,7 +205,7 @@ public abstract partial class LocalTestingTestBase
 
     private static async Task<TimeoutException> CreateKafkaTimeoutExceptionAsync(TimeSpan timeout, string[] bootstrapVariations, Exception? lastException)
     {
-        var containerStatus = await GetKafkaContainerDetailsAsync();
+        string containerStatus = await GetKafkaContainerDetailsAsync();
         return new TimeoutException($"Kafka did not become ready within {timeout.TotalSeconds:F0}s. " +
                                   $"Bootstrap servers tried: {string.Join(", ", bootstrapVariations)}. " +
                                   $"Last error: {lastException?.Message}. " +
@@ -219,7 +219,7 @@ public abstract partial class LocalTestingTestBase
     /// </summary>
     private static Task<string[]> GetBootstrapServerVariationsAsync(string originalBootstrap)
     {
-        var variations = new List<string>
+        List<string> variations = new List<string>
         {
             originalBootstrap,
             originalBootstrap.Replace("localhost", "127.0.0.1")
@@ -239,22 +239,22 @@ public abstract partial class LocalTestingTestBase
             TestContext.WriteLine("🔍 Detailed connectivity diagnostics:");
 
             // Test each endpoint manually
-            foreach (var endpoint in bootstrapVariations.Take(3)) // Test first 3 to avoid spam
+            foreach (string? endpoint in bootstrapVariations.Take(3)) // Test first 3 to avoid spam
             {
-                var parts = endpoint.Split(':');
-                if (parts.Length == 2 && int.TryParse(parts[1], out var port))
+                string[] parts = endpoint.Split(':');
+                if (parts.Length == 2 && int.TryParse(parts[1], out int port))
                 {
-                    var reachable = await TestPortConnectivityAsync(parts[0], port);
+                    bool reachable = await TestPortConnectivityAsync(parts[0], port);
                     TestContext.WriteLine($"   {endpoint}: {(reachable ? "✅ Reachable" : "❌ Not reachable")}");
                 }
             }
 
             // Container status
-            var containers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}: {{.Status}} - {{.Ports}}\"");
+            string containers = await RunDockerCommandAsync("ps --filter \"name=kafka\" --format \"{{.Names}}: {{.Status}} - {{.Ports}}\"");
             TestContext.WriteLine($"   Container Status: {containers.Trim()}");
 
             // Network information
-            var networks = await RunDockerCommandAsync("network ls --format \"{{.Name}}: {{.Driver}}\"");
+            string networks = await RunDockerCommandAsync("network ls --format \"{{.Name}}: {{.Driver}}\"");
             TestContext.WriteLine($"   Networks: {networks.Replace('\n', ' ').Trim()}");
 
             if (lastException != null)
@@ -278,9 +278,9 @@ public abstract partial class LocalTestingTestBase
     /// <param name="requireFreeSlots">If true, requires at least one free task slot. Use true for initial setup, false for per-test checks.</param>
     public static async Task WaitForFlinkReadyAsync(string overviewUrl, TimeSpan timeout, CancellationToken ct, bool requireFreeSlots = true)
     {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-        var sw = Stopwatch.StartNew();
-        var attempt = 0;
+        using HttpClient http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        Stopwatch sw = Stopwatch.StartNew();
+        int attempt = 0;
 
         TestContext.WriteLine($"╔══════════════════════════════════════════════════════════════");
         TestContext.WriteLine($"║ 🔎 [FlinkReady] Connecting to Flink JobManager");
@@ -296,7 +296,7 @@ public abstract partial class LocalTestingTestBase
             attempt++;
             if (await CheckFlinkJobManagerAsync(http, overviewUrl, attempt, ct, requireFreeSlots))
             {
-                var slotsMessage = requireFreeSlots ? " with available slots" : "";
+                string slotsMessage = requireFreeSlots ? " with available slots" : "";
                 TestContext.WriteLine($"✅ [FlinkReady] JobManager with TaskManagers ready{slotsMessage} at {overviewUrl} after {attempt} attempt(s), {sw.Elapsed.TotalSeconds:F1}s");
                 return;
             }
@@ -315,9 +315,9 @@ public abstract partial class LocalTestingTestBase
 
         await Task.Delay(500); // Optimized: Reduced to 500ms (was 2000ms)
 
-        var overviewUri = new Uri(overviewUrl);
-        var jobManagerPort = overviewUri.Port;
-        var portAccessible = await TestPortConnectivityAsync("localhost", jobManagerPort);
+        Uri overviewUri = new Uri(overviewUrl);
+        int jobManagerPort = overviewUri.Port;
+        bool portAccessible = await TestPortConnectivityAsync("localhost", jobManagerPort);
         TestContext.WriteLine($"🔍 [FlinkReady] Port {jobManagerPort} accessible: {portAccessible}");
     }
 
@@ -335,10 +335,10 @@ public abstract partial class LocalTestingTestBase
         try
         {
             // First check overview endpoint to verify TaskManagers are registered
-            var resp = await http.GetAsync(overviewUrl, ct);
+            HttpResponseMessage resp = await http.GetAsync(overviewUrl, ct);
             if (resp.IsSuccessStatusCode)
             {
-                var content = await resp.Content.ReadAsStringAsync(ct);
+                string content = await resp.Content.ReadAsStringAsync(ct);
                 if (!ValidateFlinkResponse(content, attempt))
                 {
                     return false;
@@ -347,7 +347,7 @@ public abstract partial class LocalTestingTestBase
                 // TaskManagers are registered - check slots only if required
                 if (requireFreeSlots)
                 {
-                    var baseUrl = overviewUrl.Replace("/v1/overview", "");
+                    string baseUrl = overviewUrl.Replace("/v1/overview", "");
                     return await CheckTaskManagerSlotsAsync(http, baseUrl, attempt, ct);
                 }
 
@@ -378,8 +378,8 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            var taskManagersUrl = $"{baseUrl}/v1/taskmanagers";
-            var resp = await http.GetAsync(taskManagersUrl, ct);
+            string taskManagersUrl = $"{baseUrl}/v1/taskmanagers";
+            HttpResponseMessage resp = await http.GetAsync(taskManagersUrl, ct);
 
             if (!resp.IsSuccessStatusCode)
             {
@@ -387,7 +387,7 @@ public abstract partial class LocalTestingTestBase
                 return false;
             }
 
-            var content = await resp.Content.ReadAsStringAsync(ct);
+            string content = await resp.Content.ReadAsStringAsync(ct);
 
             // Parse JSON to check for available slots
             // Expected format: {"taskmanagers":[{"id":"...","slotsNumber":2,"freeSlots":2,...}]}
@@ -399,10 +399,10 @@ public abstract partial class LocalTestingTestBase
 
             // Simple JSON parsing to check for freeSlots > 0
             // Look for "freeSlots": pattern followed by a number greater than 0
-            var freeSlotsMatch = Regex.Match(content, @"""freeSlots""\s*:\s*(\d+)");
+            Match freeSlotsMatch = Regex.Match(content, @"""freeSlots""\s*:\s*(\d+)");
             if (freeSlotsMatch.Success)
             {
-                var freeSlots = int.Parse(freeSlotsMatch.Groups[1].Value);
+                int freeSlots = int.Parse(freeSlotsMatch.Groups[1].Value);
                 if (freeSlots > 0)
                 {
                     TestContext.WriteLine($"✅ [FlinkReady] Attempt {attempt}: TaskManagers ready with {freeSlots} free slot(s)");
@@ -474,17 +474,17 @@ public abstract partial class LocalTestingTestBase
             TestContext.WriteLine("🔍 [FlinkReady] Container diagnostics:");
 
             // Check Flink containers
-            var flinkContainers = await RunDockerCommandAsync("ps --filter \"name=flink\" --format \"{{.Names}}: {{.Status}} - {{.Ports}}\"");
+            string flinkContainers = await RunDockerCommandAsync("ps --filter \"name=flink\" --format \"{{.Names}}: {{.Status}} - {{.Ports}}\"");
             TestContext.WriteLine($"   Flink Containers: {flinkContainers.Trim()}");
 
             // Check if port is listening using dynamically discovered endpoint
-            var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
-            var flinkPort = new Uri(flinkEndpoint).Port;
-            var portTest = await TestPortConnectivityAsync("localhost", flinkPort);
+            string flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+            int flinkPort = new Uri(flinkEndpoint).Port;
+            bool portTest = await TestPortConnectivityAsync("localhost", flinkPort);
             TestContext.WriteLine($"   Port {flinkPort} accessible: {portTest}");
 
             // Try to get container logs
-            var jobManagerLogs = await RunDockerCommandAsync("logs --tail 20 flink-jobmanager 2>&1 || echo 'Could not get logs'");
+            string jobManagerLogs = await RunDockerCommandAsync("logs --tail 20 flink-jobmanager 2>&1 || echo 'Could not get logs'");
             TestContext.WriteLine($"   JobManager logs (last 20 lines): {jobManagerLogs.Trim()}");
         }
         catch (Exception ex)
@@ -500,9 +500,9 @@ public abstract partial class LocalTestingTestBase
     /// </summary>
     public static async Task WaitForGatewayReadyAsync(string healthUrl, TimeSpan timeout, CancellationToken ct)
     {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        var sw = Stopwatch.StartNew();
-        var attempt = 0;
+        using HttpClient http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        Stopwatch sw = Stopwatch.StartNew();
+        int attempt = 0;
 
         LogGatewayReadinessStart(healthUrl, timeout);
 
@@ -537,7 +537,7 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            var resp = await http.GetAsync(healthUrl, ct);
+            HttpResponseMessage resp = await http.GetAsync(healthUrl, ct);
             return HandleGatewayResponse(resp, healthUrl, attempt, elapsed);
         }
         catch (HttpRequestException ex)
@@ -596,10 +596,10 @@ public abstract partial class LocalTestingTestBase
     /// </summary>
     public static async Task WaitForSqlGatewayReadyAsync(string baseUrl, TimeSpan timeout, CancellationToken ct)
     {
-        using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
-        var sw = Stopwatch.StartNew();
-        var attempt = 0;
-        var healthUrl = $"{baseUrl}/v1/info";
+        using HttpClient http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        Stopwatch sw = Stopwatch.StartNew();
+        int attempt = 0;
+        string healthUrl = $"{baseUrl}/v1/info";
 
         LogSqlGatewayReadinessStart(healthUrl, timeout);
 
@@ -625,7 +625,7 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            var resp = await http.GetAsync(healthUrl, ct);
+            HttpResponseMessage resp = await http.GetAsync(healthUrl, ct);
             if (resp.IsSuccessStatusCode)
             {
                 TestContext.WriteLine($"✅ [SqlGatewayReady] SQL Gateway ready at {healthUrl} after {attempt} attempt(s), {elapsed.TotalSeconds:F1}s");
@@ -683,8 +683,8 @@ public abstract partial class LocalTestingTestBase
     /// </summary>
     public static async Task WaitForTemporalReadyAsync(string address, TimeSpan timeout, CancellationToken ct)
     {
-        var sw = Stopwatch.StartNew();
-        var attempt = 0;
+        Stopwatch sw = Stopwatch.StartNew();
+        int attempt = 0;
         Exception? lastException = null;
 
         LogTemporalReadinessStart(address, timeout);
@@ -693,7 +693,7 @@ public abstract partial class LocalTestingTestBase
         {
             attempt++;
 
-            var (success, exception) = await TryConnectToTemporalAsync(address, attempt, sw.Elapsed);
+            (bool success, Exception exception) = await TryConnectToTemporalAsync(address, attempt, sw.Elapsed);
             if (success)
             {
                 return;
@@ -721,7 +721,7 @@ public abstract partial class LocalTestingTestBase
     {
         try
         {
-            var client = await Temporalio.Client.TemporalClient.ConnectAsync(new Temporalio.Client.TemporalClientConnectOptions
+            Temporalio.Client.TemporalClient client = await Temporalio.Client.TemporalClient.ConnectAsync(new Temporalio.Client.TemporalClientConnectOptions
             {
                 TargetHost = address,
                 Namespace = "default",
@@ -761,7 +761,7 @@ public abstract partial class LocalTestingTestBase
 
     private static TimeoutException CreateTemporalTimeoutException(string address, TimeSpan timeout, int attempt, TimeSpan elapsed, Exception? lastException)
     {
-        var errorMessage = $"Temporal not ready within {timeout.TotalSeconds:F0}s at {address}. " +
+        string errorMessage = $"Temporal not ready within {timeout.TotalSeconds:F0}s at {address}. " +
                           $"Attempted {attempt} times over {elapsed.TotalSeconds:F1}s.";
 
         if (lastException != null)

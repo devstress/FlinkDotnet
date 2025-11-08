@@ -31,8 +31,8 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
     {
         await RunNativeFlinkPattern(
             patternName: "Uppercase",
-            inputMessages: new[] { "hello", "world" },
-            expectedOutputs: new[] { "HELLO", "WORLD" },
+            inputMessages: ["hello", "world"],
+            expectedOutputs: ["HELLO", "WORLD"],
             description: "Basic uppercase transformation"
         );
     }
@@ -48,22 +48,22 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         bool allowLongerProcessing = false)
     {
         // Kafka topic names must be lowercase, so ToLowerInvariant is correct here
-        var inputTopic = $"lt.pattern.{patternName.ToLowerInvariant()}.input.{TestContext.CurrentContext.Test.ID}";
-        var outputTopic = $"lt.pattern.{patternName.ToLowerInvariant()}.output.{TestContext.CurrentContext.Test.ID}";
+        string inputTopic = $"lt.pattern.{patternName.ToLowerInvariant()}.input.{TestContext.CurrentContext.Test.ID}";
+        string outputTopic = $"lt.pattern.{patternName.ToLowerInvariant()}.output.{TestContext.CurrentContext.Test.ID}";
 
         // Find and verify JAR exists
-        var jarPath = FindNativeFlinkJar();
+        string jarPath = FindNativeFlinkJar();
         TestContext.WriteLine($"🔍 Using JAR: {jarPath}");
         Assert.That(File.Exists(jarPath), Is.True, $"Native Flink JAR must exist at {jarPath}");
 
-        var baseToken = TestContext.CurrentContext.CancellationToken;
-        using var testTimeout = new CancellationTokenSource(TestTimeout);
-        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
-        var ct = linkedCts.Token;
+        CancellationToken baseToken = TestContext.CurrentContext.CancellationToken;
+        using CancellationTokenSource testTimeout = new CancellationTokenSource(TestTimeout);
+        using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(baseToken, testTimeout.Token);
+        CancellationToken ct = linkedCts.Token;
 
         TestContext.WriteLine($"🚀 Starting Native Flink Pattern Test: {patternName}");
         TestContext.WriteLine($"📝 Description: {description}");
-        var stopwatch = Stopwatch.StartNew();
+        Stopwatch stopwatch = Stopwatch.StartNew();
 
         try
         {
@@ -74,9 +74,9 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
             await CreateTopicAsync(outputTopic, 1);
 
             // Upload JAR and submit job
-            using var httpClient = new HttpClient();
-            var jarId = await UploadJarToFlinkAsync(httpClient, jarPath, ct);
-            var jobId = await SubmitNativeJobAsync(httpClient, jarId, inputTopic, outputTopic, ct);
+            using HttpClient httpClient = new HttpClient();
+            string jarId = await UploadJarToFlinkAsync(httpClient, jarPath, ct);
+            string jobId = await SubmitNativeJobAsync(httpClient, jarId, inputTopic, outputTopic, ct);
             TestContext.WriteLine($"✅ Job submitted: {jobId}");
 
             // Wait for job to be running
@@ -88,8 +88,8 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
             await ProduceMessagesAsync(inputTopic, inputMessages, KafkaConnectionString!, ct);
 
             // Consume and verify
-            var consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(60) : ConsumeTimeout;
-            var consumed = await ConsumeMessagesAsync(outputTopic, expectedOutputs.Length, consumeTimeout, KafkaConnectionString!, ct);
+            TimeSpan consumeTimeout = allowLongerProcessing ? TimeSpan.FromSeconds(60) : ConsumeTimeout;
+            List<string> consumed = await ConsumeMessagesAsync(outputTopic, expectedOutputs.Length, consumeTimeout, KafkaConnectionString!, ct);
 
             TestContext.WriteLine($"📊 Consumed {consumed.Count} messages (expected: {expectedOutputs.Length})");
 
@@ -120,19 +120,19 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 
     private static async Task<string> UploadJarToFlinkAsync(HttpClient client, string jarPath, CancellationToken ct)
     {
-        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
-        var uploadUrl = $"{flinkEndpoint}jars/upload";
+        string flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+        string uploadUrl = $"{flinkEndpoint}jars/upload";
 
-        using var fileStream = File.OpenRead(jarPath);
-        using var content = new MultipartFormDataContent();
-        using var fileContent = new StreamContent(fileStream);
+        using FileStream fileStream = File.OpenRead(jarPath);
+        using MultipartFormDataContent content = new MultipartFormDataContent();
+        using StreamContent fileContent = new StreamContent(fileStream);
         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/x-java-archive");
         content.Add(fileContent, "jarfile", Path.GetFileName(jarPath));
 
-        var response = await client.PostAsync(uploadUrl, content, ct);
+        HttpResponseMessage response = await client.PostAsync(uploadUrl, content, ct);
         response.EnsureSuccessStatusCode();
 
-        var result = await response.Content.ReadFromJsonAsync<FlinkJarUploadResponse>(ct);
+        FlinkJarUploadResponse? result = await response.Content.ReadFromJsonAsync<FlinkJarUploadResponse>(ct);
         Assert.That(result?.Filename, Is.Not.Null.And.Not.Empty);
         return Path.GetFileName(result!.Filename);
     }
@@ -144,12 +144,12 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         string outputTopic,
         CancellationToken ct)
     {
-        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
-        var runUrl = $"{flinkEndpoint}jars/{jarId}/run";
+        string flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+        string runUrl = $"{flinkEndpoint}jars/{jarId}/run";
 
         // Use dynamically discovered Kafka container IP for Flink job connectivity
         // Docker bridge network doesn't support DNS between containers
-        var kafkaBootstrap = GlobalTestInfrastructure.KafkaContainerIpForFlink;
+        string? kafkaBootstrap = GlobalTestInfrastructure.KafkaContainerIpForFlink;
         var submitPayload = new
         {
             entryClass = "com.flinkdotnet.NativeKafkaJob",
@@ -163,26 +163,26 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
             parallelism = 1
         };
 
-        var response = await client.PostAsJsonAsync(runUrl, submitPayload, ct);
+        HttpResponseMessage response = await client.PostAsJsonAsync(runUrl, submitPayload, ct);
         response.EnsureSuccessStatusCode();
 
-        var result = await response.Content.ReadFromJsonAsync<FlinkJobSubmitResponse>(ct);
+        FlinkJobSubmitResponse? result = await response.Content.ReadFromJsonAsync<FlinkJobSubmitResponse>(ct);
         Assert.That(result?.JobId, Is.Not.Null.And.Not.Empty);
         return result!.JobId;
     }
 
     private static async Task WaitForJobRunningAsync(HttpClient client, string jobId, TimeSpan timeout, CancellationToken ct)
     {
-        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
-        var jobUrl = $"{flinkEndpoint}jobs/{jobId}";
-        var deadline = DateTime.UtcNow.Add(timeout);
+        string flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+        string jobUrl = $"{flinkEndpoint}jobs/{jobId}";
+        DateTime deadline = DateTime.UtcNow.Add(timeout);
 
         while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
         {
-            var response = await client.GetAsync(jobUrl, ct);
+            HttpResponseMessage response = await client.GetAsync(jobUrl, ct);
             response.EnsureSuccessStatusCode();
 
-            var jobInfo = await response.Content.ReadFromJsonAsync<FlinkJobInfo>(ct);
+            FlinkJobInfo? jobInfo = await response.Content.ReadFromJsonAsync<FlinkJobInfo>(ct);
             if (jobInfo?.State == "RUNNING")
                 return;
             if (jobInfo?.State == "FAILED" || jobInfo?.State == "CANCELED")
@@ -198,15 +198,15 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 
     private static async Task CancelJobAsync(HttpClient client, string jobId, CancellationToken ct)
     {
-        var flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
-        var cancelUrl = $"{flinkEndpoint}jobs/{jobId}?mode=cancel";
-        var response = await client.PatchAsync(cancelUrl, null, ct);
+        string flinkEndpoint = await GetFlinkJobManagerEndpointAsync();
+        string cancelUrl = $"{flinkEndpoint}jobs/{jobId}?mode=cancel";
+        HttpResponseMessage response = await client.PatchAsync(cancelUrl, null, ct);
         response.EnsureSuccessStatusCode();
     }
 
     private static async Task ProduceMessagesAsync(string topic, string[] messages, string kafkaConnectionString, CancellationToken ct)
     {
-        using var producer = new ProducerBuilder<Null, string>(new ProducerConfig
+        using IProducer<Null, string> producer = new ProducerBuilder<Null, string>(new ProducerConfig
         {
             BootstrapServers = kafkaConnectionString,
             ClientId = "native-pattern-test-producer",
@@ -217,7 +217,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         .SetErrorHandler((_, _) => { })
         .Build();
 
-        foreach (var message in messages)
+        foreach (string message in messages)
         {
             await producer.ProduceAsync(topic, new Message<Null, string> { Value = message }, ct);
         }
@@ -232,7 +232,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
         string kafkaConnectionString,
         CancellationToken ct)
     {
-        var config = new ConsumerConfig
+        ConsumerConfig config = new ConsumerConfig
         {
             BootstrapServers = kafkaConnectionString,
             GroupId = $"native-pattern-consumer-{Guid.NewGuid()}",
@@ -242,18 +242,18 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
             SecurityProtocol = SecurityProtocol.Plaintext
         };
 
-        var messages = new List<string>();
-        using var consumer = new ConsumerBuilder<Ignore, string>(config)
+        List<string> messages = new List<string>();
+        using IConsumer<Ignore, string> consumer = new ConsumerBuilder<Ignore, string>(config)
             .SetLogHandler((_, _) => { })
             .SetErrorHandler((_, _) => { })
             .Build();
 
         consumer.Subscribe(topic);
-        var deadline = DateTime.UtcNow.Add(timeout);
+        DateTime deadline = DateTime.UtcNow.Add(timeout);
 
         while (DateTime.UtcNow < deadline && messages.Count < expectedCount && !ct.IsCancellationRequested)
         {
-            var consumeResult = consumer.Consume(TimeSpan.FromSeconds(1));
+            ConsumeResult<Ignore, string> consumeResult = consumer.Consume(TimeSpan.FromSeconds(1));
             if (consumeResult != null)
             {
                 messages.Add(consumeResult.Message.Value);
@@ -265,12 +265,12 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 
     private static string FindNativeFlinkJar()
     {
-        var currentDir = AppContext.BaseDirectory;
-        var repoRoot = FindRepositoryRoot(currentDir);
+        string currentDir = AppContext.BaseDirectory;
+        string? repoRoot = FindRepositoryRoot(currentDir);
 
         if (repoRoot != null)
         {
-            var jarPath = Path.Combine(repoRoot, "LocalTesting", "NativeFlinkJob", "target", "native-flink-kafka-job-1.0.0.jar");
+            string jarPath = Path.Combine(repoRoot, "LocalTesting", "NativeFlinkJob", "target", "native-flink-kafka-job-1.0.0.jar");
             if (File.Exists(jarPath))
                 return jarPath;
         }
@@ -280,7 +280,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
 
     private static string? FindRepositoryRoot(string startPath)
     {
-        var dir = new DirectoryInfo(startPath);
+        DirectoryInfo? dir = new DirectoryInfo(startPath);
         while (dir != null)
         {
             if (File.Exists(Path.Combine(dir.FullName, "global.json")))
@@ -294,7 +294,7 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
     {
         try
         {
-            var psi = new ProcessStartInfo
+            ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = "docker",
                 Arguments = "ps --filter \"name=flink-jobmanager\" --format \"{{.Ports}}\"",
@@ -303,13 +303,13 @@ public class NativeFlinkAllPatternsTests : LocalTestingTestBase
                 CreateNoWindow = true
             };
 
-            using var process = Process.Start(psi);
+            using Process? process = Process.Start(psi);
             if (process != null)
             {
-                var output = process.StandardOutput.ReadToEnd();
+                string output = process.StandardOutput.ReadToEnd();
                 process.WaitForExit();
 
-                var match = System.Text.RegularExpressions.Regex.Match(output, @"127\.0\.0\.1:(\d+)->8081");
+                System.Text.RegularExpressions.Match match = System.Text.RegularExpressions.Regex.Match(output, @"127\.0\.0\.1:(\d+)->8081");
                 if (match.Success)
                 {
                     return Task.FromResult($"http://localhost:{match.Groups[1].Value}/");

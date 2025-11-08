@@ -36,7 +36,7 @@ namespace FlinkDotNet.JobGateway.Tests
             _ = this._mockConfiguration.Setup(x => x[It.IsAny<string>()]).Returns((string?) null);
 
             this._mockHttpMessageHandler = new Mock<HttpMessageHandler>();
-            
+
             // Setup default handler for unmocked HTTP requests to fail fast instead of timing out
             _ = this._mockHttpMessageHandler
                 .Protected()
@@ -45,7 +45,7 @@ namespace FlinkDotNet.JobGateway.Tests
                     ItExpr.IsAny<HttpRequestMessage>(),
                     ItExpr.IsAny<CancellationToken>())
                 .ThrowsAsync(new InvalidOperationException("Handler did not return a response message."));
-            
+
             this._httpClient = new HttpClient(this._mockHttpMessageHandler.Object)
             {
                 BaseAddress = new Uri("http://localhost:8081"),

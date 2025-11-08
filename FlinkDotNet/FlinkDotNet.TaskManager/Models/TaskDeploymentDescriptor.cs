@@ -44,12 +44,18 @@ public class TaskDeploymentDescriptor
     /// <summary>
     /// Subtask index
     /// </summary>
-    public int SubtaskIndex { get; set; }
+    public int SubtaskIndex
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Total parallelism for this operator
     /// </summary>
-    public int Parallelism { get; set; }
+    public int Parallelism
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Input channels for receiving data
@@ -80,7 +86,10 @@ public class InputChannel
     /// <summary>
     /// Whether this is a local or remote channel
     /// </summary>
-    public bool IsLocal { get; set; }
+    public bool IsLocal
+    {
+        get; set;
+    }
 }
 
 /// <summary>

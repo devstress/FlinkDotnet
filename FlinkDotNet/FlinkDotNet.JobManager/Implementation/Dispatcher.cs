@@ -139,7 +139,7 @@ public class Dispatcher(IResourceManager resourceManager, ITemporalClient tempor
     /// </summary>
     public Task<List<JobStatus>> ListJobsAsync(CancellationToken cancellationToken = default)
     {
-        List<JobStatus> jobs = _jobs.Values
+        List<JobStatus> jobs = [.. _jobs.Values
             .OrderByDescending(j => j.SubmittedAt)
             .Select(j => new JobStatus
             {
@@ -148,8 +148,7 @@ public class Dispatcher(IResourceManager resourceManager, ITemporalClient tempor
                 State = j.State,
                 StartTime = j.StartedAt,
                 EndTime = j.FinishedAt
-            })
-            .ToList();
+            })];
 
         return Task.FromResult(jobs);
     }
@@ -270,18 +269,60 @@ public class Dispatcher(IResourceManager resourceManager, ITemporalClient tempor
 /// </summary>
 public class JobInfo
 {
-    public required string JobId { get; set; }
-    public required string JobName { get; set; }
-    public required JobGraph JobGraph { get; set; }
-    public JobExecutionState State { get; set; }
-    public DateTime SubmittedAt { get; set; }
-    public DateTime? StartedAt { get; set; }
-    public DateTime? FinishedAt { get; set; }
-    public int TotalTasks { get; set; }
-    public int RunningTasks { get; set; }
-    public int CompletedTasks { get; set; }
-    public int FailedTasks { get; set; }
-    public string? ErrorMessage { get; set; }
-    public CancellationTokenSource? CancellationToken { get; set; }
-    public JobMaster? JobMaster { get; set; }
+    public required string JobId
+    {
+        get; set;
+    }
+    public required string JobName
+    {
+        get; set;
+    }
+    public required JobGraph JobGraph
+    {
+        get; set;
+    }
+    public JobExecutionState State
+    {
+        get; set;
+    }
+    public DateTime SubmittedAt
+    {
+        get; set;
+    }
+    public DateTime? StartedAt
+    {
+        get; set;
+    }
+    public DateTime? FinishedAt
+    {
+        get; set;
+    }
+    public int TotalTasks
+    {
+        get; set;
+    }
+    public int RunningTasks
+    {
+        get; set;
+    }
+    public int CompletedTasks
+    {
+        get; set;
+    }
+    public int FailedTasks
+    {
+        get; set;
+    }
+    public string? ErrorMessage
+    {
+        get; set;
+    }
+    public CancellationTokenSource? CancellationToken
+    {
+        get; set;
+    }
+    public JobMaster? JobMaster
+    {
+        get; set;
+    }
 }

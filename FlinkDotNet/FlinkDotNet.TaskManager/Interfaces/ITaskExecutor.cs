@@ -64,15 +64,24 @@ public class TaskExecutionStatus
     /// <summary>
     /// Records processed
     /// </summary>
-    public long RecordsProcessed { get; set; }
+    public long RecordsProcessed
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Bytes processed
     /// </summary>
-    public long BytesProcessed { get; set; }
+    public long BytesProcessed
+    {
+        get; set;
+    }
 
     /// <summary>
     /// Error message if failed
     /// </summary>
-    public string? ErrorMessage { get; set; }
+    public string? ErrorMessage
+    {
+        get; set;
+    }
 }

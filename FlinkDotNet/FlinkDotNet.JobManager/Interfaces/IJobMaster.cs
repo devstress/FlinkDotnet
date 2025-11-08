@@ -27,7 +27,10 @@ public interface IJobMaster
     /// <summary>
     /// Job identifier managed by this JobMaster
     /// </summary>
-    public string JobId { get; }
+    public string JobId
+    {
+        get;
+    }
 
     /// <summary>
     /// Start job execution

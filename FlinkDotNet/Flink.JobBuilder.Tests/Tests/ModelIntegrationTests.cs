@@ -37,7 +37,7 @@ public class ModelIntegrationTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "Streaming Aggregation Job",
+                JobName = "Streaming Aggregation Job",
                 Parallelism = 4,
                 Version = "1.0.0"
             }
@@ -67,7 +67,7 @@ public class ModelIntegrationTests
             Sink = null,
             Metadata = new JobMetadata
             {
-                                JobName = "Pure SQL Job"
+                JobName = "Pure SQL Job"
             }
         };
 
@@ -392,7 +392,7 @@ public class ModelIntegrationTests
     {
         var metadata = new JobMetadata
         {
-                        JobName = "Production Data Pipeline",
+            JobName = "Production Data Pipeline",
             CreatedAt = DateTime.UtcNow,
             Version = "2.1.0",
             Parallelism = 16,
@@ -464,7 +464,7 @@ public class ModelIntegrationTests
 
         var status = new JobStatus
         {
-                        FlinkJobId = "flink-456",
+            FlinkJobId = "flink-456",
             State = "FINISHED",
             StartTime = startTime,
             EndTime = endTime,

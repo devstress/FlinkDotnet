@@ -23,7 +23,7 @@ public class Flink20IntegrationTests
     public void Test1_DisaggregatedStateBackend_S3Storage_ValidatesConfiguration()
     {
         // Arrange: Create job with S3 disaggregated state backend
-        var job = new JobDefinition
+        JobDefinition job = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "orders" },
             Sink = new KafkaSinkDefinition
@@ -33,7 +33,7 @@ public class Flink20IntegrationTests
             },
             Metadata = new JobMetadata
             {
-                                Version = "2.0.0",
+                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",
@@ -47,8 +47,8 @@ public class Flink20IntegrationTests
         };
 
         // Act: Serialize to JSON
-        var json = JsonSerializer.Serialize(job, new JsonSerializerOptions 
-        { 
+        string json = JsonSerializer.Serialize(job, new JsonSerializerOptions
+        {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
@@ -78,7 +78,7 @@ public class Flink20IntegrationTests
     public void Test2_DisaggregatedStateBackend_HDFSStorage_ValidatesConfiguration()
     {
         // Arrange: Create job with HDFS disaggregated state backend
-        var job = new JobDefinition
+        JobDefinition job = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "transactions" },
             Sink = new KafkaSinkDefinition
@@ -88,7 +88,7 @@ public class Flink20IntegrationTests
             },
             Metadata = new JobMetadata
             {
-                                Version = "2.0.0",
+                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",
@@ -102,8 +102,8 @@ public class Flink20IntegrationTests
         };
 
         // Act: Serialize and deserialize to verify round-trip
-        var json = JsonSerializer.Serialize(job);
-        var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
+        string json = JsonSerializer.Serialize(job);
+        JobDefinition? deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
 
         // Assert: Verify configuration persists through serialization
         Assert.That(deserialized, Is.Not.Null);
@@ -126,7 +126,7 @@ public class Flink20IntegrationTests
     public void Test3_DisaggregatedStateBackend_AzureStorage_ValidatesConfiguration()
     {
         // Arrange: Create job with Azure Blob disaggregated state backend
-        var job = new JobDefinition
+        JobDefinition job = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "events" },
             Sink = new KafkaSinkDefinition
@@ -136,7 +136,7 @@ public class Flink20IntegrationTests
             },
             Metadata = new JobMetadata
             {
-                                Version = "2.0.0",
+                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",
@@ -170,7 +170,7 @@ public class Flink20IntegrationTests
     public void Test4_DisaggregatedStateBackend_GCSStorage_ValidatesConfiguration()
     {
         // Arrange: Create job with GCS disaggregated state backend
-        var job = new JobDefinition
+        JobDefinition job = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "user-activity" },
             Sink = new KafkaSinkDefinition
@@ -180,7 +180,7 @@ public class Flink20IntegrationTests
             },
             Metadata = new JobMetadata
             {
-                                Version = "2.0.0",
+                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",
@@ -194,19 +194,19 @@ public class Flink20IntegrationTests
         };
 
         // Act: Serialize with different options
-        var options = new JsonSerializerOptions
+        JsonSerializerOptions options = new JsonSerializerOptions
         {
             WriteIndented = false,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
-        var compactJson = JsonSerializer.Serialize(job, options);
+        string compactJson = JsonSerializer.Serialize(job, options);
 
         // Assert: Verify GCS configuration
         Assert.That(job.Metadata.StateBackendConfig.Type, Is.EqualTo("disaggregated"));
         Assert.That(job.Metadata.StateBackendConfig.StorageType, Is.EqualTo("gcs"));
         Assert.That(job.Metadata.StateBackendConfig.StoragePath, Does.StartWith("gs://"));
         Assert.That(job.Metadata.StateBackendConfig.AsyncCompactionThreads, Is.EqualTo(12));
-        
+
         // Verify compact JSON format
         Assert.That(compactJson, Does.Not.Contain("\n"));
         Assert.That(compactJson, Does.Contain("gcs"));
@@ -224,13 +224,13 @@ public class Flink20IntegrationTests
     public void Test5_StateBackendComparison_LegacyVsDisaggregated_ValidatesCoexistence()
     {
         // Arrange: Create job with legacy RocksDB backend
-        var legacyJob = new JobDefinition
+        JobDefinition legacyJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "legacy-input" },
             Sink = new KafkaSinkDefinition { Topic = "legacy-output" },
             Metadata = new JobMetadata
             {
-                                Version = "1.20.0",
+                Version = "1.20.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "rocksdb",
@@ -242,13 +242,13 @@ public class Flink20IntegrationTests
         };
 
         // Arrange: Create job with new disaggregated backend
-        var modernJob = new JobDefinition
+        JobDefinition modernJob = new JobDefinition
         {
             Source = new KafkaSourceDefinition { Topic = "modern-input" },
             Sink = new KafkaSinkDefinition { Topic = "modern-output" },
             Metadata = new JobMetadata
             {
-                                Version = "2.0.0",
+                Version = "2.0.0",
                 StateBackendConfig = new StateBackendConfig
                 {
                     Type = "disaggregated",
@@ -262,11 +262,11 @@ public class Flink20IntegrationTests
         };
 
         // Act: Serialize both configurations
-        var legacyJson = JsonSerializer.Serialize(legacyJob);
-        var modernJson = JsonSerializer.Serialize(modernJob);
+        string legacyJson = JsonSerializer.Serialize(legacyJob);
+        string modernJson = JsonSerializer.Serialize(modernJob);
 
-        var deserializedLegacy = JsonSerializer.Deserialize<JobDefinition>(legacyJson);
-        var deserializedModern = JsonSerializer.Deserialize<JobDefinition>(modernJson);
+        JobDefinition? deserializedLegacy = JsonSerializer.Deserialize<JobDefinition>(legacyJson);
+        JobDefinition? deserializedModern = JsonSerializer.Deserialize<JobDefinition>(modernJson);
 
         // Assert: Verify legacy backend configuration
         Assert.That(deserializedLegacy, Is.Not.Null);
@@ -285,7 +285,7 @@ public class Flink20IntegrationTests
         Assert.That(deserializedModern.Metadata.StateBackendConfig.IncrementalCheckpoints, Is.True);
 
         // Assert: Verify configurations are independent
-        Assert.That(deserializedLegacy.Metadata.StateBackendConfig.Type, 
+        Assert.That(deserializedLegacy.Metadata.StateBackendConfig.Type,
             Is.Not.EqualTo(deserializedModern.Metadata.StateBackendConfig.Type));
     }
 

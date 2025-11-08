@@ -69,7 +69,7 @@ public abstract partial class LocalTestingTestBase
         if (string.IsNullOrEmpty(KafkaConnectionString))
             throw new InvalidOperationException("Kafka connection string is not available");
 
-        using var admin = new AdminClientBuilder(new AdminClientConfig
+        using IAdminClient admin = new AdminClientBuilder(new AdminClientConfig
         {
             BootstrapServers = KafkaConnectionString,
             BrokerAddressFamily = BrokerAddressFamily.V4,
@@ -81,7 +81,7 @@ public abstract partial class LocalTestingTestBase
 
         try
         {
-            var topicSpec = new TopicSpecification
+            TopicSpecification topicSpec = new TopicSpecification
             {
                 Name = topicName,
                 NumPartitions = partitions,

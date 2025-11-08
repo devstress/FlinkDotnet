@@ -39,7 +39,7 @@ public class ClusterControllerTests
             null!,
             _mockDispatcher.Object,
             _mockLogger.Object);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("resourceManager");
     }
 
@@ -51,7 +51,7 @@ public class ClusterControllerTests
             _mockResourceManager.Object,
             null!,
             _mockLogger.Object);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("dispatcher");
     }
 
@@ -63,7 +63,7 @@ public class ClusterControllerTests
             _mockResourceManager.Object,
             _mockDispatcher.Object,
             null!);
-        
+
         act.Should().Throw<ArgumentNullException>().WithParameterName("logger");
     }
 
@@ -141,7 +141,7 @@ public class ClusterControllerTests
 
         response.Should().NotBeNull();
         response!.TaskManagers.Should().HaveCount(2);
-        
+
         var tm1 = response.TaskManagers.First(tm => tm.TaskManagerId == "tm-1");
         tm1.TotalSlots.Should().Be(2);
         tm1.FreeSlots.Should().Be(1);

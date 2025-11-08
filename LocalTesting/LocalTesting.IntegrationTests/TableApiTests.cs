@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using Flink.JobBuilder.Models;
 using FlinkDotNet.DataStream;
@@ -29,7 +27,7 @@ public class TableApiTests
     public void Test1_IRSchema_TablesAndVariantSupport()
     {
         // Arrange - Create job with Table source containing VARIANT columns
-        var jobDef = new JobDefinition
+        JobDefinition jobDef = new()
         {
             Source = new TableSourceDefinition
             {
@@ -71,20 +69,20 @@ public class TableApiTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "Table API Test",
+                JobName = "Table API Test",
                 Version = "1.0"
             }
         };
 
         // Act - Serialize and deserialize
-        var json = JsonSerializer.Serialize(jobDef, new JsonSerializerOptions { WriteIndented = true });
-        var deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
+        string json = JsonSerializer.Serialize(jobDef, new JsonSerializerOptions { WriteIndented = true });
+        JobDefinition? deserialized = JsonSerializer.Deserialize<JobDefinition>(json);
 
         // Assert - Source structure
         Assert.That(deserialized, Is.Not.Null);
         Assert.That(deserialized!.Source, Is.InstanceOf<TableSourceDefinition>());
 
-        var tableSource = deserialized.Source as TableSourceDefinition;
+        TableSourceDefinition? tableSource = deserialized.Source as TableSourceDefinition;
         Assert.That(tableSource, Is.Not.Null);
         Assert.That(tableSource!.Type, Is.EqualTo("table"));
         Assert.That(tableSource.TableName, Is.EqualTo("events"));
@@ -93,18 +91,18 @@ public class TableApiTests
         // Assert - Operations
         Assert.That(deserialized.Operations, Has.Count.EqualTo(3));
 
-        var parseOp = deserialized.Operations[0] as ParseJsonOperationDefinition;
+        ParseJsonOperationDefinition? parseOp = deserialized.Operations[0] as ParseJsonOperationDefinition;
         Assert.That(parseOp, Is.Not.Null);
         Assert.That(parseOp!.Type, Is.EqualTo("parseJson"));
         Assert.That(parseOp.FunctionType, Is.EqualTo("TRY_PARSE_JSON"));
         Assert.That(parseOp.JsonPath, Is.EqualTo("$.user.name"));
 
-        var selectOp = deserialized.Operations[1] as TableOperationDefinition;
+        TableOperationDefinition? selectOp = deserialized.Operations[1] as TableOperationDefinition;
         Assert.That(selectOp, Is.Not.Null);
         Assert.That(selectOp!.OperationType, Is.EqualTo("select"));
         Assert.That(selectOp.Columns, Has.Count.EqualTo(3));
 
-        var whereOp = deserialized.Operations[2] as TableOperationDefinition;
+        TableOperationDefinition? whereOp = deserialized.Operations[2] as TableOperationDefinition;
         Assert.That(whereOp, Is.Not.Null);
         Assert.That(whereOp!.OperationType, Is.EqualTo("where"));
     }
@@ -124,11 +122,11 @@ public class TableApiTests
     public void Test2_TableAPI_FluentInterface()
     {
         // Arrange
-        var env = StreamExecutionEnvironment.GetExecutionEnvironment();
-        var stream = env.FromCollection([1, 2, 3, 4, 5]);
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.GetExecutionEnvironment();
+        DataStream<int> stream = env.FromCollection([1, 2, 3, 4, 5]);
 
         // Act - Create table and apply transformations
-        var table = stream.ToTable("my_table", new Dictionary<string, string>
+        Table table = stream.ToTable("my_table", new Dictionary<string, string>
         {
             { "id", "INT" },
             { "value", "STRING" },
@@ -141,20 +139,20 @@ public class TableApiTests
         Assert.That(table.Definition.Schema, Has.Count.EqualTo(3));
 
         // Act - Apply select operation
-        var selectedTable = table.Select("id", "value");
+        Table selectedTable = table.Select("id", "value");
         Assert.That(selectedTable.Operations, Has.Count.EqualTo(1));
-        var selectOp = selectedTable.Operations[0] as TableOperationDefinition;
+        TableOperationDefinition? selectOp = selectedTable.Operations[0] as TableOperationDefinition;
         Assert.That(selectOp?.OperationType, Is.EqualTo("select"));
         Assert.That(selectOp?.Columns, Has.Count.EqualTo(2));
 
         // Act - Apply where filter
-        var filteredTable = selectedTable.Where("value IS NOT NULL");
+        Table filteredTable = selectedTable.Where("value IS NOT NULL");
         Assert.That(filteredTable.Operations, Has.Count.EqualTo(2));
-        var whereOp = filteredTable.Operations[1] as TableOperationDefinition;
+        TableOperationDefinition? whereOp = filteredTable.Operations[1] as TableOperationDefinition;
         Assert.That(whereOp?.OperationType, Is.EqualTo("where"));
 
         // Act - Generate SQL
-        var sql = filteredTable.ToSql();
+        string sql = filteredTable.ToSql();
         Assert.That(sql, Does.Contain("SELECT"));
         Assert.That(sql, Does.Contain("id, value"));
         Assert.That(sql, Does.Contain("FROM my_table"));
@@ -176,7 +174,7 @@ public class TableApiTests
     public void Test3_VariantType_JsonFunctions()
     {
         // Arrange
-        var table = new Table(new TableSourceDefinition
+        Table table = new(new TableSourceDefinition
         {
             TableName = "raw_events",
             Schema = new Dictionary<string, string>
@@ -187,26 +185,26 @@ public class TableApiTests
         });
 
         // Act - Add JSON column with TRY_PARSE_JSON (lenient)
-        var table1 = table.AddJsonColumn("raw_json", "user_name", "$.user.name", strict: false);
+        Table table1 = table.AddJsonColumn("raw_json", "user_name", "$.user.name", strict: false);
 
         // Assert - TRY_PARSE_JSON operation
         Assert.That(table1.Operations, Has.Count.EqualTo(1));
-        var parseOp1 = table1.Operations[0] as ParseJsonOperationDefinition;
+        ParseJsonOperationDefinition? parseOp1 = table1.Operations[0] as ParseJsonOperationDefinition;
         Assert.That(parseOp1?.FunctionType, Is.EqualTo("TRY_PARSE_JSON"));
         Assert.That(parseOp1?.SourceField, Is.EqualTo("raw_json"));
         Assert.That(parseOp1?.TargetField, Is.EqualTo("user_name"));
         Assert.That(parseOp1?.JsonPath, Is.EqualTo("$.user.name"));
 
         // Act - Add another JSON column with PARSE_JSON (strict)
-        var table2 = table1.AddJsonColumn("raw_json", "user_id", "$.user.id", strict: true);
+        Table table2 = table1.AddJsonColumn("raw_json", "user_id", "$.user.id", strict: true);
 
         // Assert - PARSE_JSON operation
         Assert.That(table2.Operations, Has.Count.EqualTo(2));
-        var parseOp2 = table2.Operations[1] as ParseJsonOperationDefinition;
+        ParseJsonOperationDefinition? parseOp2 = table2.Operations[1] as ParseJsonOperationDefinition;
         Assert.That(parseOp2?.FunctionType, Is.EqualTo("PARSE_JSON"));
 
         // Act - Generate SQL
-        var sql = table2.ToSql();
+        string sql = table2.ToSql();
 
         // Assert - SQL contains JSON functions
         Assert.That(sql, Does.Contain("TRY_PARSE_JSON"));
@@ -231,11 +229,11 @@ public class TableApiTests
     public void Test4_TableAPI_GroupByAndAggregations()
     {
         // Arrange
-        var table = new Table("orders");
+        Table table = new("orders");
 
         // Act - Group by customer_id and aggregate
-        var groupedTable = table.GroupBy("customer_id");
-        var aggregatedTable = groupedTable.Aggregate(
+        GroupedTable groupedTable = table.GroupBy("customer_id");
+        Table aggregatedTable = groupedTable.Aggregate(
             "COUNT(*) AS order_count",
             "SUM(amount) AS total_amount",
             "AVG(amount) AS avg_amount"
@@ -243,7 +241,7 @@ public class TableApiTests
 
         // Assert - Operations structure
         Assert.That(aggregatedTable.Operations, Has.Count.EqualTo(1));
-        var aggOp = aggregatedTable.Operations[0] as TableOperationDefinition;
+        TableOperationDefinition? aggOp = aggregatedTable.Operations[0] as TableOperationDefinition;
         Assert.That(aggOp, Is.Not.Null);
         Assert.That(aggOp!.OperationType, Is.EqualTo("aggregate"));
         Assert.That(aggOp.GroupByKeys, Has.Count.EqualTo(1));
@@ -254,15 +252,15 @@ public class TableApiTests
         Assert.That(aggOp.Aggregations[2], Is.EqualTo("AVG(amount) AS avg_amount"));
 
         // Act - Use GroupedTable.Select shorthand
-        var groupedTable2 = table.GroupBy("product_id", "category");
-        var selectedTable = groupedTable2.Select(
+        GroupedTable groupedTable2 = table.GroupBy("product_id", "category");
+        Table selectedTable = groupedTable2.Select(
             "COUNT(*) AS count",
             "MAX(price) AS max_price"
         );
 
         // Assert - Multiple group keys
         Assert.That(selectedTable.Operations, Has.Count.EqualTo(1));
-        var selectOp = selectedTable.Operations[0] as TableOperationDefinition;
+        TableOperationDefinition? selectOp = selectedTable.Operations[0] as TableOperationDefinition;
         Assert.That(selectOp?.GroupByKeys, Has.Count.EqualTo(2));
         Assert.That(selectOp?.Aggregations, Has.Count.EqualTo(2));
     }
@@ -284,7 +282,7 @@ public class TableApiTests
     public void Test5_ComplexWorkflow_VariantTableAPIAndPTFs()
     {
         // Part A: Table API with VARIANT (existing functionality)
-        var table = new Table(new TableSourceDefinition
+        Table table = new(new TableSourceDefinition
         {
             TableName = "user_events",
             Schema = new Dictionary<string, string>
@@ -301,7 +299,7 @@ public class TableApiTests
             }
         });
 
-        var result = table
+        Table result = table
             .AddJsonColumn("event_data", "event_type", "$.type", strict: false)
             .AddJsonColumn("event_data", "event_value", "$.value", strict: false)
             .Select("user_id", "event_type", "event_value", "event_timestamp")
@@ -310,7 +308,7 @@ public class TableApiTests
         Assert.That(result.Operations, Has.Count.EqualTo(4));
 
         // Part B: Process Table Function (PTF) IR Schema
-        var ptfJobDef = new JobDefinition
+        JobDefinition ptfJobDef = new()
         {
             Source = new TableSourceDefinition
             {
@@ -346,19 +344,19 @@ public class TableApiTests
             },
             Metadata = new JobMetadata
             {
-                                JobName = "PTF Test",
+                JobName = "PTF Test",
                 Version = "1.0"
             }
         };
 
         // Assert PTF IR serialization
-        var ptfJson = JsonSerializer.Serialize(ptfJobDef, new JsonSerializerOptions { WriteIndented = true });
-        var ptfDeserialized = JsonSerializer.Deserialize<JobDefinition>(ptfJson);
+        string ptfJson = JsonSerializer.Serialize(ptfJobDef, new JsonSerializerOptions { WriteIndented = true });
+        JobDefinition? ptfDeserialized = JsonSerializer.Deserialize<JobDefinition>(ptfJson);
 
         Assert.That(ptfDeserialized, Is.Not.Null);
         Assert.That(ptfDeserialized!.Operations, Has.Count.EqualTo(1));
 
-        var ptfOp = ptfDeserialized.Operations[0] as ProcessTableFunctionDefinition;
+        ProcessTableFunctionDefinition? ptfOp = ptfDeserialized.Operations[0] as ProcessTableFunctionDefinition;
         Assert.That(ptfOp, Is.Not.Null);
         Assert.That(ptfOp!.Type, Is.EqualTo("processTableFunction"));
         Assert.That(ptfOp.FunctionName, Is.EqualTo("analyze_session"));
@@ -370,46 +368,56 @@ public class TableApiTests
         Assert.That(ptfOp.Properties["timeout_minutes"], Is.EqualTo("30"));
 
         // Part C: PTF C# API - Stateful Session Processing
-        var sessionAnalyzer = new TestSessionAnalyzer();
-        var functionContext = new FunctionContext();
+        TestSessionAnalyzer sessionAnalyzer = new();
+        FunctionContext functionContext = new();
         sessionAnalyzer.TestOpen(functionContext);
 
-        var processingContext = new ProcessingContext
+        ProcessingContext processingContext = new()
         {
             Timestamp = 1000L,
             CurrentWatermark = 900L
         };
 
         // Simulate processing events
-        var event1 = new TestEvent { UserId = "user1", Action = "click", EventTime = 1000L };
+        TestEvent event1 = new()
+        {
+            UserId = "user1",
+            Action = "click",
+            EventTime = 1000L
+        };
         sessionAnalyzer.Eval(processingContext, event1);
 
         // Assert output collected
-        var output1 = processingContext.GetOutput();
+        IReadOnlyList<object> output1 = processingContext.GetOutput();
         Assert.That(output1, Has.Count.EqualTo(1));
         Assert.That(output1[0], Is.InstanceOf<TestSessionOutput>());
-        var session1 = (TestSessionOutput)output1[0];
+        TestSessionOutput session1 = (TestSessionOutput) output1[0];
         Assert.That(session1.SessionId, Is.Not.Null);
         Assert.That(session1.ActionCount, Is.EqualTo(1));
 
         // Assert event-time timer registered
-        var eventTimers = processingContext.GetEventTimeTimers();
+        IReadOnlyList<long> eventTimers = processingContext.GetEventTimeTimers();
         Assert.That(eventTimers, Has.Count.EqualTo(1));
         Assert.That(eventTimers[0], Is.EqualTo(1000L + 30 * 60 * 1000)); // 30 minutes timeout
 
         // Process another event in same session
         processingContext.ClearOutput();
-        var event2 = new TestEvent { UserId = "user1", Action = "purchase", EventTime = 2000L };
+        TestEvent event2 = new()
+        {
+            UserId = "user1",
+            Action = "purchase",
+            EventTime = 2000L
+        };
         processingContext.Timestamp = 2000L;
         sessionAnalyzer.Eval(processingContext, event2);
 
-        var output2 = processingContext.GetOutput();
+        IReadOnlyList<object> output2 = processingContext.GetOutput();
         Assert.That(output2, Has.Count.EqualTo(1));
-        var session2 = (TestSessionOutput)output2[0];
+        TestSessionOutput session2 = (TestSessionOutput) output2[0];
         Assert.That(session2.ActionCount, Is.EqualTo(2));
 
         // Part D: PTF Timer Callback
-        var timerContext = new OnTimerContext
+        OnTimerContext timerContext = new()
         {
             TimerTimestamp = 1000L + 30 * 60 * 1000,
             TimerType = TimerType.EventTime
@@ -419,7 +427,7 @@ public class TableApiTests
         sessionAnalyzer.OnTimer(processingContext, timerContext);
 
         // Verify state cleared after timeout
-        var stateValue = sessionAnalyzer.GetSessionState();
+        TestSessionData? stateValue = sessionAnalyzer.GetSessionState();
         Assert.That(stateValue, Is.Null);
 
         // Part E: Edge cases validation
@@ -427,16 +435,16 @@ public class TableApiTests
         Assert.Throws<ArgumentException>(() => new Table(""));
 
         // Test: Invalid JSON path should still create operation
-        var invalidPathTable = table.AddJsonColumn("event_data", "invalid", "$.invalid.path[999]");
+        Table invalidPathTable = table.AddJsonColumn("event_data", "invalid", "$.invalid.path[999]");
         Assert.That(invalidPathTable.Operations, Has.Count.EqualTo(1));
 
         // Test: Multiple GroupBy keys
-        var groupedResult = result.GroupBy("user_id", "event_type");
-        var aggregated = groupedResult.Aggregate("COUNT(*) AS event_count");
+        GroupedTable groupedResult = result.GroupBy("user_id", "event_type");
+        Table aggregated = groupedResult.Aggregate("COUNT(*) AS event_count");
         Assert.That((aggregated.Operations[4] as TableOperationDefinition)?.GroupByKeys, Has.Count.EqualTo(2));
 
         // Part F: SQL Generation from Table API
-        var sql = result.ToSql();
+        string sql = result.ToSql();
         Assert.That(sql, Does.Contain("TRY_PARSE_JSON"));
         Assert.That(sql, Does.Contain("::VARIANT"));
         Assert.That(sql, Does.Contain("WHERE event_type IS NOT NULL"));
@@ -464,18 +472,15 @@ public class TestSessionAnalyzer : ProcessTableFunction<TestEvent, TestSessionOu
 
     public override void Eval(ProcessingContext context, TestEvent input)
     {
-        var session = this._sessionState?.Value();
+        TestSessionData? session = this._sessionState?.Value();
 
-        if (session == null)
+        session ??= new TestSessionData
         {
-            session = new TestSessionData
-            {
-                SessionId = Guid.NewGuid().ToString(),
-                UserId = input.UserId,
-                StartTime = input.EventTime,
-                ActionCount = 0
-            };
-        }
+            SessionId = Guid.NewGuid().ToString(),
+            UserId = input.UserId,
+            StartTime = input.EventTime,
+            ActionCount = 0
+        };
 
         session.ActionCount++;
         session.LastActionTime = input.EventTime;
@@ -513,7 +518,10 @@ public class TestEvent
 {
     public string UserId { get; set; } = string.Empty;
     public string Action { get; set; } = string.Empty;
-    public long EventTime { get; set; }
+    public long EventTime
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -523,9 +531,18 @@ public class TestSessionData
 {
     public string SessionId { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
-    public long StartTime { get; set; }
-    public long LastActionTime { get; set; }
-    public int ActionCount { get; set; }
+    public long StartTime
+    {
+        get; set;
+    }
+    public long LastActionTime
+    {
+        get; set;
+    }
+    public int ActionCount
+    {
+        get; set;
+    }
 }
 
 /// <summary>
@@ -534,6 +551,12 @@ public class TestSessionData
 public class TestSessionOutput
 {
     public string SessionId { get; set; } = string.Empty;
-    public int ActionCount { get; set; }
-    public long Duration { get; set; }
+    public int ActionCount
+    {
+        get; set;
+    }
+    public long Duration
+    {
+        get; set;
+    }
 }
