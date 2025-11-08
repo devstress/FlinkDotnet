@@ -6,6 +6,62 @@ This document provides an overview of stream processing features implemented in 
 
 **FlinkDotNet has achieved comprehensive coverage of stream processing features** inspired by Apache Flink versions 1.0 to 2.1.0, implemented as a native .NET distributed stream processing engine.
 
+## FlinkDotNet v2: Native .NET Stream Processing Architecture
+
+**FlinkDotNet v2 represents a fundamental architectural evolution**: While FlinkDotNet v1 (covered in `LearningCourse/`, `LocalTesting/`, and `ObservabilityTesting/`) demonstrates integration patterns with Apache Flink through the FlinkDotNet SDK and IR (Intermediate Representation) runner, **FlinkDotNet v2 implements a complete native .NET distributed stream processing engine** that does not depend on or use Apache Flink at runtime.
+
+### Architectural Evolution
+
+**FlinkDotNet v1 Architecture** (LearningCourse, LocalTesting, ObservabilityTesting):
+- Uses Apache Flink 2.1 as the execution engine
+- FlinkDotNet SDK compiles C# code to Intermediate Representation (IR)
+- IR Runner JAR translates and submits jobs to Apache Flink clusters
+- Integrates with Flink JobManager and TaskManager for execution
+- Demonstrated in 15-day learning course and integration tests
+
+**FlinkDotNet v2 Architecture** (Native FlinkDotNet):
+- **Pure .NET implementation** - no Apache Flink dependencies
+- **Native FlinkDotNet JobManager and TaskManager** written in C# (.NET 9)
+- Direct distributed stream processing without JVM
+- References Apache Flink concepts and patterns as architectural inspiration
+- Implements distributed, multi-tier message-oriented architecture natively
+
+### Why the Evolution?
+
+1. **True .NET Native**: Eliminates JVM dependency, runs entirely in .NET runtime
+2. **Simplified Operations**: No need to manage separate Java/Flink infrastructure
+3. **Better Integration**: Native integration with .NET ecosystem (Aspire, Temporal, etc.)
+4. **Performance**: Optimized for .NET runtime without cross-process overhead
+5. **Architectural Learning**: Leverages Apache Flink's proven distributed patterns
+
+### Relationship with Apache Flink
+
+FlinkDotNet v2 **references Apache Flink as architectural inspiration** for:
+- Distributed stream processing patterns
+- JobManager/TaskManager coordination model
+- Checkpoint and state management approaches
+- Back pressure and flow control mechanisms
+- Watermark and event-time processing concepts
+
+**However, FlinkDotNet v2 does NOT use Apache Flink**:
+- No runtime dependency on Apache Flink
+- No IR (Intermediate Representation) translation layer
+- No communication with Flink REST API
+- Pure .NET distributed processing implementation
+
+### Migration Path
+
+Projects using FlinkDotNet v1 (with Apache Flink) can continue to use the patterns demonstrated in:
+- **LearningCourse/**: 15-day comprehensive training with Apache Flink integration
+- **LocalTesting/**: Local development and testing with Flink + Kafka + Temporal
+- **ObservabilityTesting/**: Monitoring and observability patterns
+
+Projects targeting FlinkDotNet v2 benefit from:
+- **Native .NET JobManager**: Job coordination and scheduling in C#
+- **Native .NET TaskManager**: Distributed task execution in .NET
+- **Simplified deployment**: Single .NET application, no JVM required
+- **Native observability**: Integrated with .NET metrics and diagnostics
+
 ## Native Distributed Message-Oriented Architecture
 
 FlinkDotNet implements a **native distributed message-oriented architecture** using **Native FlinkDotNet JobManager and TaskManager** (not Apache Flink), combined with Apache Kafka and Temporal workflows to deliver enterprise-grade stream processing at massive scale. The architecture provides a pure .NET implementation of distributed stream processing, designed to support the future of **Agentic AI** and real-time data streaming as envisioned in [The Future of Data Streaming with Apache Flink for Agentic AI](https://www.kai-waehner.de/blog/2025/08/18/the-future-of-data-streaming-with-apache-flink-for-agentic-ai/).
