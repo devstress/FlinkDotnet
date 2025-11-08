@@ -5,6 +5,7 @@
 using System.Collections.Concurrent;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
+using FlinkDotNet.JobManager.Workflows;
 using Temporalio.Client;
 
 namespace FlinkDotNet.JobManager.Implementation;
@@ -115,17 +116,23 @@ public class Dispatcher(IResourceManager resourceManager, ITemporalClient tempor
         {
             jobInfo.State = JobExecutionState.Canceling;
 
-            // Cancel via JobMaster if available
-            if (jobInfo.JobMaster != null)
+            // Cancel via Temporal workflow signal if available
+            if (jobInfo.WorkflowHandle != null)
             {
+                await jobInfo.WorkflowHandle.SignalAsync(wf => wf.CancelJobSignalAsync());
+                
+                // Wait a bit for cancellation to propagate
+                await Task.Delay(100, cancellationToken);
+            }
+            else if (jobInfo.JobMaster != null)
+            {
+                // Fallback to JobMaster for backward compatibility
                 await jobInfo.JobMaster.CancelJobAsync(cancellationToken);
             }
             else
             {
-                // Fallback to cancellation token if JobMaster not yet created
+                // Fallback to cancellation token if neither available
                 jobInfo.CancellationToken?.Cancel();
-
-                // Wait a bit for cancellation to complete
                 await Task.Delay(100, cancellationToken);
             }
 
@@ -219,36 +226,42 @@ public class Dispatcher(IResourceManager resourceManager, ITemporalClient tempor
 
     private async Task ExecuteJobAsync(JobInfo jobInfo)
     {
-        ILogger<JobMaster> jobMasterLogger = this._loggerFactory.CreateLogger<JobMaster>();
-
         try
         {
-            // Create JobMaster for this job
-            JobMaster jobMaster = new(
-                jobInfo.JobId,
-                jobInfo.JobGraph,
-                this._resourceManager,
-                this._temporalClient,
-                jobMasterLogger);
+            // Create workflow ID based on job ID
+            string workflowId = $"flink-job-{jobInfo.JobId}";
 
-            // Store JobMaster reference for later access
-            jobInfo.JobMaster = jobMaster;
+            // Start Temporal workflow for job execution
+            WorkflowHandle<FlinkJobWorkflow, JobExecutionResult> workflowHandle = 
+                await _temporalClient.StartWorkflowAsync(
+                    (FlinkJobWorkflow wf) => wf.ExecuteJobAsync(jobInfo.JobGraph),
+                    new WorkflowOptions(id: workflowId, taskQueue: Services.TemporalWorkerService.TaskQueueName)
+                    {
+                        TaskTimeout = TimeSpan.FromHours(24) // Allow long-running jobs
+                    });
 
-            // Start job execution via JobMaster
-            await jobMaster.StartJobAsync(jobInfo.CancellationToken?.Token ?? CancellationToken.None);
+            // Store workflow handle for status queries and cancellation
+            jobInfo.WorkflowHandle = workflowHandle;
+            jobInfo.State = JobExecutionState.Running;
+            jobInfo.StartedAt = DateTime.UtcNow;
 
-            // Get final execution graph
-            ExecutionGraph executionGraph = await jobMaster.GetExecutionGraphAsync();
+            // Wait for workflow completion
+            JobExecutionResult result = await workflowHandle.GetResultAsync();
 
-            // Update job info based on execution graph state
-            jobInfo.State = executionGraph.State;
-            jobInfo.FinishedAt = executionGraph.FinishedAt;
-            jobInfo.ErrorMessage = executionGraph.FailureMessage;
+            // Update job info based on workflow result
+            jobInfo.State = result.State;
+            jobInfo.FinishedAt = DateTime.UtcNow;
+            jobInfo.ErrorMessage = result.ErrorMessage;
+
+            // Query final task states from workflow
+            Dictionary<string, ExecutionState> taskStates = 
+                await workflowHandle.QueryAsync(wf => wf.GetTaskStates());
 
             // Update task counts
-            jobInfo.CompletedTasks = executionGraph.ExecutionVertices.Count(v => v.State == ExecutionState.Finished);
-            jobInfo.FailedTasks = executionGraph.ExecutionVertices.Count(v => v.State == ExecutionState.Failed);
-            jobInfo.RunningTasks = executionGraph.ExecutionVertices.Count(v => v.State == ExecutionState.Running);
+            jobInfo.TotalTasks = taskStates.Count;
+            jobInfo.CompletedTasks = taskStates.Count(kvp => kvp.Value == ExecutionState.Finished);
+            jobInfo.FailedTasks = taskStates.Count(kvp => kvp.Value == ExecutionState.Failed);
+            jobInfo.RunningTasks = taskStates.Count(kvp => kvp.Value == ExecutionState.Running);
         }
         catch (OperationCanceledException)
         {
@@ -322,6 +335,10 @@ public class JobInfo
         get; set;
     }
     public JobMaster? JobMaster
+    {
+        get; set;
+    }
+    public WorkflowHandle<FlinkJobWorkflow, JobExecutionResult>? WorkflowHandle
     {
         get; set;
     }
