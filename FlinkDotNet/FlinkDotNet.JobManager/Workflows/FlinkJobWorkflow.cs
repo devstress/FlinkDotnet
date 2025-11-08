@@ -28,6 +28,11 @@ namespace FlinkDotNet.JobManager.Workflows;
 [Workflow]
 public class FlinkJobWorkflow
 {
+    /// <summary>
+    /// Configurable delay for task execution monitoring (can be overridden in tests for fast execution)
+    /// </summary>
+    public static TimeSpan TaskMonitoringDelay { get; set; } = TimeSpan.FromSeconds(5);
+
     private JobExecutionState _currentState = JobExecutionState.Created;
     private List<string> _deployedTasks = new();
     private Dictionary<string, ExecutionState> _taskStates = new();
@@ -216,7 +221,8 @@ public class FlinkJobWorkflow
 
         // Wait for all tasks to complete or fail
         // In production, this would be event-driven based on activity completion
-        await Workflow.DelayAsync(TimeSpan.FromSeconds(5));
+        // Use configurable delay to allow fast test execution (1ms in tests, 5s in production)
+        await Workflow.DelayAsync(TaskMonitoringDelay);
 
         // Update task states based on job state
         foreach (string taskId in this._deployedTasks)

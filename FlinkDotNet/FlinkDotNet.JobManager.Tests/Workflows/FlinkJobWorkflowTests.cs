@@ -25,8 +25,9 @@ namespace FlinkDotNet.JobManager.Tests.Workflows;
 /// <summary>
 /// Tests for FlinkJobWorkflow - Temporal workflow orchestration
 /// Phase 4: Temporal Integration - TDD Tests
+/// Optimized for fast execution (1ms delays instead of 5s)
 /// </summary>
-public class FlinkJobWorkflowTests
+public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
 {
     [Fact]
     public async Task ExecuteJobAsync_SimpleJobGraph_CompletesSuccessfully()
