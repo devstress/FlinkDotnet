@@ -1,0 +1,54 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NativeFlinkDotnet.AppHost", "NativeFlinkDotnet.AppHost\NativeFlinkDotnet.AppHost.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NativeFlinkDotnet.IntegrationTests", "NativeFlinkDotnet.IntegrationTests\NativeFlinkDotnet.IntegrationTests.csproj", "{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.JobManager", "..\FlinkDotNet\FlinkDotNet.JobManager\FlinkDotNet.JobManager.csproj", "{C1D2E3F4-A5B6-7890-CDEF-123456789ABC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.TaskManager", "..\FlinkDotNet\FlinkDotNet.TaskManager\FlinkDotNet.TaskManager.csproj", "{D2E3F4A5-B6C7-8901-DEF0-23456789ABCD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.Common", "..\FlinkDotNet\FlinkDotNet.Common\FlinkDotNet.Common.csproj", "{A7E68656-E18B-35A8-84ED-E151C27FD09C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FlinkDotNet.DataStream", "..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj", "{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2C3D4E5-F6A7-8901-BCDE-F23456789ABC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1D2E3F4-A5B6-7890-CDEF-123456789ABC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1D2E3F4-A5B6-7890-CDEF-123456789ABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1D2E3F4-A5B6-7890-CDEF-123456789ABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1D2E3F4-A5B6-7890-CDEF-123456789ABC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2E3F4A5-B6C7-8901-DEF0-23456789ABCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2E3F4A5-B6C7-8901-DEF0-23456789ABCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2E3F4A5-B6C7-8901-DEF0-23456789ABCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2E3F4A5-B6C7-8901-DEF0-23456789ABCD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7E68656-E18B-35A8-84ED-E151C27FD09C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7E68656-E18B-35A8-84ED-E151C27FD09C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7E68656-E18B-35A8-84ED-E151C27FD09C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7E68656-E18B-35A8-84ED-E151C27FD09C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B2A0DA6-E8B4-3D06-5D7D-F56B40C91E87}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CBC518AA-3076-41C1-9F57-03B68E65E970}
+	EndGlobalSection
+EndGlobal
