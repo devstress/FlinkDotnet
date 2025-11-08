@@ -16,6 +16,7 @@
 
 using FlinkDotNet.JobManager.Implementation;
 using FlinkDotNet.JobManager.Interfaces;
+using FlinkDotNet.JobManager.Services;
 using Temporalio.Client;
 
 Console.WriteLine("===========================================");
@@ -62,6 +63,9 @@ builder.Services.AddSingleton<IDispatcher, Dispatcher>();
 builder.Services.Configure<HeartbeatConfiguration>(
     builder.Configuration.GetSection(HeartbeatConfiguration.SectionName));
 builder.Services.AddHostedService<HeartbeatMonitoringService>();
+
+// Configure Temporal worker
+builder.Services.AddHostedService<TemporalWorkerService>();
 
 Console.WriteLine("JobManager services registered");
 
