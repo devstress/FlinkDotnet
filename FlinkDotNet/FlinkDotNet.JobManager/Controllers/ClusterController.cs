@@ -154,6 +154,29 @@ public class ClusterController(
             message = $"TaskManager {taskManagerId} unregistered successfully"
         });
     }
+
+    /// <summary>
+    /// Record heartbeat from a TaskManager.
+    /// TaskManagers should call this endpoint periodically to indicate they are alive.
+    /// </summary>
+    /// <param name="taskManagerId">ID of the TaskManager sending the heartbeat.</param>
+    /// <returns>Heartbeat acknowledgement.</returns>
+    [HttpPost("taskmanagers/{taskManagerId}/heartbeat")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RecordHeartbeat(string taskManagerId)
+    {
+        this._logger.LogDebug("Received heartbeat from TaskManager: {TaskManagerId}", taskManagerId);
+
+        await this._resourceManager.RecordHeartbeatAsync(taskManagerId);
+
+        return Ok(new
+        {
+            message = "Heartbeat recorded",
+            taskManagerId,
+            timestamp = DateTime.UtcNow
+        });
+    }
 }
 
 /// <summary>

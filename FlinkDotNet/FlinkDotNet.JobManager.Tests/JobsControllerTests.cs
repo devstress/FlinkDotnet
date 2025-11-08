@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0.
 // See LICENSE file in the project root for full license information.
 
+#nullable enable
+
 using FlinkDotNet.JobManager.Controllers;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
@@ -127,7 +129,7 @@ public class JobsControllerTests
 
         _mockDispatcher
             .Setup(d => d.GetJobStatusAsync(jobId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((JobStatus?) null);
+            .ReturnsAsync((JobStatus?)null);
 
         // Act
         var result = await _controller.GetJobStatus(jobId);

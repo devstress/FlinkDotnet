@@ -14,6 +14,9 @@
 //  See the License for the specific language governing permissions and
 // limitations under the License.
 
+using System.Net.Http.Json;
+using FlinkDotNet.TaskManager.Implementation;
+using FlinkDotNet.TaskManager.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -51,6 +54,16 @@ internal class Program
 
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
+        // Configure HttpClient for JobManager communication
+#pragma warning disable S5332 // Using HTTP is acceptable for local development and internal communication
+        string jobManagerUrl = $"http://{jobManagerHost}:{jobManagerPort}";
+#pragma warning restore S5332
+        builder.Services.AddHttpClient("JobManager", client =>
+        {
+            client.BaseAddress = new Uri(jobManagerUrl);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
         // Configure Temporal client
         string temporalAddress = $"{temporalHost}:{temporalPort}";
         builder.Services.AddSingleton<ITemporalClient>(sp =>
@@ -65,8 +78,19 @@ internal class Program
             }).GetAwaiter().GetResult();
         });
 
+        // Register TaskExecutor
+        builder.Services.AddSingleton<ITaskExecutor, TaskExecutor>();
+
         // Add background service for task execution
-        builder.Services.AddHostedService<TaskManagerWorker>();
+        builder.Services.AddHostedService<TaskManagerWorker>(sp =>
+            new TaskManagerWorker(
+                sp.GetRequiredService<ILogger<TaskManagerWorker>>(),
+                sp.GetRequiredService<ITemporalClient>(),
+                sp.GetRequiredService<ITaskExecutor>(),
+                sp.GetRequiredService<IHttpClientFactory>(),
+                taskManagerId,
+                numberOfSlots,
+                jobManagerUrl));
 
         IHost host = builder.Build();
 
@@ -80,34 +104,168 @@ internal class Program
 }
 
 /// <summary>
-/// Background worker that manages task execution slots
+/// Background worker that manages task execution slots and JobManager communication
 /// </summary>
 internal class TaskManagerWorker : BackgroundService
 {
     private readonly ILogger<TaskManagerWorker> _logger;
+    private readonly HttpClient _httpClient;
+    private readonly string _taskManagerId;
+    private readonly int _numberOfSlots;
+    private readonly string _jobManagerUrl;
 
-    public TaskManagerWorker(ILogger<TaskManagerWorker> logger, ITemporalClient temporalClient)
+    public TaskManagerWorker(
+        ILogger<TaskManagerWorker> logger,
+        ITemporalClient temporalClient,
+        ITaskExecutor taskExecutor,
+        IHttpClientFactory httpClientFactory,
+        string taskManagerId,
+        int numberOfSlots,
+        string jobManagerUrl)
     {
         this._logger = logger;
-        _ = temporalClient; // Will be used for Temporal worker in future implementation
+        this._httpClient = httpClientFactory.CreateClient("JobManager");
+        this._taskManagerId = taskManagerId;
+        this._numberOfSlots = numberOfSlots;
+        this._jobManagerUrl = jobManagerUrl;
+        
+        // Suppress warnings for parameters that will be used in future implementations
+        _ = temporalClient; // Will be used for Temporal worker
+        _ = taskExecutor; // Will be used for task deployment from JobManager
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         this._logger.LogInformation("TaskManager worker started");
 
-        // Register with JobManager - Implementation deferred to future iteration
-        // Registration will be implemented via HTTP call to JobManager REST API
+        // Register with JobManager
+        await RegisterWithJobManagerAsync(stoppingToken);
 
-        // Start Temporal worker to execute activities - Implementation deferred to future iteration
-        // Temporal worker will listen for task execution activities from workflow orchestration
-
+        // Send heartbeats periodically
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
-            this._logger.LogDebug("TaskManager heartbeat");
+            try
+            {
+                await SendHeartbeatAsync(stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal shutdown
+                break;
+            }
+            catch (Exception ex)
+            {
+                this._logger.LogError(ex, "Error sending heartbeat");
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            }
         }
 
+        // Unregister on shutdown
+        await UnregisterFromJobManagerAsync(stoppingToken);
+
         this._logger.LogInformation("TaskManager worker stopping");
+    }
+
+    private async Task RegisterWithJobManagerAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            this._logger.LogInformation(
+                "Registering TaskManager {TaskManagerId} with JobManager at {JobManagerUrl}",
+                this._taskManagerId,
+                this._jobManagerUrl);
+
+            var request = new
+            {
+                TaskManagerId = this._taskManagerId,
+                NumberOfSlots = this._numberOfSlots
+            };
+
+            HttpResponseMessage response = await this._httpClient.PostAsJsonAsync(
+                "/api/taskmanagers/register",
+                request,
+                cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                this._logger.LogInformation(
+                    "Successfully registered TaskManager {TaskManagerId}",
+                    this._taskManagerId);
+            }
+            else
+            {
+                this._logger.LogWarning(
+                    "Failed to register TaskManager {TaskManagerId}. Status: {StatusCode}",
+                    this._taskManagerId,
+                    response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogError(
+                ex,
+                "Error registering TaskManager {TaskManagerId}",
+                this._taskManagerId);
+        }
+    }
+
+    private async Task SendHeartbeatAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            HttpResponseMessage response = await this._httpClient.PostAsync(
+                $"/api/taskmanagers/{this._taskManagerId}/heartbeat",
+                null,
+                cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                this._logger.LogDebug("Heartbeat sent for TaskManager {TaskManagerId}", this._taskManagerId);
+            }
+            else
+            {
+                this._logger.LogWarning(
+                    "Heartbeat failed for TaskManager {TaskManagerId}. Status: {StatusCode}",
+                    this._taskManagerId,
+                    response.StatusCode);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            this._logger.LogWarning(
+                ex,
+                "Could not reach JobManager for heartbeat. TaskManager {TaskManagerId}",
+                this._taskManagerId);
+        }
+    }
+
+    private async Task UnregisterFromJobManagerAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            this._logger.LogInformation(
+                "Unregistering TaskManager {TaskManagerId} from JobManager",
+                this._taskManagerId);
+
+            HttpResponseMessage response = await this._httpClient.PostAsync(
+                $"/api/taskmanagers/{this._taskManagerId}/unregister",
+                null,
+                cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                this._logger.LogInformation(
+                    "Successfully unregistered TaskManager {TaskManagerId}",
+                    this._taskManagerId);
+            }
+        }
+        catch (Exception ex)
+        {
+            this._logger.LogError(
+                ex,
+                "Error unregistering TaskManager {TaskManagerId}",
+                this._taskManagerId);
+        }
     }
 }

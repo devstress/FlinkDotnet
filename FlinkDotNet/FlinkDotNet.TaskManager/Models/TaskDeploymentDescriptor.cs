@@ -32,6 +32,11 @@ public class TaskDeploymentDescriptor
     public string JobId { get; set; } = string.Empty;
 
     /// <summary>
+    /// Job vertex identifier
+    /// </summary>
+    public string JobVertexId { get; set; } = string.Empty;
+
+    /// <summary>
     /// Operator name
     /// </summary>
     public string OperatorName { get; set; } = string.Empty;

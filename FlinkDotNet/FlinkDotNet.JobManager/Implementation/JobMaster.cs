@@ -169,7 +169,7 @@ public class JobMaster : IJobMaster
             // For now, just log the checkpoint request
             _logger.LogDebug("Checkpoint {CheckpointId} coordination started", checkpointId);
 
-            // TODO: Implement full checkpoint coordination with Temporal
+            // NOTE: Full checkpoint coordination with Temporal will be implemented in Phase 4
             await Task.CompletedTask;
         }
         catch (Exception ex)

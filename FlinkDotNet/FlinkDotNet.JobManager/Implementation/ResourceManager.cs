@@ -42,12 +42,14 @@ public class ResourceManager : IResourceManager
     /// <inheritdoc/>
     public Task RegisterTaskManagerAsync(string taskManagerId, int numberOfSlots, CancellationToken cancellationToken = default)
     {
+        DateTime now = DateTime.UtcNow;
         TaskManagerInfo info = new()
         {
             TaskManagerId = taskManagerId,
             TotalSlots = numberOfSlots,
             AvailableSlots = numberOfSlots,
-            RegisteredAt = DateTime.UtcNow
+            RegisteredAt = now,
+            LastHeartbeat = now
         };
 
         if (this._taskManagers.TryAdd(taskManagerId, info))
@@ -211,12 +213,14 @@ public class ResourceManager : IResourceManager
     /// <inheritdoc/>
     public void RegisterTaskManager(string taskManagerId, int numberOfSlots)
     {
+        DateTime now = DateTime.UtcNow;
         TaskManagerInfo info = new()
         {
             TaskManagerId = taskManagerId,
             TotalSlots = numberOfSlots,
             AvailableSlots = numberOfSlots,
-            RegisteredAt = DateTime.UtcNow
+            RegisteredAt = now,
+            LastHeartbeat = now
         };
 
         if (this._taskManagers.TryAdd(taskManagerId, info))
@@ -267,6 +271,37 @@ public class ResourceManager : IResourceManager
         this._logger.LogDebug("Releasing slot {SlotId}", slotId);
         return Task.CompletedTask;
     }
+
+    /// <inheritdoc/>
+    public Task RecordHeartbeatAsync(string taskManagerId, CancellationToken cancellationToken = default)
+    {
+        if (this._taskManagers.TryGetValue(taskManagerId, out TaskManagerInfo? info))
+        {
+            info.LastHeartbeat = DateTime.UtcNow;
+            this._logger.LogDebug(
+                "Recorded heartbeat from TaskManager {TaskManagerId}",
+                taskManagerId);
+        }
+        else
+        {
+            this._logger.LogWarning(
+                "Received heartbeat from unregistered TaskManager {TaskManagerId}",
+                taskManagerId);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    public DateTime? GetLastHeartbeat(string taskManagerId)
+    {
+        if (this._taskManagers.TryGetValue(taskManagerId, out TaskManagerInfo? info))
+        {
+            return info.LastHeartbeat;
+        }
+
+        return null;
+    }
 }
 
 /// <summary>
@@ -299,6 +334,14 @@ internal class TaskManagerInfo
     /// Registration timestamp
     /// </summary>
     public DateTime RegisteredAt
+    {
+        get; set;
+    }
+
+    /// <summary>
+    /// Last heartbeat timestamp
+    /// </summary>
+    public DateTime LastHeartbeat
     {
         get; set;
     }
