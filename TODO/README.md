@@ -69,6 +69,51 @@ Projects targeting FlinkDotNet v2 benefit from:
 - **Simplified deployment**: Single .NET application, no JVM required
 - **Native observability**: Integrated with .NET metrics and diagnostics
 
+### Backward Compatibility Strategy
+
+**FlinkDotNet maintains backward compatibility** between v1 and v2:
+
+**Shared Features (v1 + v2 compatible)**:
+- All existing DataStream API operations continue to work with both v1 (Apache Flink) and v2 (native .NET)
+- Core stream processing operators: Map, Filter, FlatMap, KeyBy, Window, Join, etc.
+- State management APIs remain consistent across versions
+- Checkpoint and savepoint mechanisms work with both execution engines
+- Existing applications using FlinkDotNet SDK work without modification
+
+**v2-Only Features (Native .NET exclusive)**:
+- Features that require native .NET implementation use **`NativeDataStream`** API
+- `NativeDataStream` provides v2-exclusive capabilities:
+  - Native .NET JobManager/TaskManager coordination
+  - Direct .NET metrics and observability integration
+  - Aspire orchestration for local development
+  - Native Temporal workflow integration
+  - Pure .NET distributed state management
+  
+**Exception Handling for v2-Only Features**:
+- Attempting to use `NativeDataStream` with v1 (Apache Flink) throws `NotSupportedException`
+- Exception message: "NativeDataStream requires FlinkDotNet v2 with native JobManager/TaskManager. Current configuration uses Apache Flink (v1). Please switch to v2 execution mode or use standard DataStream API."
+- Clear error messages guide users to proper API usage based on their configuration
+
+**API Design Pattern**:
+```csharp
+// Works with both v1 and v2
+var stream = env.FromKafka<Event>("topic", bootstrapServers, groupId)
+    .Filter(e => e.IsValid())
+    .Map(e => Transform(e));
+
+// v2-only: Throws NotSupportedException if using v1 (Apache Flink)
+var nativeStream = env.CreateNativeDataStream<Event>("topic")
+    .WithNativeJobManager()
+    .WithNativeTaskManager()
+    .Process(new NativeStreamProcessor());
+```
+
+**Configuration Detection**:
+- FlinkDotNet automatically detects execution mode (v1 with Apache Flink or v2 native)
+- Detection based on configuration settings and runtime environment
+- Clear documentation indicates which features require v2
+- IntelliSense/IDE hints indicate v2-only APIs
+
 ## Native Distributed Message-Oriented Architecture
 
 > **FlinkDotNet v2 Implementation**: This section describes the native .NET stream processing architecture for FlinkDotNet v2. For FlinkDotNet v1 with Apache Flink support, see [root README.md](../README.md) and the `LearningCourse/`, `LocalTesting/`, `ObservabilityTesting/` folders.
@@ -207,6 +252,8 @@ For detailed architecture documentation, see [Architecture & Use Cases](../docs/
 ## Implemented Features by Category
 
 > **Note**: The features listed below are implemented for **FlinkDotNet v2** (native .NET). FlinkDotNet v1 with Apache Flink support is documented in [root README.md](../README.md).
+>
+> **Backward Compatibility**: All features marked with ✅ support both v1 and v2 unless explicitly marked as "v2-only". Features requiring native .NET implementation use `NativeDataStream` API and throw `NotSupportedException` when used with v1.
 
 ### 1. AI/ML Integration (Inspired by Flink 2.1) ✅
 
