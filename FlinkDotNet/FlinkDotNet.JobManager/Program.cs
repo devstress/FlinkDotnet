@@ -58,6 +58,11 @@ builder.Services.AddSingleton<ITemporalClient>(sp =>
 builder.Services.AddSingleton<IResourceManager, ResourceManager>();
 builder.Services.AddSingleton<IDispatcher, Dispatcher>();
 
+// Configure heartbeat monitoring
+builder.Services.Configure<HeartbeatConfiguration>(
+    builder.Configuration.GetSection(HeartbeatConfiguration.SectionName));
+builder.Services.AddHostedService<HeartbeatMonitoringService>();
+
 Console.WriteLine("JobManager services registered");
 
 WebApplication app = builder.Build();

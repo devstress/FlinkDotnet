@@ -104,4 +104,18 @@ public interface IResourceManager
     /// <param name="slotId">Slot ID to release</param>
     /// <param name="cancellationToken">Cancellation token</param>
     Task ReleaseSlotAsync(string slotId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Record heartbeat from a TaskManager
+    /// </summary>
+    /// <param name="taskManagerId">TaskManager identifier</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task RecordHeartbeatAsync(string taskManagerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get last heartbeat timestamp for a TaskManager
+    /// </summary>
+    /// <param name="taskManagerId">TaskManager identifier</param>
+    /// <returns>Last heartbeat timestamp or null if not found</returns>
+    DateTime? GetLastHeartbeat(string taskManagerId);
 }
