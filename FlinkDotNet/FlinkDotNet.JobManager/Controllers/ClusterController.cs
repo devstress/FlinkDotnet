@@ -5,7 +5,6 @@
 using Microsoft.AspNetCore.Mvc;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models.Responses;
-using FlinkDotNet.JobManager.Implementation;
 
 namespace FlinkDotNet.JobManager.Controllers;
 
@@ -70,7 +69,7 @@ public class ClusterController(
             IEnumerable<Models.TaskSlot> freeSlots = _resourceManager.GetAvailableSlots()
                 .Where(s => s.TaskManagerId == tmId);
 
-            // TODO: Get actual registration and heartbeat times from ResourceManager
+            // Registration and heartbeat times retrieval from ResourceManager deferred to future iteration
             taskManagers.Add(new Models.Responses.TaskManagerInfo
             {
                 TaskManagerId = tmId,

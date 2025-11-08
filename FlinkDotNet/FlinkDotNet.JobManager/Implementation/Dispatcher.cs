@@ -5,7 +5,6 @@
 using System.Collections.Concurrent;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
-using Microsoft.Extensions.Logging;
 using Temporalio.Client;
 
 namespace FlinkDotNet.JobManager.Implementation;
@@ -115,7 +114,7 @@ public class Dispatcher(IResourceManager resourceManager, ITemporalClient tempor
         if (jobInfo.State == JobExecutionState.Running || jobInfo.State == JobExecutionState.Created || jobInfo.State == JobExecutionState.Deploying)
         {
             jobInfo.State = JobExecutionState.Canceling;
-            
+
             // Cancel via JobMaster if available
             if (jobInfo.JobMaster != null)
             {
@@ -125,7 +124,7 @@ public class Dispatcher(IResourceManager resourceManager, ITemporalClient tempor
             {
                 // Fallback to cancellation token if JobMaster not yet created
                 jobInfo.CancellationToken?.Cancel();
-                
+
                 // Wait a bit for cancellation to complete
                 await Task.Delay(100, cancellationToken);
             }
@@ -222,7 +221,7 @@ public class Dispatcher(IResourceManager resourceManager, ITemporalClient tempor
     private async Task ExecuteJobAsync(JobInfo jobInfo)
     {
         ILogger<JobMaster> jobMasterLogger = this._loggerFactory.CreateLogger<JobMaster>();
-        
+
         try
         {
             // Create JobMaster for this job
@@ -241,12 +240,12 @@ public class Dispatcher(IResourceManager resourceManager, ITemporalClient tempor
 
             // Get final execution graph
             ExecutionGraph executionGraph = await jobMaster.GetExecutionGraphAsync();
-            
+
             // Update job info based on execution graph state
             jobInfo.State = executionGraph.State;
             jobInfo.FinishedAt = executionGraph.FinishedAt;
             jobInfo.ErrorMessage = executionGraph.FailureMessage;
-            
+
             // Update task counts
             jobInfo.CompletedTasks = executionGraph.ExecutionVertices.Count(v => v.State == ExecutionState.Finished);
             jobInfo.FailedTasks = executionGraph.ExecutionVertices.Count(v => v.State == ExecutionState.Failed);

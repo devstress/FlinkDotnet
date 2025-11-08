@@ -5,7 +5,6 @@
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Logging;
 using Temporalio.Client;
 
 namespace FlinkDotNet.JobManager.Implementation;

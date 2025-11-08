@@ -30,14 +30,14 @@ public interface IDispatcher
     /// <param name="jobGraph">Job graph definition</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Job submission result with job ID</returns>
-    Task<JobSubmissionResult> SubmitJobAsync(JobGraph jobGraph, CancellationToken cancellationToken = default);
+    public Task<JobSubmissionResult> SubmitJobAsync(JobGraph jobGraph, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Cancel a running job
     /// </summary>
     /// <param name="jobId">Job identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task CancelJobAsync(string jobId, CancellationToken cancellationToken = default);
+    public Task CancelJobAsync(string jobId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get status of a job
@@ -45,14 +45,14 @@ public interface IDispatcher
     /// <param name="jobId">Job identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Current job status</returns>
-    Task<JobStatus> GetJobStatusAsync(string jobId, CancellationToken cancellationToken = default);
+    public Task<JobStatus> GetJobStatusAsync(string jobId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// List all jobs in the cluster
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of job statuses</returns>
-    Task<List<JobStatus>> ListJobsAsync(CancellationToken cancellationToken = default);
+    public Task<List<JobStatus>> ListJobsAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>

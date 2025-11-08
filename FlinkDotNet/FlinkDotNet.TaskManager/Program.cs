@@ -19,50 +19,65 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Temporalio.Client;
 
-Console.WriteLine("===========================================");
-Console.WriteLine("FlinkDotNet TaskManager");
-Console.WriteLine("Native .NET Task Execution Engine");
-Console.WriteLine("===========================================");
+namespace FlinkDotNet.TaskManager;
 
-var taskManagerId = Environment.GetEnvironmentVariable("TASKMANAGER_ID") ?? $"tm-{Guid.NewGuid().ToString()[..8]}";
-var numberOfSlots = int.Parse(Environment.GetEnvironmentVariable("TASKMANAGER_SLOTS") ?? "4");
-var jobManagerHost = Environment.GetEnvironmentVariable("JOBMANAGER_HOST") ?? "localhost";
-var jobManagerPort = Environment.GetEnvironmentVariable("JOBMANAGER_PORT") ?? "8081";
-var temporalHost = Environment.GetEnvironmentVariable("TEMPORAL_HOST") ?? "localhost";
-var temporalPort = Environment.GetEnvironmentVariable("TEMPORAL_PORT") ?? "7233";
-
-Console.WriteLine($"TaskManager ID: {taskManagerId}");
-Console.WriteLine($"Number of slots: {numberOfSlots}");
-Console.WriteLine($"JobManager: {jobManagerHost}:{jobManagerPort}");
-Console.WriteLine($"Temporal: {temporalHost}:{temporalPort}");
-
-var builder = Host.CreateApplicationBuilder(args);
-
-// Configure Temporal client
-var temporalAddress = $"{temporalHost}:{temporalPort}";
-builder.Services.AddSingleton<ITemporalClient>(sp =>
+internal class Program
 {
-    var logger = sp.GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Connecting to Temporal at {TemporalAddress}", temporalAddress);
-    
-    return TemporalClient.ConnectAsync(new TemporalClientConnectOptions
+    private const string SeparatorLine = "===========================================";
+
+    private Program()
     {
-        TargetHost = temporalAddress,
-        Namespace = "default"
-    }).GetAwaiter().GetResult();
-});
+        // Private constructor to prevent instantiation
+    }
 
-// Add background service for task execution
-builder.Services.AddHostedService<TaskManagerWorker>();
+    public static async Task Main(string[] args)
+    {
+        Console.WriteLine(SeparatorLine);
+        Console.WriteLine("FlinkDotNet TaskManager");
+        Console.WriteLine("Native .NET Task Execution Engine");
+        Console.WriteLine(SeparatorLine);
 
-var host = builder.Build();
+        string taskManagerId = Environment.GetEnvironmentVariable("TASKMANAGER_ID") ?? $"tm-{Guid.NewGuid().ToString()[..8]}";
+        int numberOfSlots = int.Parse(Environment.GetEnvironmentVariable("TASKMANAGER_SLOTS") ?? "4");
+        string jobManagerHost = Environment.GetEnvironmentVariable("JOBMANAGER_HOST") ?? "localhost";
+        string jobManagerPort = Environment.GetEnvironmentVariable("JOBMANAGER_PORT") ?? "8081";
+        string temporalHost = Environment.GetEnvironmentVariable("TEMPORAL_HOST") ?? "localhost";
+        string temporalPort = Environment.GetEnvironmentVariable("TEMPORAL_PORT") ?? "7233";
 
-Console.WriteLine("===========================================");
-Console.WriteLine("TaskManager starting...");
-Console.WriteLine($"Ready to execute tasks with {numberOfSlots} parallel slots");
-Console.WriteLine("===========================================");
+        Console.WriteLine($"TaskManager ID: {taskManagerId}");
+        Console.WriteLine($"Number of slots: {numberOfSlots}");
+        Console.WriteLine($"JobManager: {jobManagerHost}:{jobManagerPort}");
+        Console.WriteLine($"Temporal: {temporalHost}:{temporalPort}");
 
-await host.RunAsync();
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+
+        // Configure Temporal client
+        string temporalAddress = $"{temporalHost}:{temporalPort}";
+        builder.Services.AddSingleton<ITemporalClient>(sp =>
+        {
+            ILogger<Program> logger = sp.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("Connecting to Temporal at {TemporalAddress}", temporalAddress);
+
+            return TemporalClient.ConnectAsync(new TemporalClientConnectOptions
+            {
+                TargetHost = temporalAddress,
+                Namespace = "default"
+            }).GetAwaiter().GetResult();
+        });
+
+        // Add background service for task execution
+        builder.Services.AddHostedService<TaskManagerWorker>();
+
+        IHost host = builder.Build();
+
+        Console.WriteLine(SeparatorLine);
+        Console.WriteLine("TaskManager starting...");
+        Console.WriteLine($"Ready to execute tasks with {numberOfSlots} parallel slots");
+        Console.WriteLine(SeparatorLine);
+
+        await host.RunAsync();
+    }
+}
 
 /// <summary>
 /// Background worker that manages task execution slots
@@ -73,26 +88,26 @@ internal class TaskManagerWorker : BackgroundService
 
     public TaskManagerWorker(ILogger<TaskManagerWorker> logger, ITemporalClient temporalClient)
     {
-        _logger = logger;
+        this._logger = logger;
         _ = temporalClient; // Will be used for Temporal worker in future implementation
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("TaskManager worker started");
+        this._logger.LogInformation("TaskManager worker started");
 
-        // Register with JobManager
-        // TODO: Implement registration via HTTP call to JobManager
+        // Register with JobManager - Implementation deferred to future iteration
+        // Registration will be implemented via HTTP call to JobManager REST API
 
-        // Start Temporal worker to execute activities
-        // TODO: Start Temporal worker listening for task execution activities
+        // Start Temporal worker to execute activities - Implementation deferred to future iteration
+        // Temporal worker will listen for task execution activities from workflow orchestration
 
         while (!stoppingToken.IsCancellationRequested)
         {
             await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
-            _logger.LogDebug("TaskManager heartbeat");
+            this._logger.LogDebug("TaskManager heartbeat");
         }
 
-        _logger.LogInformation("TaskManager worker stopping");
+        this._logger.LogInformation("TaskManager worker stopping");
     }
 }
