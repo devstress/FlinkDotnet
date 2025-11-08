@@ -72,4 +72,36 @@ public interface IResourceManager
     /// </summary>
     /// <returns>Collection of all task slots</returns>
     IEnumerable<TaskSlot> GetAllSlots();
+
+    /// <summary>
+    /// Get registered TaskManagers
+    /// </summary>
+    /// <returns>Collection of registered TaskManager IDs</returns>
+    IEnumerable<string> GetRegisteredTaskManagers();
+
+    /// <summary>
+    /// Register a TaskManager (synchronous)
+    /// </summary>
+    void RegisterTaskManager(string taskManagerId, int numberOfSlots);
+
+    /// <summary>
+    /// Unregister a TaskManager (synchronous)
+    /// </summary>
+    bool UnregisterTaskManager(string taskManagerId);
+
+    /// <summary>
+    /// Allocate task slots for job execution (async version)
+    /// </summary>
+    /// <param name="jobId">Job identifier</param>
+    /// <param name="numberOfSlots">Number of slots requested</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>List of allocated task slots</returns>
+    Task<List<TaskSlot>> AllocateSlotsAsync(string jobId, int numberOfSlots, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Release a single task slot (async version)
+    /// </summary>
+    /// <param name="slotId">Slot ID to release</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    Task ReleaseSlotAsync(string slotId, CancellationToken cancellationToken = default);
 }

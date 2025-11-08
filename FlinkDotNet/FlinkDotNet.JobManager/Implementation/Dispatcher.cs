@@ -5,6 +5,8 @@
 using System.Collections.Concurrent;
 using FlinkDotNet.JobManager.Interfaces;
 using FlinkDotNet.JobManager.Models;
+using Microsoft.Extensions.Logging;
+using Temporalio.Client;
 
 namespace FlinkDotNet.JobManager.Implementation;
 
@@ -12,10 +14,12 @@ namespace FlinkDotNet.JobManager.Implementation;
 /// Dispatcher manages job submission and lifecycle.
 /// Thread-safe implementation for concurrent job submission.
 /// </summary>
-public class Dispatcher(IResourceManager resourceManager) : IDispatcher
+public class Dispatcher(IResourceManager resourceManager, ITemporalClient temporalClient, ILoggerFactory loggerFactory) : IDispatcher
 {
     private readonly ConcurrentDictionary<string, JobInfo> _jobs = new();
     private readonly IResourceManager _resourceManager = resourceManager ?? throw new ArgumentNullException(nameof(resourceManager));
+    private readonly ITemporalClient _temporalClient = temporalClient ?? throw new ArgumentNullException(nameof(temporalClient));
+    private readonly ILoggerFactory _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
 
     /// <summary>
     /// Submit a new job for execution.
@@ -108,13 +112,23 @@ public class Dispatcher(IResourceManager resourceManager) : IDispatcher
             throw new ArgumentException($"Job {jobId} not found", nameof(jobId));
         }
 
-        if (jobInfo.State == JobExecutionState.Running || jobInfo.State == JobExecutionState.Created)
+        if (jobInfo.State == JobExecutionState.Running || jobInfo.State == JobExecutionState.Created || jobInfo.State == JobExecutionState.Deploying)
         {
             jobInfo.State = JobExecutionState.Canceling;
-            jobInfo.CancellationToken?.Cancel();
-
-            // Wait a bit for cancellation to complete
-            await Task.Delay(100, cancellationToken);
+            
+            // Cancel via JobMaster if available
+            if (jobInfo.JobMaster != null)
+            {
+                await jobInfo.JobMaster.CancelJobAsync(cancellationToken);
+            }
+            else
+            {
+                // Fallback to cancellation token if JobMaster not yet created
+                jobInfo.CancellationToken?.Cancel();
+                
+                // Wait a bit for cancellation to complete
+                await Task.Delay(100, cancellationToken);
+            }
 
             jobInfo.State = JobExecutionState.Canceled;
             jobInfo.FinishedAt = DateTime.UtcNow;
@@ -207,35 +221,36 @@ public class Dispatcher(IResourceManager resourceManager) : IDispatcher
 
     private async Task ExecuteJobAsync(JobInfo jobInfo)
     {
+        ILogger<JobMaster> jobMasterLogger = this._loggerFactory.CreateLogger<JobMaster>();
+        
         try
         {
-            // Update state to running
-            jobInfo.State = JobExecutionState.Running;
-            jobInfo.StartedAt = DateTime.UtcNow;
-            jobInfo.CancellationToken = new CancellationTokenSource();
+            // Create JobMaster for this job
+            JobMaster jobMaster = new(
+                jobInfo.JobId,
+                jobInfo.JobGraph,
+                this._resourceManager,
+                this._temporalClient,
+                jobMasterLogger);
 
-            // Check if we have enough slots
-            int requiredSlots = jobInfo.TotalTasks;
-            int availableSlots = this._resourceManager.GetAvailableSlots().Count();
+            // Store JobMaster reference for later access
+            jobInfo.JobMaster = jobMaster;
 
-            if (availableSlots < requiredSlots)
-            {
-                throw new InvalidOperationException(
-                    $"Insufficient slots: required {requiredSlots}, available {availableSlots}");
-            }
+            // Start job execution via JobMaster
+            await jobMaster.StartJobAsync(jobInfo.CancellationToken?.Token ?? CancellationToken.None);
 
-            // TODO: Create ExecutionGraph from JobGraph
-            // TODO: Deploy tasks to TaskManagers
-            // TODO: Monitor task execution
-            // TODO: Handle failures and recovery
-
-            // For now, simulate execution
-            await Task.Delay(1000, jobInfo.CancellationToken.Token);
-
-            // Mark as finished
-            jobInfo.State = JobExecutionState.Finished;
-            jobInfo.FinishedAt = DateTime.UtcNow;
-            jobInfo.CompletedTasks = jobInfo.TotalTasks;
+            // Get final execution graph
+            ExecutionGraph executionGraph = await jobMaster.GetExecutionGraphAsync();
+            
+            // Update job info based on execution graph state
+            jobInfo.State = executionGraph.State;
+            jobInfo.FinishedAt = executionGraph.FinishedAt;
+            jobInfo.ErrorMessage = executionGraph.FailureMessage;
+            
+            // Update task counts
+            jobInfo.CompletedTasks = executionGraph.ExecutionVertices.Count(v => v.State == ExecutionState.Finished);
+            jobInfo.FailedTasks = executionGraph.ExecutionVertices.Count(v => v.State == ExecutionState.Failed);
+            jobInfo.RunningTasks = executionGraph.ExecutionVertices.Count(v => v.State == ExecutionState.Running);
         }
         catch (OperationCanceledException)
         {
@@ -269,4 +284,5 @@ public class JobInfo
     public int FailedTasks { get; set; }
     public string? ErrorMessage { get; set; }
     public CancellationTokenSource? CancellationToken { get; set; }
+    public JobMaster? JobMaster { get; set; }
 }

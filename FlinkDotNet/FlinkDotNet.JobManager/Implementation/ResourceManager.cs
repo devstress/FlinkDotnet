@@ -200,6 +200,72 @@ public class ResourceManager : IResourceManager
         }
         return allSlots;
     }
+
+    /// <inheritdoc/>
+    public IEnumerable<string> GetRegisteredTaskManagers()
+    {
+        return this._taskManagers.Keys;
+    }
+
+    /// <inheritdoc/>
+    public void RegisterTaskManager(string taskManagerId, int numberOfSlots)
+    {
+        TaskManagerInfo info = new()
+        {
+            TaskManagerId = taskManagerId,
+            TotalSlots = numberOfSlots,
+            AvailableSlots = numberOfSlots,
+            RegisteredAt = DateTime.UtcNow
+        };
+
+        if (this._taskManagers.TryAdd(taskManagerId, info))
+        {
+            this._logger.LogInformation(
+                "TaskManager {TaskManagerId} registered with {NumberOfSlots} slots",
+                taskManagerId,
+                numberOfSlots);
+        }
+        else
+        {
+            this._logger.LogWarning(
+                "TaskManager {TaskManagerId} already registered",
+                taskManagerId);
+        }
+    }
+
+    /// <inheritdoc/>
+    public bool UnregisterTaskManager(string taskManagerId)
+    {
+        if (this._taskManagers.TryRemove(taskManagerId, out _))
+        {
+            this._logger.LogInformation(
+                "TaskManager {TaskManagerId} unregistered",
+                taskManagerId);
+            return true;
+        }
+
+        this._logger.LogWarning(
+            "TaskManager {TaskManagerId} not found for unregistration",
+            taskManagerId);
+        return false;
+    }
+
+    /// <inheritdoc/>
+    public async Task<List<TaskSlot>> AllocateSlotsAsync(string jobId, int numberOfSlots, CancellationToken cancellationToken = default)
+    {
+        // This is the same as RequestSlotsAsync - delegate to it
+        return await RequestSlotsAsync(jobId, numberOfSlots, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public Task ReleaseSlotAsync(string slotId, CancellationToken cancellationToken = default)
+    {
+        // Find the slot by ID and release it
+        // In a full implementation, we'd track slots by ID
+        // For now, just log and return
+        this._logger.LogDebug("Releasing slot {SlotId}", slotId);
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>

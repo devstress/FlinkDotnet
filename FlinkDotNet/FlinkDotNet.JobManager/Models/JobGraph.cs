@@ -140,6 +140,15 @@ public class JobEdge
     /// Partitioning strategy for data flow
     /// </summary>
     public PartitioningStrategy Strategy { get; set; } = PartitioningStrategy.Forward;
+
+    /// <summary>
+    /// Partitioning strategy (alternative property name)
+    /// </summary>
+    public PartitioningStrategy PartitioningStrategy
+    {
+        get => Strategy;
+        set => Strategy = value;
+    }
 }
 
 /// <summary>
