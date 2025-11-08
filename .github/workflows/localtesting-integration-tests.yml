@@ -2,6 +2,9 @@ name: LocalTesting Integration Tests
 
 on:
   push:
+    paths:
+      - 'LocalTesting/**'
+      - '.github/workflows/localtesting-integration-tests.yml'
   workflow_dispatch:
 
 env:
