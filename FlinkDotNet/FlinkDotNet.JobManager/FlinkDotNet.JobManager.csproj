@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FlinkDotNet.Common\FlinkDotNet.Common.csproj" />
+    <ProjectReference Include="..\FlinkDotNet.TaskManager\FlinkDotNet.TaskManager.csproj" />
   </ItemGroup>
 
 </Project>
