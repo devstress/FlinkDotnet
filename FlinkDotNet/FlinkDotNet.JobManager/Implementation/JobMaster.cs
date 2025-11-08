@@ -18,7 +18,6 @@ public class JobMaster : IJobMaster
     private readonly string _jobId;
     private readonly JobGraph _jobGraph;
     private readonly IResourceManager _resourceManager;
-    private readonly ITemporalClient _temporalClient;
     private readonly ILogger<JobMaster> _logger;
 
     private ExecutionGraph? _executionGraph;
@@ -38,7 +37,8 @@ public class JobMaster : IJobMaster
         _jobId = jobId ?? throw new ArgumentNullException(nameof(jobId));
         _jobGraph = jobGraph ?? throw new ArgumentNullException(nameof(jobGraph));
         _resourceManager = resourceManager ?? throw new ArgumentNullException(nameof(resourceManager));
-        _temporalClient = temporalClient ?? throw new ArgumentNullException(nameof(temporalClient));
+        // temporalClient parameter kept for interface compatibility but not used in current implementation
+        ArgumentNullException.ThrowIfNull(temporalClient);
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -73,7 +73,7 @@ public class JobMaster : IJobMaster
         {
             _logger.LogError(ex, "Failed to start job {JobId}", _jobId);
             _jobState = JobExecutionState.Failed;
-            throw;
+            throw new InvalidOperationException($"Failed to start job {_jobId}. See inner exception for details.", ex);
         }
     }
 
@@ -112,7 +112,7 @@ public class JobMaster : IJobMaster
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to cancel job {JobId}", _jobId);
-            throw;
+            throw new InvalidOperationException($"Failed to cancel job {_jobId}. See inner exception for details.", ex);
         }
     }
 
@@ -175,12 +175,13 @@ public class JobMaster : IJobMaster
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to trigger checkpoint {CheckpointId} for job {JobId}", checkpointId, _jobId);
-            throw;
+            throw new InvalidOperationException($"Failed to trigger checkpoint {checkpointId} for job {_jobId}. See inner exception for details.", ex);
         }
     }
 
-    private async Task<ExecutionGraph> CreateExecutionGraphAsync(CancellationToken cancellationToken)
+    private Task<ExecutionGraph> CreateExecutionGraphAsync(CancellationToken cancellationToken)
     {
+        _ = cancellationToken; // Parameter kept for consistency with async pattern
         _logger.LogDebug("Creating ExecutionGraph from JobGraph");
 
         ExecutionGraph executionGraph = new()
@@ -232,7 +233,7 @@ public class JobMaster : IJobMaster
         _logger.LogDebug("ExecutionGraph created: {VertexCount} vertices, {EdgeCount} edges",
             executionGraph.ExecutionVertices.Count, executionGraph.ExecutionEdges.Count);
 
-        return await Task.FromResult(executionGraph);
+        return Task.FromResult(executionGraph);
     }
 
     private void CreateExecutionEdges(
@@ -399,8 +400,9 @@ public class JobMaster : IJobMaster
         }
     }
 
-    private async Task HandleTaskFailureAsync(ExecutionVertex vertex, CancellationToken cancellationToken)
+    private Task HandleTaskFailureAsync(ExecutionVertex vertex, CancellationToken cancellationToken)
     {
+        _ = cancellationToken; // Parameter kept for consistency with async pattern
         _logger.LogError("Task {VertexId} failed: {Error}", vertex.Id, vertex.Error);
 
         // In a full implementation, this would:
@@ -412,7 +414,7 @@ public class JobMaster : IJobMaster
         _jobState = JobExecutionState.Failed;
         _executionCts?.Cancel();
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     private async Task CheckJobCompletionAsync(CancellationToken cancellationToken)
