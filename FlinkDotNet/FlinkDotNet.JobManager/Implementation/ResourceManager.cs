@@ -191,3 +191,35 @@ internal class TaskManagerInfo
     /// </summary>
     public DateTime RegisteredAt { get; set; }
 }
+
+// Extension methods for synchronous API compatibility
+public static class ResourceManagerExtensions
+{
+    /// <summary>
+    /// Register a TaskManager synchronously.
+    /// </summary>
+    public static void RegisterTaskManager(this IResourceManager resourceManager, string taskManagerId, int numberOfSlots)
+    {
+        resourceManager.RegisterTaskManagerAsync(taskManagerId, numberOfSlots).GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// Unregister a TaskManager synchronously.
+    /// </summary>
+    public static bool UnregisterTaskManager(this IResourceManager resourceManager, string taskManagerId)
+    {
+        return resourceManager.UnregisterTaskManagerAsync(taskManagerId).GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// Get list of registered TaskManager IDs.
+    /// </summary>
+    public static IEnumerable<string> GetRegisteredTaskManagers(this IResourceManager resourceManager)
+    {
+        // Access internal dictionary via reflection or implement in ResourceManager
+        // For now, return from GetAllSlots
+        return resourceManager.GetAllSlots()
+            .Select(s => s.TaskManagerId)
+            .Distinct();
+    }
+}
