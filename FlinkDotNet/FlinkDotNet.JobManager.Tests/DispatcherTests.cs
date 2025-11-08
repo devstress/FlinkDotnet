@@ -230,6 +230,64 @@ public class DispatcherTests
         result.ErrorMessage.Should().NotBeNullOrEmpty();
     }
 
+    [Fact]
+    public async Task SubmitJobAsync_WithZeroMaxParallelism_ReturnsFailure()
+    {
+        // Arrange
+        var jobGraph = new JobGraph
+        {
+            JobName = "Test Job",
+            MaxParallelism = 0, // Invalid
+            Vertices = new List<JobVertex>
+            {
+                new JobVertex { Name = "source", Parallelism = 1, OperatorType = OperatorType.Source }
+            },
+            Edges = new List<JobEdge>(),
+            Configuration = new Dictionary<string, string>()
+        };
+
+        // Act
+        var result = await _dispatcher.SubmitJobAsync(jobGraph);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("parallelism");
+    }
+
+    [Fact]
+    public async Task ListJobsAsync_WithMultipleJobs_ReturnsAllJobs()
+    {
+        // Arrange
+        var jobGraph1 = CreateValidJobGraph();
+        var jobGraph2 = CreateValidJobGraph();
+        var jobGraph3 = CreateValidJobGraph();
+        
+        await _dispatcher.SubmitJobAsync(jobGraph1);
+        await _dispatcher.SubmitJobAsync(jobGraph2);
+        await _dispatcher.SubmitJobAsync(jobGraph3);
+
+        // Act
+        var jobs = await _dispatcher.ListJobsAsync();
+
+        // Assert
+        jobs.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task GetJobStatusAsync_MultipleTimesForSameJob_ReturnsSameJobId()
+    {
+        // Arrange
+        var jobGraph = CreateValidJobGraph();
+        var submitResult = await _dispatcher.SubmitJobAsync(jobGraph);
+
+        // Act
+        var status1 = await _dispatcher.GetJobStatusAsync(submitResult.JobId);
+        var status2 = await _dispatcher.GetJobStatusAsync(submitResult.JobId);
+
+        // Assert
+        status1!.JobId.Should().Be(status2!.JobId);
+    }
+
     private static JobGraph CreateValidJobGraph()
     {
         var sourceVertex = new JobVertex

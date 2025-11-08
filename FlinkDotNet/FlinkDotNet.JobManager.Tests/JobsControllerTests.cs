@@ -194,6 +194,92 @@ public class JobsControllerTests
         result.Should().BeOfType<NotFoundObjectResult>();
     }
 
+    [Fact]
+    public async Task CancelJob_WithException_ReturnsBadRequest()
+    {
+        // Arrange
+        var jobId = "job-123";
+
+        _mockDispatcher
+            .Setup(d => d.CancelJobAsync(jobId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Cannot cancel job in current state"));
+
+        // Act
+        var result = await _controller.CancelJob(jobId);
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task ListJobs_WithStateFilter_FiltersJobs()
+    {
+        // Arrange
+        var jobs = new List<JobStatus>
+        {
+            new JobStatus { JobId = "job-1", JobName = "Job 1", State = JobExecutionState.Running },
+            new JobStatus { JobId = "job-2", JobName = "Job 2", State = JobExecutionState.Finished },
+            new JobStatus { JobId = "job-3", JobName = "Job 3", State = JobExecutionState.Running }
+        };
+
+        _mockDispatcher
+            .Setup(d => d.ListJobsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(jobs);
+
+        // Act
+        var result = await _controller.ListJobs("Running");
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        var okResult = result as OkObjectResult;
+        var response = okResult!.Value as JobListResponse;
+        response!.Jobs.Should().HaveCount(2);
+        response.Jobs.Should().OnlyContain(j => j.State == JobExecutionState.Running);
+    }
+
+    [Fact]
+    public async Task ListJobs_WithInvalidStateFilter_ReturnsAllJobs()
+    {
+        // Arrange
+        var jobs = new List<JobStatus>
+        {
+            new JobStatus { JobId = "job-1", JobName = "Job 1", State = JobExecutionState.Running },
+            new JobStatus { JobId = "job-2", JobName = "Job 2", State = JobExecutionState.Finished }
+        };
+
+        _mockDispatcher
+            .Setup(d => d.ListJobsAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(jobs);
+
+        // Act
+        var result = await _controller.ListJobs("InvalidState");
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        var okResult = result as OkObjectResult;
+        var response = okResult!.Value as JobListResponse;
+        response!.Jobs.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task SubmitJob_WithException_ReturnsInternalServerError()
+    {
+        // Arrange
+        var request = CreateValidSubmitJobRequest();
+
+        _mockDispatcher
+            .Setup(d => d.SubmitJobAsync(It.IsAny<JobGraph>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Unexpected error"));
+
+        // Act
+        var result = await _controller.SubmitJob(request);
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        var objectResult = result as ObjectResult;
+        objectResult!.StatusCode.Should().Be(500);
+    }
+
     private static SubmitJobRequest CreateValidSubmitJobRequest()
     {
         return new SubmitJobRequest

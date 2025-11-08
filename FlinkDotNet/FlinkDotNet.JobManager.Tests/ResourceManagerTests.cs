@@ -218,4 +218,73 @@ public class ResourceManagerTests
         var currentAvailable = _resourceManager.GetAvailableSlots().Count();
         currentAvailable.Should().Be(initialAvailable + 3);
     }
+
+    [Fact]
+    public async Task RegisterTaskManagerAsync_UpdatesExistingTaskManager()
+    {
+        // Arrange
+        var taskManagerId = "tm-1";
+        await _resourceManager.RegisterTaskManagerAsync(taskManagerId, 2);
+
+        // Act - Register again with different slot count
+        await _resourceManager.RegisterTaskManagerAsync(taskManagerId, 4);
+
+        // Assert
+        var taskManagers = _resourceManager.GetRegisteredTaskManagers();
+        taskManagers.Should().ContainSingle(taskManagerId);
+    }
+
+    [Fact]
+    public async Task AllocateSlotsAsync_WithMultipleTaskManagers_DistributesSlots()
+    {
+        // Arrange
+        await _resourceManager.RegisterTaskManagerAsync("tm-1", 2);
+        await _resourceManager.RegisterTaskManagerAsync("tm-2", 2);
+
+        // Act
+        var allocatedSlots = await _resourceManager.AllocateSlotsAsync("job-1", 3);
+
+        // Assert
+        allocatedSlots.Should().HaveCount(3);
+        allocatedSlots.Should().Contain(s => s.TaskManagerId == "tm-1");
+    }
+
+    [Fact]
+    public async Task GetAvailableSlots_AfterAllocation_ReturnsCorrectCount()
+    {
+        // Arrange
+        await _resourceManager.RegisterTaskManagerAsync("tm-1", 5);
+        await _resourceManager.AllocateSlotsAsync("job-1", 2);
+
+        // Act
+        var availableSlots = _resourceManager.GetAvailableSlots();
+
+        // Assert
+        availableSlots.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task RequestSlotsAsync_WithNoRegisteredTaskManagers_ReturnsEmptyList()
+    {
+        // Act
+        var slots = await _resourceManager.RequestSlotsAsync("job-1", 2);
+
+        // Assert
+        slots.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ReleaseSlotsAsync_WithEmptyList_DoesNotThrow()
+    {
+        // Arrange
+        await _resourceManager.RegisterTaskManagerAsync("tm-1", 2);
+        var emptySlotList = new List<TaskSlot>();
+
+        // Act
+        var act = async () => await _resourceManager.ReleaseSlotsAsync(emptySlotList);
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
 }
+
