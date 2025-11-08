@@ -26,7 +26,9 @@ namespace FlinkDotNet.JobManager.Tests.Workflows;
 /// Tests for FlinkJobWorkflow - Temporal workflow orchestration
 /// Phase 4: Temporal Integration - TDD Tests
 /// Optimized for fast execution (1ms delays instead of 5s)
+/// Marked as Integration tests due to Temporal WorkflowEnvironment initialization overhead (~15s per test)
 /// </summary>
+[Trait("Category", "Integration")]
 public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
 {
     [Fact]

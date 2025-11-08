@@ -27,6 +27,7 @@ namespace FlinkDotNet.JobManager.Tests.Integration;
 /// End-to-end integration tests for Phase 3 completion
 /// Tests JobManager-TaskManager coordination without Temporal
 /// </summary>
+[Trait("Category", "Integration")]
 public class Phase3IntegrationTests
 {
     private static IResourceManager CreateResourceManager()
