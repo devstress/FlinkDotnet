@@ -2,9 +2,6 @@ name: NativeFlinkDotnet Integration Tests
 
 on:
   push:
-    paths:
-      - 'NativeFlinkDotnetTesting/**'
-      - '.github/workflows/nativeflinkdotnet-integration-tests.yml'
   workflow_dispatch:
 
 env:
