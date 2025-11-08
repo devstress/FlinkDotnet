@@ -1,0 +1,119 @@
+name: NativeFlinkDotnetTesting Integration Tests
+
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  configuration: Release
+
+concurrency:
+  group: nativeflink-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nativeflink-integration-test:
+    name: Run NativeFlinkDotnetTesting Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # Optimized: Reduced from 30 minutes with parallel execution and shared infrastructure
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Maven
+        uses: stCarolas/setup-maven@v4
+        with:
+          maven-version: '3.9.6'
+
+      - name: Set up .NET 9.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install .NET Aspire workload
+        run: |
+          echo "📦 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
+
+      - name: Verify Docker environment
+        run: |
+          echo "=== Verifying Docker environment ==="
+          docker --version
+          docker compose version
+          docker info
+          docker ps -a
+          echo "Docker service status:"
+          sudo systemctl status docker --no-pager || true
+          echo "Starting Docker if not running..."
+          sudo systemctl start docker || true
+          sleep 5
+          docker ps
+          echo "=== Pulling required Docker images ==="
+          docker pull confluentinc/cp-kafka:latest || true
+          docker pull flink:2.1.0-java17 || true
+          echo "✅ Docker is ready"
+
+      - name: Configure system for Kafka performance
+        run: |
+          echo "=== Configuring system for optimal Kafka performance ==="
+          sudo sysctl -w vm.max_map_count=262144
+          sudo bash -c 'echo "* soft nofile 65536" >> /etc/security/limits.conf'
+          sudo bash -c 'echo "* hard nofile 65536" >> /etc/security/limits.conf'
+          echo "Current vm.max_map_count: $(sysctl vm.max_map_count)"
+          echo "Current ulimit -n: $(ulimit -n)"
+          echo "Available memory: $(free -h)"
+          echo "CPU info: $(nproc) cores"
+          cat /proc/cpuinfo | grep "model name" | head -1
+
+      - name: Build NativeFlinkDotnetTesting solution
+        run: |
+          echo "🔨 Building NativeFlinkDotnetTesting solution..."
+          dotnet restore NativeFlinkDotnetTesting/NativeFlinkDotnetTesting.sln
+          dotnet build NativeFlinkDotnetTesting/NativeFlinkDotnetTesting.sln --configuration ${{ env.configuration }} --no-restore
+
+      - name: Run NativeFlinkDotnetTesting Integration Tests
+        timeout-minutes: 20  # Increased timeout for CI environment
+        env:
+          DOTNET_ENVIRONMENT: Testing
+          KAFKA_BOOTSTRAP_SERVERS: "localhost:9092"
+          ASPIRE_ALLOW_UNSECURED_TRANSPORT: "true"
+          DOCKER_HOST: "unix:///var/run/docker.sock"
+          TESTCONTAINERS_RYUK_DISABLED: "false"
+          TESTCONTAINERS_HOST_OVERRIDE: "localhost"
+        run: |
+          echo "=== Starting NativeFlinkDotnetTesting Integration Tests ==="
+          dotnet test NativeFlinkDotnetTesting/NativeFlinkDotnet.IntegrationTests --no-build --configuration ${{ env.configuration }} --verbosity normal --logger "trx;LogFileName=TestResults.trx" --results-directory TestResults
+        working-directory: ./
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: NativeFlinkDotnetTestingResults
+          path: TestResults/
+        if: always()
+
+      - name: Show Docker containers (diagnostic)
+        if: always()
+        run: |
+          echo "=== Docker containers status ==="
+          docker ps -a
+          echo "=== Docker logs for Kafka ==="
+          docker logs $(docker ps -aq --filter "name=kafka") 2>&1 | tail -100 || echo "No Kafka container found"
+          echo "=== Docker logs for Flink JobManager ==="
+          docker logs $(docker ps -aq --filter "name=flink") 2>&1 | tail -100 || echo "No Flink container found"
+ 
+      - name: Cleanup
+        if: always()
+        run: |
+          docker system prune -f || true
+          docker volume prune -f || true
