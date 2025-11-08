@@ -21,9 +21,11 @@ This document provides an overview of stream processing features implemented in 
 **FlinkDotNet v1 Architecture** (LearningCourse, LocalTesting, ObservabilityTesting):
 - Supports Apache Flink as described in [root README.md](../README.md)
 - Uses Apache Flink 2.1 as the execution engine
+- **Flink SQL support** - full SQL query capabilities via Apache Flink
 - FlinkDotNet SDK compiles C# code to Intermediate Representation (IR)
 - IR Runner JAR translates and submits jobs to Apache Flink clusters
 - Integrates with Flink JobManager and TaskManager for execution
+- **Docker deployment**: JobGateway image (`devstress/flinkdotnet`) with Java runtime
 - Demonstrated in 15-day learning course and integration tests
 
 **FlinkDotNet v2 Architecture** (Native FlinkDotNet):
@@ -32,9 +34,11 @@ This document provides an overview of stream processing features implemented in 
 - **Embedded Temporal.IO workers** within JobManager and TaskManager processes
 - **Cassandra state backend** (default for v2) for Temporal persistence and state management
 - **RocksDB support** maintained for v1 feature compatibility
+- **Docker deployment**: Single Docker image (`devstress/flinkdotnet-native`) for both JobManager and TaskManager
 - Direct distributed stream processing without JVM
 - References Apache Flink concepts and patterns as architectural inspiration
 - Implements distributed, multi-tier message-oriented architecture natively
+- **No Flink SQL support** - SQL functionality requires v1 with Apache Flink
 
 ### Why the Evolution?
 
@@ -122,6 +126,79 @@ var nativeStream = env.CreateNativeDataStream<Event>("topic")
 - Detection based on configuration settings and runtime environment
 - Clear documentation indicates which features require v2
 - IntelliSense/IDE hints indicate v2-only APIs
+
+### Flink SQL Support
+
+**Flink SQL is NOT supported in FlinkDotNet v2**. Users requiring Flink SQL functionality must use FlinkDotNet v1 with Apache Flink.
+
+**Guidance for Flink SQL Users**:
+- **Flink SQL requires FlinkDotNet v1**: SQL query capabilities are only available when using Apache Flink (v1)
+- **Flink SQL with v2 throws exception**: Attempting to use Flink SQL features with `NativeDataStream` or FlinkDotNet v2 will throw `NotSupportedException`
+- **Exception message**: "Flink SQL is not supported in FlinkDotNet v2 (native .NET). Please use FlinkDotNet v1 with Apache Flink for SQL query functionality. See root README.md for v1 documentation."
+- **Recommendation**: For SQL-based stream processing, use FlinkDotNet v1 as documented in [root README.md](../README.md)
+
+**API Pattern**:
+```csharp
+// v1 only - Flink SQL support
+var tableEnv = env.CreateTableEnvironment();
+tableEnv.ExecuteSql("SELECT * FROM kafka_source WHERE value > 100");
+
+// v2 - Throws NotSupportedException for Flink SQL
+// Use programmatic DataStream API instead
+var stream = env.FromKafka<Event>("topic", bootstrapServers, groupId)
+    .Filter(e => e.Value > 100);
+```
+
+### Docker Image Strategy
+
+**FlinkDotNet v2 requires TWO separate Docker images** to support both v1 (Apache Flink/Java) and v2 (native .NET) architectures:
+
+#### 1. JobGateway Docker Image
+- **Repository**: `devstress/flinkdotnet` (existing repository)
+- **Purpose**: JobGateway with Java support for Apache Flink SQL and v1 compatibility
+- **Contents**:
+  - Java runtime (JRE/JDK) for Apache Flink
+  - Apache Flink SQL support
+  - FlinkDotNet v1 SDK components
+  - REST API gateway for job submission
+- **Use Case**: Applications requiring Flink SQL or Apache Flink features
+
+#### 2. JobManager and TaskManager Docker Image
+- **Repository**: `devstress/flinkdotnet-native` (new repository)
+- **Purpose**: Native .NET JobManager and TaskManager without Java (v2 implementation)
+- **Contents**:
+  - .NET 9 runtime only (no Java)
+  - Native FlinkDotNet JobManager
+  - Native FlinkDotNet TaskManager
+  - Embedded Temporal.IO workers
+  - Pure .NET distributed stream processing
+- **Architecture**: **Both JobManager and TaskManager in the SAME Docker image** (like Apache Flink)
+  - Container can run as JobManager or TaskManager based on configuration/entry point
+  - Simplified deployment with single image
+  - Consistent versioning between control plane and data plane
+
+**Deployment Patterns**:
+```yaml
+# FlinkDotNet v2 deployment (native .NET)
+services:
+  jobmanager:
+    image: devstress/flinkdotnet-native:latest
+    command: jobmanager
+    
+  taskmanager:
+    image: devstress/flinkdotnet-native:latest
+    command: taskmanager
+    
+# FlinkDotNet v1 deployment (Apache Flink + SQL)
+services:
+  jobgateway:
+    image: devstress/flinkdotnet:latest
+```
+
+**Implementation Timeline**:
+- Dockerfile creation for both images will be tracked in separate work items
+- Images will be published to Docker Hub under `devstress` organization
+- Documentation and deployment guides will be provided with each image
 
 ## Native Distributed Message-Oriented Architecture
 
