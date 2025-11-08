@@ -103,8 +103,8 @@ var stream = env.FromKafka<Event>("topic", bootstrapServers, groupId)
 
 // v2-only: Throws NotSupportedException if using v1 (Apache Flink)
 var nativeStream = env.CreateNativeDataStream<Event>("topic")
-    .WithNativeJobManager()
-    .WithNativeTaskManager()
+    .WithJobManager()
+    .WithTaskManager()
     .Process(new NativeStreamProcessor());
 ```
 
