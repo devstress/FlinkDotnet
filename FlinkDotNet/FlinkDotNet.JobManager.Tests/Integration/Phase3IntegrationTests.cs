@@ -27,6 +27,7 @@ namespace FlinkDotNet.JobManager.Tests.Integration;
 /// End-to-end integration tests for Phase 3 completion
 /// Tests JobManager-TaskManager coordination without Temporal
 /// </summary>
+[Trait("Category", "Integration")]
 public class Phase3IntegrationTests
 {
     private static IResourceManager CreateResourceManager()
@@ -46,6 +47,7 @@ public class Phase3IntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task EndToEnd_TaskManagerRegistration_TracksHeartbeats()
     {
         // Arrange: Create resource manager
@@ -68,6 +70,7 @@ public class Phase3IntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task EndToEnd_MultiTaskManager_DistributesSlots()
     {
         // Arrange: Create resource manager with multiple TaskManagers
@@ -103,6 +106,7 @@ public class Phase3IntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public void ResourceManager_SlotAllocation_RespectsAvailableSlots()
     {
         // Arrange: Create ResourceManager with limited slots
@@ -118,6 +122,7 @@ public class Phase3IntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task ResourceManager_RegisterMultiple_TracksAllTaskManagers()
     {
         // Arrange
@@ -139,6 +144,7 @@ public class Phase3IntegrationTests
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task ResourceManager_Unregister_RemovesTaskManager()
     {
         // Arrange

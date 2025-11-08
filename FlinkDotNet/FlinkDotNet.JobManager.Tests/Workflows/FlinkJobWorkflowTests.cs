@@ -26,10 +26,13 @@ namespace FlinkDotNet.JobManager.Tests.Workflows;
 /// Tests for FlinkJobWorkflow - Temporal workflow orchestration
 /// Phase 4: Temporal Integration - TDD Tests
 /// Optimized for fast execution (1ms delays instead of 5s)
+/// NOTE: These are integration tests due to Temporal environment initialization overhead
 /// </summary>
+[Trait("Category", "Integration")]
 public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
 {
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task ExecuteJobAsync_SimpleJobGraph_CompletesSuccessfully()
     {
         // Arrange: Create test environment and simple job
@@ -80,6 +83,7 @@ public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task ExecuteJobAsync_MultipleVertices_CreatesExecutionGraph()
     {
         // Arrange: Create job with multiple vertices
@@ -135,6 +139,7 @@ public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task CancelJobSignalAsync_RunningJob_CancelsAllTasks()
     {
         // Arrange: Start a long-running job
@@ -186,6 +191,7 @@ public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetJobState_Query_ReturnsCurrentState()
     {
         // Arrange: Start workflow
@@ -228,6 +234,7 @@ public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
     }
 
     [Fact(Skip = "Test implementation pending - requires activity integration")]
+    [Trait("Category", "Integration")]
     public async Task ExecuteJobAsync_WorkflowFailure_ReturnsFailedResult()
     {
         // NOTE: This test will be updated in implementation phase
@@ -236,6 +243,7 @@ public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
     }
 
     [Fact(Skip = "Test implementation pending - requires activity retry configuration")]
+    [Trait("Category", "Integration")]
     public async Task ExecuteJobAsync_TaskRetry_RecoversFromTransientFailure()
     {
         // NOTE: This test will be updated in implementation phase
@@ -244,6 +252,7 @@ public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
     }
 
     [Fact(Skip = "Test implementation pending - requires checkpoint implementation")]
+    [Trait("Category", "Integration")]
     public async Task ExecuteJobAsync_StateRecovery_ResumesFromCheckpoint()
     {
         // NOTE: This test will be updated in implementation phase
@@ -252,6 +261,7 @@ public class FlinkJobWorkflowTests : FlinkJobWorkflowTestBase
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetTaskStates_Query_ReturnsAllTaskStates()
     {
         // Arrange: Create workflow with multiple tasks
