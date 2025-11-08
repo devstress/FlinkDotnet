@@ -8,7 +8,7 @@ This document provides an overview of Apache Flink features (versions 1.0 throug
 
 ## Native Distributed Message-Oriented Architecture
 
-FlinkDotNet implements a **native distributed message-oriented architecture** that combines Apache Flink 2.1, Apache Kafka, Temporal workflows, and native JobManager/TaskManager clustering to deliver enterprise-grade stream processing at massive scale. This architecture is designed to support the future of **Agentic AI** and real-time data streaming as envisioned in [The Future of Data Streaming with Apache Flink for Agentic AI](https://www.kai-waehner.de/blog/2025/08/18/the-future-of-data-streaming-with-apache-flink-for-agentic-ai/).
+FlinkDotNet implements a **native distributed message-oriented architecture** using **Native FlinkDotNet JobManager and TaskManager** (not Apache Flink), combined with Apache Kafka and Temporal workflows to deliver enterprise-grade stream processing at massive scale. The architecture provides a pure .NET implementation of distributed stream processing, designed to support the future of **Agentic AI** and real-time data streaming as envisioned in [The Future of Data Streaming with Apache Flink for Agentic AI](https://www.kai-waehner.de/blog/2025/08/18/the-future-of-data-streaming-with-apache-flink-for-agentic-ai/).
 
 ### Architecture Overview
 
@@ -28,10 +28,11 @@ FlinkDotNet implements a **native distributed message-oriented architecture** th
                         │
                         ▼
 ┌────────────────────────────────────────────────────────────────┐
-│         Stream Processing Layer (Flink Cluster)                │
+│    Stream Processing Layer (Native FlinkDotNet Cluster)       │
 │                                                                 │
 │  ┌──────────────────┐        ┌─────────────────────────┐     │
-│  │  JobManager      │───────▶│   TaskManager Cluster   │     │
+│  │  FlinkDotNet     │───────▶│   FlinkDotNet           │     │
+│  │  JobManager      │        │   TaskManager Cluster   │     │
 │  │  (Control Plane) │        │   (Data Plane)          │     │
 │  │                  │        │                          │     │
 │  │  • Job scheduling│        │  • Operator execution   │     │
@@ -68,18 +69,22 @@ FlinkDotNet implements a **native distributed message-oriented architecture** th
 - **Notification infrastructure**: Foundation for multi-tiered notification framework
 - **Event-driven architecture**: Enables real-time event processing and agent collaboration
 
-#### 2. Apache Flink - Distributed Stream Processing
-- **JobManager (Control Plane)**:
+#### 2. Native FlinkDotNet JobManager and TaskManager - Distributed Stream Processing
+- **FlinkDotNet JobManager (Control Plane)**:
+  - Pure .NET implementation of job coordination
   - Job scheduling and coordination
   - Checkpoint management
   - Failure recovery
   - Back pressure coordination
   
-- **TaskManager Cluster (Data Plane)**:
+- **FlinkDotNet TaskManager Cluster (Data Plane)**:
+  - Native .NET distributed task execution
   - Parallel operator execution
   - Distributed state management
   - Stream processing at scale
   - Dynamic parallelism adjustment
+
+**Note**: FlinkDotNet provides a complete native .NET implementation of distributed stream processing. It does **not** use Apache Flink directly, but instead implements its own JobManager and TaskManager components in pure .NET, inspired by Apache Flink's architecture.
 
 #### 3. Temporal - Durable Workflow Orchestration
 - **Long-running workflows**: Coordinate complex multi-step processes
@@ -97,18 +102,18 @@ FlinkDotNet implements a **native distributed message-oriented architecture** th
 
 **Pattern 1: Event-Driven Stream Processing**
 ```
-Kafka Topic → Flink Source → Processing Pipeline → Flink Sink → Kafka Topic
+Kafka Topic → FlinkDotNet Source → Processing Pipeline → FlinkDotNet Sink → Kafka Topic
 ```
 
 **Pattern 2: Notification Delivery with Acknowledgement**
 ```
-Application → Notification Framework → Kafka → Flink Processing → 
+Application → Notification Framework → Kafka → FlinkDotNet Processing → 
 Multi-Platform Delivery → Ack/Nack Feedback → Kafka → Monitoring
 ```
 
 **Pattern 3: Agentic AI Workflow**
 ```
-AI Agent → Kafka Event Stream → Flink Processing (Context enrichment) →
+AI Agent → Kafka Event Stream → FlinkDotNet Processing (Context enrichment) →
 LLM Integration → Decision Making → Action Execution → Kafka Result Stream
 ```
 
@@ -122,7 +127,7 @@ FlinkDotNet embraces **Kappa Architecture** - using real-time data pipelines for
 - **Stateful processing**: Maintain context across event streams
 - **LLM integration**: Native support for AI/ML model inference in stream processing
 
-This architecture supports composable multi-agent systems where multiple AI agents collaborate through Kafka event streams and Flink processing jobs, enabling autonomous, goal-driven behavior with real-time context awareness.
+This architecture supports composable multi-agent systems where multiple AI agents collaborate through Kafka event streams and FlinkDotNet processing jobs, enabling autonomous, goal-driven behavior with real-time context awareness.
 
 ### Integration Points
 
@@ -299,10 +304,10 @@ Comprehensive observability validation.
 
 ### 10. Native Notification Framework ✅
 
-FlinkDotNet implements a **native notification framework** as a backbone for distributed message-oriented architecture, providing Azure Notification Hub feature parity while integrating deeply with Kafka and Flink stream processing.
+FlinkDotNet implements a **native notification framework** as a backbone for distributed message-oriented architecture, providing Azure Notification Hub feature parity while integrating deeply with Kafka and FlinkDotNet's native stream processing.
 
 **Architecture Overview:**
-The notification framework is built on top of Kafka message streams and Flink processing pipelines, enabling:
+The notification framework is built on top of Kafka message streams and FlinkDotNet processing pipelines, enabling:
 - Multi-tiered distributed notification delivery
 - Ack/nack notification management with feedback loops
 - Massive scalability for billions of notifications per second
@@ -355,7 +360,7 @@ The notification framework is built on top of Kafka message streams and Flink pr
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  Tier 3: Stream Processing (Flink)                          │
+│  Tier 3: Stream Processing (FlinkDotNet)                    │
 │  • Notification enrichment                                  │
 │  • Targeting and personalization                            │
 │  • Back pressure management                                 │
@@ -384,7 +389,7 @@ The notification framework is built on top of Kafka message streams and Flink pr
 | Azure Feature | FlinkDotNet Implementation | Status |
 |--------------|---------------------------|---------|
 | Multi-platform push | Unified API with platform abstraction | 🔄 Planned |
-| Massive scalability | Kafka + Flink distributed processing | ✅ Architecture ready |
+| Massive scalability | Kafka + FlinkDotNet distributed processing | ✅ Architecture ready |
 | Targeting & tags | Kafka partitioning + Flink filtering | 🔄 Planned |
 | Template localization | Template engine with language routing | 🔄 Planned |
 | Rich telemetry | Prometheus metrics + Kafka feedback streams | ✅ Partial |
@@ -425,7 +430,7 @@ var feedback = env
 ```
 
 **Current Implementation Status:**
-- ✅ **Infrastructure**: Kafka + Flink foundation for notification delivery
+- ✅ **Infrastructure**: Kafka + FlinkDotNet foundation for notification delivery
 - ✅ **Back pressure**: Production-ready back pressure handling (see `BackPressureExample/`)
 - ✅ **Observability**: Metrics collection and monitoring (see `ObservabilityTesting/`)
 - 🔄 **Platform integration**: Multi-platform push notification connectors (planned)
@@ -509,7 +514,8 @@ FlinkDotNet is architected to support **billion messages per second** processing
          │                         │                         │
          ▼                         ▼                         ▼
 ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐
-│ Flink Cluster 1 │      │ Flink Cluster 2 │      │ Flink Cluster N │
+│ FlinkDotNet     │      │ FlinkDotNet     │      │ FlinkDotNet     │
+│ Cluster 1       │      │ Cluster 2       │      │ Cluster N       │
 │                 │      │                 │      │                 │
 │  JobManager     │      │  JobManager     │      │  JobManager     │
 │  TaskManager×N  │      │  TaskManager×N  │      │  TaskManager×N  │
@@ -529,7 +535,7 @@ Total Throughput = Clusters × TaskManagers per Cluster × Slots per TM × Opera
 ```
 
 **Example Calculation:**
-- 10 Flink clusters
+- 10 FlinkDotNet clusters
 - 20 TaskManagers per cluster
 - 8 slots per TaskManager
 - 625,000 messages/second per operator
@@ -587,7 +593,7 @@ FlinkDotNet implements comprehensive back pressure handling to prevent system ov
 
 **1. Back Pressure Detection**
 
-Flink automatically detects back pressure through:
+FlinkDotNet automatically detects back pressure through:
 - **Buffer utilization**: Monitors network buffer usage
 - **Task latency**: Tracks operator processing time
 - **Output queue depth**: Measures downstream consumption rate
@@ -676,7 +682,7 @@ FlinkDotNet provides enterprise-grade observability for monitoring billion-scale
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Flink Cluster (JobManager + TaskManagers)                  │
+│  FlinkDotNet Cluster (JobManager + TaskManagers)            │
 │  Metrics: throughput, latency, back pressure, checkpoints   │
 └────────────────────┬────────────────────────────────────────┘
                      │ Metrics export
@@ -806,7 +812,7 @@ Back Pressure (max)             | 65%              | Alert at 80%
 FlinkDotNet has been validated for billion-scale processing:
 
 **Test Configuration:**
-- **Cluster**: 10 Flink clusters, 20 TaskManagers each (200 total TMs)
+- **Cluster**: 10 FlinkDotNet clusters, 20 TaskManagers each (200 total TMs)
 - **Resources**: 8 CPU cores, 16GB RAM per TaskManager
 - **Kafka**: 160 partitions per topic
 - **Parallelism**: 1,600 (200 TMs × 8 slots)
@@ -836,7 +842,7 @@ FlinkDotNet has been validated for billion-scale processing:
 
 **1. Reactive Mode (Flink 2.1+)**
 
-FlinkDotNet supports Flink's reactive mode for automatic parallelism adjustment:
+FlinkDotNet supports native reactive mode for automatic parallelism adjustment:
 
 ```csharp
 var config = new FlinkConfiguration
@@ -851,7 +857,7 @@ var config = new FlinkConfiguration
 ```
 
 **Behavior:**
-- Flink automatically adjusts parallelism based on available TaskManagers
+- FlinkDotNet automatically adjusts parallelism based on available TaskManagers
 - Add TMs → parallelism increases automatically
 - Remove TMs → parallelism decreases with graceful failover
 

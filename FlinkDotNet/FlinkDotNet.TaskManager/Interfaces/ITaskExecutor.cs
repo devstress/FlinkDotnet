@@ -29,21 +29,21 @@ public interface ITaskExecutor
     /// </summary>
     /// <param name="descriptor">Task deployment descriptor</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task DeployTaskAsync(TaskDeploymentDescriptor descriptor, CancellationToken cancellationToken = default);
+    public Task DeployTaskAsync(TaskDeploymentDescriptor descriptor, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Cancel a running task
     /// </summary>
     /// <param name="executionVertexId">Execution vertex identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task CancelTaskAsync(string executionVertexId, CancellationToken cancellationToken = default);
+    public Task CancelTaskAsync(string executionVertexId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get current task execution status
     /// </summary>
     /// <param name="executionVertexId">Execution vertex identifier</param>
     /// <returns>Task status information</returns>
-    Task<TaskExecutionStatus> GetTaskStatusAsync(string executionVertexId);
+    public Task<TaskExecutionStatus> GetTaskStatusAsync(string executionVertexId);
 }
 
 /// <summary>

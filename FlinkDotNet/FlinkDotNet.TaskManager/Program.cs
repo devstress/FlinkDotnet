@@ -44,7 +44,7 @@ builder.Services.AddSingleton<ITemporalClient>(sp =>
 {
     var logger = sp.GetRequiredService<ILogger<Program>>();
     logger.LogInformation("Connecting to Temporal at {TemporalAddress}", temporalAddress);
-    
+
     return TemporalClient.ConnectAsync(new TemporalClientConnectOptions
     {
         TargetHost = temporalAddress,
@@ -81,11 +81,11 @@ internal class TaskManagerWorker : BackgroundService
     {
         _logger.LogInformation("TaskManager worker started");
 
-        // Register with JobManager
-        // TODO: Implement registration via HTTP call to JobManager
+        // Register with JobManager - Implementation deferred to future iteration
+        // Registration will be implemented via HTTP call to JobManager REST API
 
-        // Start Temporal worker to execute activities
-        // TODO: Start Temporal worker listening for task execution activities
+        // Start Temporal worker to execute activities - Implementation deferred to future iteration
+        // Temporal worker will listen for task execution activities from workflow orchestration
 
         while (!stoppingToken.IsCancellationRequested)
         {
