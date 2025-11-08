@@ -346,4 +346,37 @@ public class JobMasterTests
         // Assert
         await act.Should().NotThrowAsync();
     }
+
+    [Fact]
+    public void Constructor_WithAllParameters_CreatesInstance()
+    {
+        // Act
+        var jobMaster = new JobMaster(
+            _jobId,
+            _jobGraph,
+            _mockResourceManager.Object,
+            _mockTemporalClient.Object,
+            _mockLogger.Object);
+
+        // Assert
+        jobMaster.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task CancelJobAsync_BeforeStart_DoesNotThrow()
+    {
+        // Arrange
+        var jobMaster = new JobMaster(
+            _jobId,
+            _jobGraph,
+            _mockResourceManager.Object,
+            _mockTemporalClient.Object,
+            _mockLogger.Object);
+
+        // Act
+        var act = async () => await jobMaster.CancelJobAsync();
+
+        // Assert
+        await act.Should().NotThrowAsync();
+    }
 }
