@@ -107,8 +107,8 @@ public class JobsController : ControllerBase
             StartedAt = jobStatus.StartTime,
             FinishedAt = jobStatus.EndTime,
             Duration = jobStatus.Duration,
-            ErrorMessage = null, // TODO: Add to JobStatus model
-            TotalTasks = 0, // TODO: Get from ExecutionGraph
+            ErrorMessage = null, // Error message will be added to JobStatus model in future iteration
+            TotalTasks = 0, // Task count retrieval from ExecutionGraph deferred to future iteration
             RunningTasks = 0,
             CompletedTasks = 0,
             FailedTasks = 0
@@ -204,7 +204,7 @@ public class JobsController : ControllerBase
                 OperatorName = vertexRequest.OperatorName,
                 Type = operatorType,
                 Parallelism = vertexRequest.Parallelism,
-                OperatorLogic = vertexRequest.OperatorLogic
+                OperatorLogic = vertexRequest.OperatorLogic ?? string.Empty
             };
 
             jobGraph.Vertices.Add(vertex);

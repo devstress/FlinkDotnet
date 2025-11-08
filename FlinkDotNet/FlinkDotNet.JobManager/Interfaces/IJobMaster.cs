@@ -27,25 +27,25 @@ public interface IJobMaster
     /// <summary>
     /// Job identifier managed by this JobMaster
     /// </summary>
-    string JobId { get; }
+    public string JobId { get; }
 
     /// <summary>
     /// Start job execution
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task StartJobAsync(CancellationToken cancellationToken = default);
+    public Task StartJobAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Cancel the job
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task CancelJobAsync(CancellationToken cancellationToken = default);
+    public Task CancelJobAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get current execution graph state
     /// </summary>
     /// <returns>Execution graph representing physical execution plan</returns>
-    Task<ExecutionGraph> GetExecutionGraphAsync();
+    public Task<ExecutionGraph> GetExecutionGraphAsync();
 
     /// <summary>
     /// Handle task status update from TaskManager
@@ -54,12 +54,12 @@ public interface IJobMaster
     /// <param name="state">New execution state</param>
     /// <param name="error">Error message if failed</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task UpdateTaskStatusAsync(string executionVertexId, ExecutionState state, string? error = null, CancellationToken cancellationToken = default);
+    public Task UpdateTaskStatusAsync(string executionVertexId, ExecutionState state, string? error = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Trigger checkpoint for fault tolerance
     /// </summary>
     /// <param name="checkpointId">Checkpoint identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task TriggerCheckpointAsync(long checkpointId, CancellationToken cancellationToken = default);
+    public Task TriggerCheckpointAsync(long checkpointId, CancellationToken cancellationToken = default);
 }

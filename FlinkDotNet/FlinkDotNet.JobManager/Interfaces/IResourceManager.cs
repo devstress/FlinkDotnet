@@ -30,14 +30,14 @@ public interface IResourceManager
     /// <param name="taskManagerId">Unique TaskManager identifier</param>
     /// <param name="numberOfSlots">Number of task slots available</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task RegisterTaskManagerAsync(string taskManagerId, int numberOfSlots, CancellationToken cancellationToken = default);
+    public Task RegisterTaskManagerAsync(string taskManagerId, int numberOfSlots, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Unregister a TaskManager (on shutdown or failure)
     /// </summary>
     /// <param name="taskManagerId">TaskManager identifier</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task UnregisterTaskManagerAsync(string taskManagerId, CancellationToken cancellationToken = default);
+    public Task UnregisterTaskManagerAsync(string taskManagerId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Request task slots for job execution
@@ -46,32 +46,32 @@ public interface IResourceManager
     /// <param name="numberOfSlots">Number of slots requested</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of allocated task slots</returns>
-    Task<List<TaskSlot>> RequestSlotsAsync(string jobId, int numberOfSlots, CancellationToken cancellationToken = default);
+    public Task<List<TaskSlot>> RequestSlotsAsync(string jobId, int numberOfSlots, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Release task slots after job completion or failure
     /// </summary>
     /// <param name="slots">Slots to release</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task ReleaseSlotsAsync(List<TaskSlot> slots, CancellationToken cancellationToken = default);
+    public Task ReleaseSlotsAsync(List<TaskSlot> slots, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get current resource availability
     /// </summary>
     /// <returns>Number of available slots across all TaskManagers</returns>
-    Task<int> GetAvailableSlotsAsync();
+    public Task<int> GetAvailableSlotsAsync();
 
     /// <summary>
     /// Get all available slots (synchronous)
     /// </summary>
     /// <returns>Collection of available task slots</returns>
-    IEnumerable<TaskSlot> GetAvailableSlots();
+    public IEnumerable<TaskSlot> GetAvailableSlots();
 
     /// <summary>
     /// Get all task slots across all TaskManagers (synchronous)
     /// </summary>
     /// <returns>Collection of all task slots</returns>
-    IEnumerable<TaskSlot> GetAllSlots();
+    public IEnumerable<TaskSlot> GetAllSlots();
 
     /// <summary>
     /// Get registered TaskManagers
