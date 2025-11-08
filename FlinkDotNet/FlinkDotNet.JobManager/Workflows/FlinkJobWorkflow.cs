@@ -14,6 +14,7 @@
 //  See the License for the specific language governing permissions and
 // limitations under the License.
 
+using FlinkDotNet.JobManager.Activities;
 using FlinkDotNet.JobManager.Models;
 using Temporalio.Workflows;
 
@@ -140,50 +141,99 @@ public class FlinkJobWorkflow
 
     private async Task<List<TaskSlot>> RequestResourcesAsync(string jobId, ExecutionGraph executionGraph)
     {
-        _ = jobId; // Parameter reserved for future use - will be used for resource management tracking
-        // This would call ResourceManager activity
-        // For now, simulate slot allocation
-        List<TaskSlot> slots = new();
-        for (int i = 0; i < executionGraph.ExecutionVertices.Count; i++)
-        {
-            slots.Add(new TaskSlot
+        // Call ResourceManager activity to allocate slots
+        List<TaskSlot> slots = await Workflow.ExecuteActivityAsync(
+            (TaskExecutionActivity act) => act.RequestTaskSlotsAsync(jobId, executionGraph.ExecutionVertices.Count),
+            new ActivityOptions
             {
-                TaskManagerId = $"tm-{i % 4}", // Distribute across 4 TaskManagers
-                SlotNumber = i / 4,
-                IsAllocated = true
+                StartToCloseTimeout = TimeSpan.FromMinutes(2),
+                RetryPolicy = new()
+                {
+                    InitialInterval = TimeSpan.FromSeconds(1),
+                    MaximumInterval = TimeSpan.FromSeconds(30),
+                    BackoffCoefficient = 2.0f,
+                    MaximumAttempts = 3
+                }
             });
-        }
-        return await Task.FromResult(slots);
+
+        return slots;
     }
 
-    private Task DeployTasksAsync(ExecutionGraph executionGraph, List<TaskSlot> allocatedSlots)
+    private async Task DeployTasksAsync(ExecutionGraph executionGraph, List<TaskSlot> allocatedSlots)
     {
-        // Deploy each execution vertex to its assigned slot
+        // Deploy each execution vertex to its assigned slot via activity
         for (int i = 0; i < executionGraph.ExecutionVertices.Count; i++)
         {
             ExecutionVertex vertex = executionGraph.ExecutionVertices[i];
             vertex.AssignedSlot = allocatedSlots[i];
             vertex.State = ExecutionState.Scheduled;
-            _taskStates[vertex.ExecutionVertexId] = ExecutionState.Scheduled;
-            _deployedTasks.Add(vertex.ExecutionVertexId);
+            this._taskStates[vertex.ExecutionVertexId] = ExecutionState.Scheduled;
+            this._deployedTasks.Add(vertex.ExecutionVertexId);
+
+            // Create task deployment descriptor
+            FlinkDotNet.TaskManager.Models.TaskDeploymentDescriptor descriptor = new()
+            {
+                ExecutionVertexId = vertex.ExecutionVertexId,
+                JobId = executionGraph.JobId,
+                JobVertexId = vertex.JobVertexId,
+                SubtaskIndex = vertex.SubtaskIndex,
+                Parallelism = vertex.Parallelism,
+                OperatorName = vertex.OperatorName
+            };
+
+            // Deploy task via activity (async, don't wait for completion here)
+            _ = Workflow.ExecuteActivityAsync(
+                (TaskExecutionActivity act) => act.ExecuteTaskAsync(descriptor),
+                new ActivityOptions
+                {
+                    StartToCloseTimeout = TimeSpan.FromMinutes(30),
+                    HeartbeatTimeout = TimeSpan.FromSeconds(30),
+                    RetryPolicy = new()
+                    {
+                        InitialInterval = TimeSpan.FromSeconds(2),
+                        MaximumInterval = TimeSpan.FromMinutes(1),
+                        BackoffCoefficient = 2.0f,
+                        MaximumAttempts = 5
+                    }
+                });
         }
-        return Task.CompletedTask;
+
+        await Task.CompletedTask;
     }
 
     private async Task MonitorTaskExecutionAsync(string jobId)
     {
-        _ = jobId; // Parameter reserved for future use - will be used for monitoring and logging
-                   // Monitor task execution and handle failures
-                   // This would poll task status or receive updates
-                   // Implement fault tolerance and recovery here
-
-        // Simulate task execution
-        foreach (string taskId in _deployedTasks)
+        _ = jobId; // Parameter used for context
+        
+        // Monitor task execution - update states as tasks progress
+        // In a real implementation, this would receive status updates from activities
+        // For now, simulate monitoring by waiting for tasks to reach expected state
+        
+        foreach (string taskId in this._deployedTasks)
         {
-            _taskStates[taskId] = ExecutionState.Running;
-            await Workflow.DelayAsync(TimeSpan.FromMilliseconds(100)); // Simulate work
-            _taskStates[taskId] = ExecutionState.Finished;
+            this._taskStates[taskId] = ExecutionState.Running;
         }
+
+        // Wait for all tasks to complete or fail
+        // In production, this would be event-driven based on activity completion
+        await Workflow.DelayAsync(TimeSpan.FromSeconds(5));
+
+        // Update task states based on job state
+        foreach (string taskId in this._deployedTasks)
+        {
+            if (this._currentState == JobExecutionState.Canceling ||
+                this._currentState == JobExecutionState.Canceled)
+            {
+                this._taskStates[taskId] = ExecutionState.Canceled;
+            }
+            else
+            {
+                // Assume tasks complete successfully if not canceled
+                this._taskStates[taskId] = ExecutionState.Finished;
+            }
+        }
+
+        await Task.CompletedTask;
     }
 }
 

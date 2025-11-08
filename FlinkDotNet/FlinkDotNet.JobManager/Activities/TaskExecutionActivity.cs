@@ -14,7 +14,7 @@
 //  See the License for the specific language governing permissions and
 // limitations under the License.
 
-using FlinkDotNet.TaskManager.Models;
+using FlinkDotNet.JobManager.Models;
 using Temporalio.Activities;
 
 namespace FlinkDotNet.JobManager.Activities;
@@ -42,7 +42,7 @@ public class TaskExecutionActivity
     /// <param name="descriptor">Task deployment descriptor</param>
     /// <returns>Task execution result</returns>
     [Activity]
-    public async Task<TaskExecutionResult> ExecuteTaskAsync(TaskDeploymentDescriptor descriptor)
+    public async Task<TaskExecutionResult> ExecuteTaskAsync(FlinkDotNet.TaskManager.Models.TaskDeploymentDescriptor descriptor)
     {
         this._logger.LogInformation(
             "Executing task {ExecutionVertexId} on TaskManager (subtask {SubtaskIndex}/{Parallelism})",
@@ -102,24 +102,32 @@ public class TaskExecutionActivity
     }
 
     /// <summary>
-    /// Request task slots from a TaskManager
+    /// Request task slots from ResourceManager
     /// </summary>
-    /// <param name="taskManagerId">TaskManager identifier</param>
+    /// <param name="jobId">Job identifier</param>
     /// <param name="numberOfSlots">Number of slots to request</param>
-    /// <returns>List of allocated slots</returns>
+    /// <returns>List of allocated task slots</returns>
     [Activity]
-    public async Task<List<string>> RequestTaskSlotsAsync(string taskManagerId, int numberOfSlots)
+    public async Task<List<TaskSlot>> RequestTaskSlotsAsync(string jobId, int numberOfSlots)
     {
         this._logger.LogInformation(
-            "Requesting {NumberOfSlots} slots from TaskManager {TaskManagerId}",
+            "Requesting {NumberOfSlots} slots for job {JobId}",
             numberOfSlots,
-            taskManagerId);
+            jobId);
 
-        // Simulate slot allocation
-        List<string> allocatedSlots = new();
+        // In real implementation, this would call ResourceManager via HTTP
+        // For now, simulate slot allocation across TaskManagers
+        List<TaskSlot> allocatedSlots = new();
         for (int i = 0; i < numberOfSlots; i++)
         {
-            allocatedSlots.Add($"{taskManagerId}-slot-{i}");
+            allocatedSlots.Add(new TaskSlot
+            {
+                TaskManagerId = $"tm-{i % 4}", // Distribute across 4 TaskManagers
+                SlotNumber = i / 4,
+                IsAllocated = true,
+                SlotId = $"slot-{i}",
+                AllocatedJobId = jobId
+            });
         }
 
         await Task.CompletedTask;
