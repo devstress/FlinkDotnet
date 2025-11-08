@@ -55,7 +55,9 @@ internal class Program
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
         // Configure HttpClient for JobManager communication
+#pragma warning disable S5332 // Using HTTP is acceptable for local development and internal communication
         string jobManagerUrl = $"http://{jobManagerHost}:{jobManagerPort}";
+#pragma warning restore S5332
         builder.Services.AddHttpClient("JobManager", client =>
         {
             client.BaseAddress = new Uri(jobManagerUrl);
@@ -267,4 +269,3 @@ internal class TaskManagerWorker : BackgroundService
         }
     }
 }
-

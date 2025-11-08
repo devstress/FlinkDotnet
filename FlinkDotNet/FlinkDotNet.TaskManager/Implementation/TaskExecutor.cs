@@ -171,7 +171,7 @@ public class TaskExecutor : ITaskExecutor
     /// <summary>
     /// Execute operator pipeline (placeholder for full implementation)
     /// </summary>
-    private async Task ExecuteOperatorPipelineAsync(
+    private static async Task ExecuteOperatorPipelineAsync(
         TaskExecution taskExecution,
         Channel<StreamRecord<object>> inputChannel,
         Channel<StreamRecord<object>> outputChannel,

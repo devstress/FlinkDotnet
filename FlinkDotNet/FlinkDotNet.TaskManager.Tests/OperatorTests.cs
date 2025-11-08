@@ -54,7 +54,7 @@ public class OperatorTests
     }
 
     [Fact]
-    public async Task MapOperator_WithNullFunction_ThrowsArgumentNullException()
+    public void MapOperator_WithNullFunction_ThrowsArgumentNullException()
     {
         // Arrange & Act
         Action act = () => new MapOperator<int, string>(null!);
@@ -84,7 +84,7 @@ public class OperatorTests
     }
 
     [Fact]
-    public async Task FilterOperator_WithNullPredicate_ThrowsArgumentNullException()
+    public void FilterOperator_WithNullPredicate_ThrowsArgumentNullException()
     {
         // Arrange & Act
         Action act = () => new FilterOperator<int>(null!);
@@ -112,7 +112,7 @@ public class OperatorTests
     }
 
     [Fact]
-    public async Task CollectionSourceOperator_WithNullCollection_ThrowsArgumentNullException()
+    public void CollectionSourceOperator_WithNullCollection_ThrowsArgumentNullException()
     {
         // Arrange & Act
         Action act = () => new CollectionSourceOperator<int>(null!);
@@ -142,7 +142,7 @@ public class OperatorTests
     }
 
     [Fact]
-    public async Task CollectionSinkOperator_WithNullList_ThrowsArgumentNullException()
+    public void CollectionSinkOperator_WithNullList_ThrowsArgumentNullException()
     {
         // Arrange & Act
         Action act = () => new CollectionSinkOperator<int>(null!);
@@ -152,7 +152,7 @@ public class OperatorTests
     }
 
     [Fact]
-    public async Task CollectionSinkOperator_GetResults_ReturnsReadOnlyList()
+    public void CollectionSinkOperator_GetResults_ReturnsReadOnlyList()
     {
         // Arrange
         List<int> results = new();
