@@ -2,17 +2,24 @@
 
 This document provides an overview of stream processing features implemented in FlinkDotNet, inspired by Apache Flink architecture (versions 1.0 through 2.1.0) but implemented as a native .NET solution.
 
+> **Note**: FlinkDotNet v1 supports Apache Flink as explained in the [root README.md](../README.md). We are implementing **native FlinkDotNet (aka FlinkDotNet v2)** for distributed message-oriented/stream processing architecture. The root README.md will be updated about FlinkDotNet v2 when all TODO items are completed.
+
 ## 🎉 Implementation Complete
 
 **FlinkDotNet has achieved comprehensive coverage of stream processing features** inspired by Apache Flink versions 1.0 to 2.1.0, implemented as a native .NET distributed stream processing engine.
 
+**Important**: This TODO document tracks the implementation of **FlinkDotNet v2** (native .NET stream processing). FlinkDotNet v1, which supports Apache Flink as described in the [root README.md](../README.md), continues to be available in `LearningCourse/`, `LocalTesting/`, and `ObservabilityTesting/` folders.
+
 ## FlinkDotNet v2: Native .NET Stream Processing Architecture
+
+**FlinkDotNet v1 vs v2**: FlinkDotNet v1 supports Apache Flink (as documented in [root README.md](../README.md)). This TODO tracks **FlinkDotNet v2**, which is a native .NET implementation for distributed message-oriented/stream processing architecture.
 
 **FlinkDotNet v2 represents a fundamental architectural evolution**: While FlinkDotNet v1 (covered in `LearningCourse/`, `LocalTesting/`, and `ObservabilityTesting/`) demonstrates integration patterns with Apache Flink through the FlinkDotNet SDK and IR (Intermediate Representation) runner, **FlinkDotNet v2 implements a complete native .NET distributed stream processing engine** that does not depend on or use Apache Flink at runtime.
 
 ### Architectural Evolution
 
 **FlinkDotNet v1 Architecture** (LearningCourse, LocalTesting, ObservabilityTesting):
+- Supports Apache Flink as described in [root README.md](../README.md)
 - Uses Apache Flink 2.1 as the execution engine
 - FlinkDotNet SDK compiles C# code to Intermediate Representation (IR)
 - IR Runner JAR translates and submits jobs to Apache Flink clusters
@@ -64,7 +71,9 @@ Projects targeting FlinkDotNet v2 benefit from:
 
 ## Native Distributed Message-Oriented Architecture
 
-FlinkDotNet implements a **native distributed message-oriented architecture** using **Native FlinkDotNet JobManager and TaskManager** (not Apache Flink), combined with Apache Kafka and Temporal workflows to deliver enterprise-grade stream processing at massive scale. The architecture provides a pure .NET implementation of distributed stream processing, designed to support the future of **Agentic AI** and real-time data streaming as envisioned in [The Future of Data Streaming with Apache Flink for Agentic AI](https://www.kai-waehner.de/blog/2025/08/18/the-future-of-data-streaming-with-apache-flink-for-agentic-ai/).
+> **FlinkDotNet v2 Implementation**: This section describes the native .NET stream processing architecture for FlinkDotNet v2. For FlinkDotNet v1 with Apache Flink support, see [root README.md](../README.md) and the `LearningCourse/`, `LocalTesting/`, `ObservabilityTesting/` folders.
+
+FlinkDotNet v2 implements a **native distributed message-oriented architecture** using **Native FlinkDotNet JobManager and TaskManager** (not Apache Flink), combined with Apache Kafka and Temporal workflows to deliver enterprise-grade stream processing at massive scale. The architecture provides a pure .NET implementation of distributed stream processing, designed to support the future of **Agentic AI** and real-time data streaming as envisioned in [The Future of Data Streaming with Apache Flink for Agentic AI](https://www.kai-waehner.de/blog/2025/08/18/the-future-of-data-streaming-with-apache-flink-for-agentic-ai/).
 
 ### Architecture Overview
 
@@ -196,6 +205,8 @@ This architecture supports composable multi-agent systems where multiple AI agen
 For detailed architecture documentation, see [Architecture & Use Cases](../docs/architecture-and-usecases.md).
 
 ## Implemented Features by Category
+
+> **Note**: The features listed below are implemented for **FlinkDotNet v2** (native .NET). FlinkDotNet v1 with Apache Flink support is documented in [root README.md](../README.md).
 
 ### 1. AI/ML Integration (Inspired by Flink 2.1) ✅
 
