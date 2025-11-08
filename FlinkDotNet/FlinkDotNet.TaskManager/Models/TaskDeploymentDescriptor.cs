@@ -54,12 +54,12 @@ public class TaskDeploymentDescriptor
     /// <summary>
     /// Input channels for receiving data
     /// </summary>
-    public List<InputChannel> InputChannels { get; set; } = new();
+    public List<InputChannel> InputChannels { get; init; } = new();
 
     /// <summary>
     /// Output channels for sending data
     /// </summary>
-    public List<OutputChannel> OutputChannels { get; set; } = new();
+    public List<OutputChannel> OutputChannels { get; init; } = new();
 }
 
 /// <summary>
