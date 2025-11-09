@@ -100,28 +100,36 @@ public class ResourceManager : IResourceManager
         List<TaskSlot> allocatedSlots = new();
         int remainingSlots = numberOfSlots;
 
-        // Allocate slots from available TaskManagers
-        foreach (KeyValuePair<string, TaskManagerInfo> tm in this._taskManagers)
+        // Round-robin slot allocation across TaskManagers for even distribution
+        List<TaskManagerInfo> availableManagers = this._taskManagers.Values
+            .Where(tm => tm.AvailableSlots > 0)
+            .ToList();
+
+        int currentManagerIndex = 0;
+
+        while (remainingSlots > 0 && availableManagers.Any(tm => tm.AvailableSlots > 0))
         {
-            if (remainingSlots == 0)
-                break;
-
-            TaskManagerInfo info = tm.Value;
-            int slotsToAllocate = Math.Min(remainingSlots, info.AvailableSlots);
-
-            for (int i = 0; i < slotsToAllocate; i++)
+            // Find next TaskManager with available slots (round-robin)
+            for (int attempts = 0; attempts < availableManagers.Count; attempts++)
             {
-                TaskSlot slot = new()
-                {
-                    TaskManagerId = info.TaskManagerId,
-                    SlotNumber = info.TotalSlots - info.AvailableSlots + i,
-                    IsAllocated = true
-                };
-                allocatedSlots.Add(slot);
-            }
+                TaskManagerInfo info = availableManagers[currentManagerIndex];
+                currentManagerIndex = (currentManagerIndex + 1) % availableManagers.Count;
 
-            info.AvailableSlots -= slotsToAllocate;
-            remainingSlots -= slotsToAllocate;
+                if (info.AvailableSlots > 0)
+                {
+                    // Allocate one slot from this TaskManager
+                    TaskSlot slot = new()
+                    {
+                        TaskManagerId = info.TaskManagerId,
+                        SlotNumber = info.TotalSlots - info.AvailableSlots,
+                        IsAllocated = true
+                    };
+                    allocatedSlots.Add(slot);
+                    info.AvailableSlots--;
+                    remainingSlots--;
+                    break;
+                }
+            }
         }
 
         if (remainingSlots > 0)
