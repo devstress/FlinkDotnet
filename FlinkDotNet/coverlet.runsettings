@@ -7,8 +7,8 @@
           <Format>cobertura,opencover</Format>
           <!-- Include only FlinkDotNet assemblies -->
           <Include>[FlinkDotNet.*]*,[Flink.JobBuilder]*</Include>
-          <!-- Exclude test assemblies, Program, and Startup classes -->
-          <Exclude>[*.Tests]*,[*]*.Program,[*]*.Startup</Exclude>
+          <!-- Exclude test assemblies, Program, Startup classes, and Temporal code -->
+          <Exclude>[*.Tests]*,[*]*.Program,[*]*.Startup,[FlinkDotNet.JobManager]*Temporal*,[FlinkDotNet.JobManager]*.Activities.*,[FlinkDotNet.JobManager]*.Workflows.*,[FlinkDotNet.JobManager]*.Services.TemporalWorkerService</Exclude>
           <ExcludeByAttribute>Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverage</ExcludeByAttribute>
           <IncludeTestAssembly>false</IncludeTestAssembly>
         </Configuration>
