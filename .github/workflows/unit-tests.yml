@@ -207,3 +207,12 @@ jobs:
             FlinkDotNet/TestResults/**/*.trx
           retention-days: 7
 
+      - name: Publish test results report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: FlinkDotNet Aggregated Test & Coverage Report
+          path: 'FlinkDotNet/TestResults/**/*.trx'
+          reporter: 'dotnet-trx'
+          fail-on-error: false
+
