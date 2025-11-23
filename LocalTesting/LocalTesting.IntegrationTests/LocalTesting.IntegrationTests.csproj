@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
@@ -13,8 +13,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.Testing" Version="9.5.1" />
-    <PackageReference Include="Aspire.Hosting.Kafka" Version="9.5.1" />
+    <PackageReference Include="Aspire.Hosting.Testing" Version="13.0.0" />
+    <PackageReference Include="Aspire.Hosting.Kafka" Version="13.0.0" />
     <PackageReference Include="Confluent.Kafka" Version="2.11.1" />
     <PackageReference Include="coverlet.collector" Version="6.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -157,7 +157,7 @@
   <!-- MSBuild Target: Copy Flink IR Runner JARs to test output directory -->
   <Target Name="CopyFlinkRunnerJarsToTestOutput" AfterTargets="Build">
     <PropertyGroup>
-      <_GatewayOutputDir>..\..\FlinkDotNet\FlinkDotNet.JobGateway\bin\$(Configuration)\net9.0</_GatewayOutputDir>
+      <_GatewayOutputDir>..\..\FlinkDotNet\FlinkDotNet.JobGateway\bin\$(Configuration)\net10.0</_GatewayOutputDir>
       <_TestOutDir>$([MSBuild]::EnsureTrailingSlash('$(OutDir)'))</_TestOutDir>
     </PropertyGroup>
 
