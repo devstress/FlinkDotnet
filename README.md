@@ -23,7 +23,7 @@ This repo also provides a comprehensive distributed messaging architecture that 
 [![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=devstress_flinkdotnet&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=devstress_flinkdotnet)
 
 <!-- Technology Stack -->
-[![.NET 9.0](https://img.shields.io/badge/.NET-9.0-blue)](https://dotnet.microsoft.com/download/dotnet/9.0)
+[![.NET 10.0](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/download/dotnet/10.0)
 [![Apache Flink 2.1](https://img.shields.io/badge/Flink-2.1-orange)](https://flink.apache.org/)
 [![Apache Kafka](https://img.shields.io/badge/Kafka-3.x-black)](https://kafka.apache.org/)
 [![Temporal](https://img.shields.io/badge/Temporal-latest-purple)](https://temporal.io/)
@@ -136,7 +136,7 @@ Together, these components form a production-grade streaming architecture capabl
 ### Try It Out
 
 ```bash
-# Prerequisites: .NET 9.0 SDK, Docker Desktop (or Podman)
+# Prerequisites: .NET 10.0 SDK, Docker Desktop (or Podman)
 
 # 1. Clone and run LocalTesting
 git clone https://github.com/devstress/FlinkDotnet.git
@@ -210,7 +210,7 @@ Download from [GitHub Releases](https://github.com/devstress/FlinkDotnet/release
 
 ## Requirements
 
-- **.NET 9.0 SDK** - For development
+- **.NET 10.0 SDK** - For development
 - **Docker Desktop or Podman** - For local testing with Aspire
 - **Apache Flink 2.1 cluster** - For production deployments
 
