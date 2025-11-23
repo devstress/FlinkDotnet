@@ -1,16 +1,16 @@
 # # GitHub Copilot Guidelines
 
-## .NET 9.0 Local Development Environment Enforcement (MANDATORY)
+## .NET 10.0 Local Development Environment Enforcement (MANDATORY)
 
-### Rule 1: .NET 9.0 Environment Requirements (CRITICAL)
-- **MANDATORY .NET 9.0 SDK**: All local development must use .NET 9.0.303 or later
+### Rule 1: .NET 10.0 Environment Requirements (CRITICAL)
+- **MANDATORY .NET 10.0 SDK**: All local development must use .NET 10.0.303 or later
 - **Before submitting any GitHub workflow or PR**, developers MUST verify:
-  - Local environment has .NET 9.0 SDK installed (`dotnet --version` returns 9.0.x)
+  - Local environment has .NET 10.0 SDK installed (`dotnet --version` returns 10.0.x)
   - Aspire workload is installed and functional
-  - All solutions build successfully locally with .NET 9.0
+  - All solutions build successfully locally with .NET 10.0
   - LocalTesting workflow executes successfully locally
 - **Local environment setup requirements**:
-  - .NET 9.0 SDK installation using official Microsoft installer
+  - .NET 10.0 SDK installation using official Microsoft installer
   - Aspire workload installation (`dotnet workload install aspire`)
   - Docker Desktop or Podman running for Aspire orchestration
   - LocalTesting solution builds and runs without errors
@@ -20,14 +20,14 @@
   - LocalTesting workflow must execute successfully with Aspire dashboard accessible
   - Integration tests must pass locally with same results as CI
 - **Environment consistency enforcement**:
-  - Local development environment must match CI environment (.NET 9.0)
+  - Local development environment must match CI environment (.NET 10.0)
   - global.json version must be respected locally
   - No .NET version downgrades or workarounds permitted
   - Aspire orchestration must work locally before CI submission
 - **Verification commands required before PR submission**:
   ```bash
   # Verify .NET version
-  dotnet --version  # Must return 9.0.x
+  dotnet --version  # Must return 10.0.x
   
   # Install Aspire workload
   dotnet workload install aspire
@@ -42,35 +42,35 @@
   ```
 - **Installation verification for new developers**:
   ```bash
-  # Check if .NET 9.0 is installed
+  # Check if .NET 10.0 is installed
   dotnet --list-sdks | grep "9.0"
   
-  # If not installed, download and install .NET 9.0 SDK
+  # If not installed, download and install .NET 10.0 SDK
   # Windows: Download from https://dotnet.microsoft.com/download/dotnet/9.0
   # Linux/macOS: Use the dotnet-install script
-  curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version latest --channel 9.0
+  curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version latest --channel 10.0
   
   # Install Aspire workload
   dotnet workload install aspire
   
   # Verify installation
-  dotnet --version  # Should show 9.0.x
+  dotnet --version  # Should show 10.0.x
   ```
 - **Project file enforcement**:
-  - All new .csproj files MUST target `net9.0` framework
-  - Existing projects should be updated to .NET 9.0 when modified
-  - global.json MUST specify .NET 9.0 SDK version
-  - No mixed framework targeting (e.g., net8.0 and net9.0 in same solution)
+  - All new .csproj files MUST target `net10.0` framework
+  - Existing projects should be updated to .NET 10.0 when modified
+  - global.json MUST specify .NET 10.0 SDK version
+  - No mixed framework targeting (e.g., net8.0 and net10.0 in same solution)
 - **Troubleshooting common issues**:
-  - If `dotnet --version` shows 8.x, ensure .NET 9.0 is installed and PATH is updated
-  - If Aspire workload fails to install, update to latest .NET 9.0 version first
+  - If `dotnet --version` shows 8.x, ensure .NET 10.0 is installed and PATH is updated
+  - If Aspire workload fails to install, update to latest .NET 10.0 version first
   - If LocalTesting fails, verify Docker Desktop or Podman is running and has sufficient resources
   - If build errors occur, clean and rebuild: `dotnet clean && dotnet build`
-- **Failure to verify .NET 9.0 environment is a MAJOR violation** requiring complete environment setup before work can proceed
+- **Failure to verify .NET 10.0 environment is a MAJOR violation** requiring complete environment setup before work can proceed
 - **Automated environment verification**:
   - Add .NET version check to all build scripts
   - Include environment validation in PR templates
-  - Require .NET 9.0 confirmation in issue templates
+  - Require .NET 10.0 confirmation in issue templates
   - Document environment setup in CONTRIBUTING.md
 
 This document defines the coding standards and best practices that GitHub Copilot should enforce during code reviews for this .NET project. These guidelines ensure adherence to SOLID principles and .NET best practices, with specialized guidance for BizTalk to Inobiz migrations using .NET 9 and direct XSLT mapping.
@@ -911,7 +911,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   - If build breaks, immediately revert last change and try different approach
 - **Environment verification before changes**:
   ```bash
-  # Verify .NET version is 9.0.x
+  # Verify .NET version is 10.0.x
   dotnet --version
   
   # Ensure clean working directory
@@ -990,7 +990,7 @@ Phase: [Investigation|Design|Test Design|Development|Debugging|Testing]
   3. For pre-existing failures: document and proceed (no regression)
   4. NEVER ignore test failures without understanding root cause
 - **Environment recovery**:
-  - If .NET environment becomes inconsistent, reinstall .NET 9.0 SDK
+  - If .NET environment becomes inconsistent, reinstall .NET 10.0 SDK
   - If dependencies are corrupted, run `dotnet clean` and `dotnet restore`
   - If workspace is polluted, start with clean git checkout
 - **Escalation procedures**:

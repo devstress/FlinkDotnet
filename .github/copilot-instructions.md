@@ -57,10 +57,10 @@
   dotnet --version  # Should show 9.0.x
   ```
 - **Project file enforcement**:
-  - All new .csproj files MUST target `net9.0` framework
+  - All new .csproj files MUST target `net10.0` framework
   - Existing projects should be updated to .NET 9.0 when modified
   - global.json MUST specify .NET 9.0 SDK version
-  - No mixed framework targeting (e.g., net8.0 and net9.0 in same solution)
+  - No mixed framework targeting (e.g., net8.0 and net10.0 in same solution)
 - **Troubleshooting common issues**:
   - If `dotnet --version` shows 8.x, ensure .NET 9.0 is installed and PATH is updated
   - If Aspire workload fails to install, update to latest .NET 9.0 version first

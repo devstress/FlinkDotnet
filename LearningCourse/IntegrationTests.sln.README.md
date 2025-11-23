@@ -27,8 +27,8 @@ dotnet build FlinkDotNet/FlinkDotNet.sln --configuration Release
 ```
 
 This ensures all required binaries exist:
-- `Flink.JobGateway.exe` at `FlinkDotNet/Flink.JobGateway/bin/Release/net9.0/` (for AppHost)
-- All FlinkDotNet DLLs at `FlinkDotNet/*/bin/Release/net9.0/` (for test projects)
+- `Flink.JobGateway.exe` at `FlinkDotNet/Flink.JobGateway/bin/Release/net10.0/` (for AppHost)
+- All FlinkDotNet DLLs at `FlinkDotNet/*/bin/Release/net10.0/` (for test projects)
 
 ## How to Use
 
@@ -111,13 +111,13 @@ LearningCourse uses DLL references instead of project references for all FlinkDo
   - `FlinkDotNet.DataStream.dll`
   - `FlinkDotNet.Table.dll`
   - `FlinkDotNet.Util.dll`
-- All DLLs referenced from `FlinkDotNet/*/bin/Release/net9.0/`
+- All DLLs referenced from `FlinkDotNet/*/bin/Release/net10.0/`
 
 **Example from Day01.IntegrationTests.csproj**:
 ```xml
 <ItemGroup>
   <Reference Include="FlinkDotNet">
-    <HintPath>..\..\..\FlinkDotNet\FlinkDotNet\bin\Release\net9.0\FlinkDotNet.dll</HintPath>
+    <HintPath>..\..\..\FlinkDotNet\FlinkDotNet\bin\Release\net10.0\FlinkDotNet.dll</HintPath>
     <Private>true</Private>
   </Reference>
   <!-- ... other DLL references -->

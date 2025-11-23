@@ -121,10 +121,10 @@ var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Re
 ## Package Structure Result
 
 The FlinkDotnet.3.0.0.nupkg now contains:
-- **lib/net9.0/FlinkDotNet.DataStream.dll** (90KB) - Main DataStream API
-- **lib/net9.0/FlinkDotNet.Common.dll** (9KB) - Shared types and utilities
-- **lib/net9.0/Flink.JobBuilder.dll** (71KB) - Job definition and models
-- **lib/net9.0/FlinkDotNet.JobGateway.dll** (116KB) - Job gateway services
+- **lib/net10.0/FlinkDotNet.DataStream.dll** (90KB) - Main DataStream API
+- **lib/net10.0/FlinkDotNet.Common.dll** (9KB) - Shared types and utilities
+- **lib/net10.0/Flink.JobBuilder.dll** (71KB) - Job definition and models
+- **lib/net10.0/FlinkDotNet.JobGateway.dll** (116KB) - Job gateway services
 
 All external dependencies (Confluent.Kafka, Microsoft.Extensions.*, Serilog, etc.) remain as package dependencies.
 

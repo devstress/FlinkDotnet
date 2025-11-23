@@ -18,7 +18,7 @@ This ensures GlobalTestInfrastructure.GlobalSetUp() runs and initializes the sha
 After the first build, use --no-build for faster runs:
 
 ```bash
-dotnet test ObservabilityTesting.IntegrationTests/bin/Release/net9.0/ObservabilityTesting.IntegrationTests.dll --no-build
+dotnet test ObservabilityTesting.IntegrationTests/bin/Release/net10.0/ObservabilityTesting.IntegrationTests.dll --no-build
 ```
 
 This skips the slow Java/Maven build and Docker image rebuild.
@@ -26,7 +26,7 @@ This skips the slow Java/Maven build and Docker image rebuild.
 ### 3. Run Specific Tests
 
 ```bash
-dotnet test ObservabilityTesting.IntegrationTests/bin/Release/net9.0/ObservabilityTesting.IntegrationTests.dll \
+dotnet test ObservabilityTesting.IntegrationTests/bin/Release/net10.0/ObservabilityTesting.IntegrationTests.dll \
   --filter "FullyQualifiedName~Test1" \
   --no-build
 ```
@@ -51,7 +51,7 @@ dotnet test ObservabilityTesting.sln --configuration Release
 
 **Fast (no build):** 10-60 seconds
 ```bash
-dotnet test ObservabilityTesting.IntegrationTests/bin/Release/net9.0/ObservabilityTesting.IntegrationTests.dll --no-build
+dotnet test ObservabilityTesting.IntegrationTests/bin/Release/net10.0/ObservabilityTesting.IntegrationTests.dll --no-build
 ```
 
 ## Troubleshooting
