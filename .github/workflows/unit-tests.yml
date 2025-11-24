@@ -1,4 +1,4 @@
-name: Unit Tests
+name: FlinkDotNet Unit Tests
 
 on:
   push:
@@ -211,7 +211,7 @@ jobs:
         if: always()
         uses: dorny/test-reporter@v1
         with:
-          name: FlinkDotNet Aggregated Test & Coverage Report
+          name: Test Results
           path: 'FlinkDotNet/TestResults/**/*.trx'
           reporter: 'dotnet-trx'
           fail-on-error: false
