@@ -25,7 +25,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="NUnit3TestAdapter" Version="5.2.0" />
-    <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.0.16" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="22.1.0" />
   </ItemGroup>
 
   <ItemGroup>
