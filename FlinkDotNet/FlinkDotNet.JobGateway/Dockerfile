@@ -1,10 +1,10 @@
 # Dockerfile for FlinkDotNet Gateway
 # This containerizes the Gateway to run in the same Docker network as Flink/Kafka/Prometheus
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 8086
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 # Install Java and Maven for FlinkIRRunner build
 RUN apt-get update && \
