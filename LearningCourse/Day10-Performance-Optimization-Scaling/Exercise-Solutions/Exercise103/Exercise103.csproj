@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <!-- Kafka Client -->
-    <PackageReference Include="Confluent.Kafka" Version="2.3.0" />
+    <PackageReference Include="Confluent.Kafka" Version="2.12.0" />
     
     <!-- Logging -->
     <PackageReference Include="Serilog" Version="3.1.1" />

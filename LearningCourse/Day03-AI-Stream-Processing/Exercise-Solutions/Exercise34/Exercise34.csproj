@@ -17,7 +17,7 @@
     <PackageReference Include="Microsoft.ML.AutoML" Version="0.21.1" />
     
     <!-- Kafka integration -->
-    <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
+    <PackageReference Include="Confluent.Kafka" Version="2.12.0" />
     
     <!-- Logging -->
     <PackageReference Include="Serilog.Extensions.Hosting" Version="8.0.0" />

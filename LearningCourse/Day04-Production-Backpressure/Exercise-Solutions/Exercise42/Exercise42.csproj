@@ -17,7 +17,7 @@
     <ProjectReference Include="..\..\..\..\FlinkDotNet\FlinkDotNet.DataStream\FlinkDotNet.DataStream.csproj" />
     
     <!-- Kafka Producer/Consumer - Use version compatible with FlinkDotNet.DataStream -->
-    <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
+    <PackageReference Include="Confluent.Kafka" Version="2.12.0" />
     
     <!-- Logging - Use version compatible with FlinkDotNet.DataStream -->
     <PackageReference Include="Serilog" Version="4.2.0" />
