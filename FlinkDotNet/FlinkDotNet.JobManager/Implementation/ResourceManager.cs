@@ -29,6 +29,8 @@ public class ResourceManager : IResourceManager
     private readonly ILogger<ResourceManager> _logger;
     private readonly ConcurrentDictionary<string, TaskManagerInfo> _taskManagers = new();
     private readonly ConcurrentDictionary<string, List<TaskSlot>> _jobAllocations = new();
+    // Registry mapping slotId → taskManagerId for O(1) release by slot ID
+    private readonly ConcurrentDictionary<string, string> _slotRegistry = new();
 
     /// <summary>
     /// Constructor for ResourceManager
@@ -115,9 +117,12 @@ public class ResourceManager : IResourceManager
                 {
                     TaskManagerId = info.TaskManagerId,
                     SlotNumber = info.TotalSlots - info.AvailableSlots + i,
-                    IsAllocated = true
+                    IsAllocated = true,
+                    AllocatedJobId = jobId
                 };
                 allocatedSlots.Add(slot);
+                // Track slot in registry for O(1) release by slot ID
+                this._slotRegistry[slot.SlotId] = info.TaskManagerId;
             }
 
             info.AvailableSlots -= slotsToAllocate;
@@ -265,10 +270,23 @@ public class ResourceManager : IResourceManager
     /// <inheritdoc/>
     public Task ReleaseSlotAsync(string slotId, CancellationToken cancellationToken = default)
     {
-        // Find the slot by ID and release it
-        // In a full implementation, we'd track slots by ID
-        // For now, just log and return
-        this._logger.LogDebug("Releasing slot {SlotId}", slotId);
+        if (this._slotRegistry.TryRemove(slotId, out string? taskManagerId))
+        {
+            if (this._taskManagers.TryGetValue(taskManagerId, out TaskManagerInfo? info))
+            {
+                info.AvailableSlots++;
+                this._logger.LogDebug(
+                    "Released slot {SlotId} back to TaskManager {TaskManagerId} (available: {AvailableSlots})",
+                    slotId,
+                    taskManagerId,
+                    info.AvailableSlots);
+            }
+        }
+        else
+        {
+            this._logger.LogDebug("Slot {SlotId} not found in registry (already released or never allocated)", slotId);
+        }
+
         return Task.CompletedTask;
     }
 

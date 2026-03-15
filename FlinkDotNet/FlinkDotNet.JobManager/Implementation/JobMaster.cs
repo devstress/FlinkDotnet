@@ -53,6 +53,7 @@ public class JobMaster : IJobMaster
 
             // Step 1: Create ExecutionGraph from JobGraph (logical → physical plan)
             _executionGraph = await CreateExecutionGraphAsync(cancellationToken);
+            _executionGraph.State = JobExecutionState.Deploying;
             _logger.LogDebug("ExecutionGraph created with {VertexCount} vertices", _executionGraph.ExecutionVertices.Count);
 
             // Step 2: Request resources from ResourceManager
@@ -64,6 +65,8 @@ public class JobMaster : IJobMaster
 
             // Step 4: Start execution monitoring
             _jobState = JobExecutionState.Running;
+            _executionGraph.State = JobExecutionState.Running;
+            _executionGraph.StartedAt = DateTime.UtcNow;
             _executionCts = new CancellationTokenSource();
             _ = Task.Run(() => MonitorExecutionAsync(_executionCts.Token), _executionCts.Token);
 
@@ -73,6 +76,12 @@ public class JobMaster : IJobMaster
         {
             _logger.LogError(ex, "Failed to start job {JobId}", _jobId);
             _jobState = JobExecutionState.Failed;
+            if (_executionGraph != null)
+            {
+                _executionGraph.State = JobExecutionState.Failed;
+                _executionGraph.FinishedAt = DateTime.UtcNow;
+                _executionGraph.FailureMessage = ex.Message;
+            }
             throw new InvalidOperationException($"Failed to start job {_jobId}. See inner exception for details.", ex);
         }
     }
@@ -107,6 +116,11 @@ public class JobMaster : IJobMaster
             await ReleaseResourcesAsync(cancellationToken);
 
             _jobState = JobExecutionState.Canceled;
+            if (_executionGraph != null)
+            {
+                _executionGraph.State = JobExecutionState.Canceled;
+                _executionGraph.FinishedAt = DateTime.UtcNow;
+            }
             _logger.LogInformation("Job {JobId} canceled successfully", _jobId);
         }
         catch (Exception ex)
@@ -401,13 +415,14 @@ public class JobMaster : IJobMaster
         _ = cancellationToken; // Parameter kept for consistency with async pattern
         _logger.LogError("Task {VertexId} failed: {Error}", vertex.Id, vertex.Error);
 
-        // In a full implementation, this would:
-        // 1. Determine if task should be restarted (based on restart strategy)
-        // 2. Coordinate with Temporal for fault tolerance
-        // 3. Potentially fail the entire job if restart limit exceeded
-
         // For now, mark job as failed if any task fails
         _jobState = JobExecutionState.Failed;
+        if (_executionGraph != null)
+        {
+            _executionGraph.State = JobExecutionState.Failed;
+            _executionGraph.FinishedAt = DateTime.UtcNow;
+            _executionGraph.FailureMessage = vertex.Error;
+        }
         _executionCts?.Cancel();
 
         return Task.CompletedTask;
@@ -427,6 +442,8 @@ public class JobMaster : IJobMaster
         {
             _logger.LogInformation("All tasks finished for job {JobId}", _jobId);
             _jobState = JobExecutionState.Finished;
+            _executionGraph.State = JobExecutionState.Finished;
+            _executionGraph.FinishedAt = DateTime.UtcNow;
             _executionCts?.Cancel();
 
             // Release resources
