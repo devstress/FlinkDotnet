@@ -39,7 +39,8 @@ namespace FlinkDotNet.DataStream.Runtime
         /// <inheritdoc/>
         public T Deserialize(byte[] bytes)
         {
-            return JsonSerializer.Deserialize<T>(bytes, _options)!;
+            return JsonSerializer.Deserialize<T>(bytes, _options)
+                ?? throw new JsonException($"Deserialization returned null for type {typeof(T).Name}");
         }
 
         /// <inheritdoc/>
@@ -106,7 +107,8 @@ namespace FlinkDotNet.DataStream.Runtime
         /// <inheritdoc/>
         public T Deserialize(int version, byte[] bytes)
         {
-            return JsonSerializer.Deserialize<T>(bytes, _options)!;
+            return JsonSerializer.Deserialize<T>(bytes, _options)
+                ?? throw new JsonException($"Deserialization returned null for type {typeof(T).Name}");
         }
     }
 }

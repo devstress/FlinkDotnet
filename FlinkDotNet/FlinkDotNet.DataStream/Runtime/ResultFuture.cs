@@ -33,7 +33,7 @@ namespace FlinkDotNet.DataStream.Runtime
         /// <inheritdoc/>
         public void Complete(IEnumerable<T> results)
         {
-            _completionSource.TrySetResult(results?.ToList() ?? []);
+            _completionSource.TrySetResult(results == null ? [] : results.ToList());
         }
 
         /// <inheritdoc/>
