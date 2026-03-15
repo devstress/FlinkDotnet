@@ -356,25 +356,6 @@ namespace FlinkDotNet.DataStream
         }
 
         /// <summary>
-        /// Adds a Unified Sink v2 (Flink 1.20+) to this DataStream.
-        /// This is the recommended API for custom sinks with exactly-once semantics support.
-        /// </summary>
-        /// <typeparam name="TCommittable">Type of committable objects</typeparam>
-        /// <typeparam name="TWriterState">Type of writer state for checkpointing</typeparam>
-        /// <param name="sink">The unified sink v2 instance</param>
-        /// <returns>This DataStream</returns>
-        public DataStream<T> AddSink<TCommittable, TWriterState>(ISink<T, TCommittable, TWriterState> sink)
-        {
-            ArgumentNullException.ThrowIfNull(sink);
-
-            // Note: Full IR integration with OperationCapture will be implemented in Java IR Runner phase
-            // For now, the unified sink v2 is registered for future execution
-
-            // Sink registered for execution
-            return this;
-        }
-
-        /// <summary>
         /// Sets the parallelism for this operation.
         /// </summary>
         /// <param name="parallelism">The parallelism for this operation</param>
