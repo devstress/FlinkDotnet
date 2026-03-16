@@ -4,117 +4,11 @@ namespace Flink.JobBuilder.Tests.Tests;
 
 /// <summary>
 /// Unit tests for Performance and Format configuration models (Flink 2.1+).
-/// Tests BatchingConfig and StateBackendConfig to achieve 100% code coverage.
+/// Tests StateBackendConfig, ExecutionPlanConfig, and OptimizerConfig to achieve 100% code coverage.
 /// </summary>
 [TestFixture]
 public class PerformanceConfigModelTests
 {
-    #region BatchingConfig Tests
-
-    [Test]
-    public void BatchingConfig_DefaultConstructor_AllPropertiesNull()
-    {
-        var config = new BatchingConfig();
-
-        Assert.That(config.MaxBatchSize, Is.Null);
-        Assert.That(config.MaxBatchSizeInBytes, Is.Null);
-        Assert.That(config.MaxTimeInBufferMs, Is.Null);
-        Assert.That(config.MaxInFlightRequests, Is.Null);
-        Assert.That(config.MaxBufferedRequests, Is.Null);
-    }
-
-    [Test]
-    public void BatchingConfig_SetMaxBatchSize_ReturnsValue()
-    {
-        var config = new BatchingConfig { MaxBatchSize = 1000 };
-
-        Assert.That(config.MaxBatchSize, Is.EqualTo(1000));
-    }
-
-    [Test]
-    public void BatchingConfig_SetMaxBatchSizeInBytes_ReturnsValue()
-    {
-        var config = new BatchingConfig { MaxBatchSizeInBytes = 5242880 }; // 5MB
-
-        Assert.That(config.MaxBatchSizeInBytes, Is.EqualTo(5242880));
-    }
-
-    [Test]
-    public void BatchingConfig_SetMaxTimeInBufferMs_ReturnsValue()
-    {
-        var config = new BatchingConfig { MaxTimeInBufferMs = 1000 };
-
-        Assert.That(config.MaxTimeInBufferMs, Is.EqualTo(1000));
-    }
-
-    [Test]
-    public void BatchingConfig_SetMaxInFlightRequests_ReturnsValue()
-    {
-        var config = new BatchingConfig { MaxInFlightRequests = 50 };
-
-        Assert.That(config.MaxInFlightRequests, Is.EqualTo(50));
-    }
-
-    [Test]
-    public void BatchingConfig_SetMaxBufferedRequests_ReturnsValue()
-    {
-        var config = new BatchingConfig { MaxBufferedRequests = 10000 };
-
-        Assert.That(config.MaxBufferedRequests, Is.EqualTo(10000));
-    }
-
-    [Test]
-    public void BatchingConfig_SetAllProperties_ReturnsAllValues()
-    {
-        var config = new BatchingConfig
-        {
-            MaxBatchSize = 1000,
-            MaxBatchSizeInBytes = 5242880,
-            MaxTimeInBufferMs = 1000,
-            MaxInFlightRequests = 50,
-            MaxBufferedRequests = 10000
-        };
-
-        Assert.That(config.MaxBatchSize, Is.EqualTo(1000));
-        Assert.That(config.MaxBatchSizeInBytes, Is.EqualTo(5242880));
-        Assert.That(config.MaxTimeInBufferMs, Is.EqualTo(1000));
-        Assert.That(config.MaxInFlightRequests, Is.EqualTo(50));
-        Assert.That(config.MaxBufferedRequests, Is.EqualTo(10000));
-    }
-
-    [Test]
-    public void BatchingConfig_SizeBased_OnlySetsSizeProperties()
-    {
-        var config = new BatchingConfig
-        {
-            MaxBatchSize = 2000,
-            MaxBatchSizeInBytes = 10485760 // 10MB
-        };
-
-        Assert.That(config.MaxBatchSize, Is.EqualTo(2000));
-        Assert.That(config.MaxBatchSizeInBytes, Is.EqualTo(10485760));
-        Assert.That(config.MaxTimeInBufferMs, Is.Null);
-        Assert.That(config.MaxInFlightRequests, Is.Null);
-        Assert.That(config.MaxBufferedRequests, Is.Null);
-    }
-
-    [Test]
-    public void BatchingConfig_TimeBased_OnlySetsTimeProperty()
-    {
-        var config = new BatchingConfig
-        {
-            MaxTimeInBufferMs = 500
-        };
-
-        Assert.That(config.MaxTimeInBufferMs, Is.EqualTo(500));
-        Assert.That(config.MaxBatchSize, Is.Null);
-        Assert.That(config.MaxBatchSizeInBytes, Is.Null);
-        Assert.That(config.MaxInFlightRequests, Is.Null);
-        Assert.That(config.MaxBufferedRequests, Is.Null);
-    }
-
-    #endregion
-
     #region StateBackendConfig Tests
 
     [Test]
@@ -288,41 +182,6 @@ public class PerformanceConfigModelTests
 
     #endregion
 
-    #region Integration with SinkWriterConfig Tests
-
-    [Test]
-    public void SinkWriterConfig_WithBatchingConfig_StoresBatchingSettings()
-    {
-        var batchingConfig = new BatchingConfig
-        {
-            MaxBatchSize = 1000,
-            MaxTimeInBufferMs = 1000
-        };
-
-        var writerConfig = new SinkWriterConfig
-        {
-            ClassName = "TestWriter",
-            BatchingConfig = batchingConfig
-        };
-
-        Assert.That(writerConfig.BatchingConfig, Is.Not.Null);
-        Assert.That(writerConfig.BatchingConfig, Is.EqualTo(batchingConfig));
-        Assert.That(writerConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(1000));
-    }
-
-    [Test]
-    public void SinkWriterConfig_WithoutBatchingConfig_BatchingConfigIsNull()
-    {
-        var writerConfig = new SinkWriterConfig
-        {
-            ClassName = "TestWriter"
-        };
-
-        Assert.That(writerConfig.BatchingConfig, Is.Null);
-    }
-
-    #endregion
-
     #region Integration with JobMetadata Tests
 
     [Test]
@@ -351,50 +210,6 @@ public class PerformanceConfigModelTests
         var metadata = new JobMetadata { };
 
         Assert.That(metadata.StateBackendConfig, Is.Null);
-    }
-
-    #endregion
-
-    #region Complete Job Definition Tests
-
-    [Test]
-    public void JobDefinition_WithBatchingAndStateBackend_StoresBothConfigs()
-    {
-        var job = new JobDefinition
-        {
-            Source = new KafkaSourceDefinition { Topic = "input" },
-            Sink = new UnifiedSinkV2Definition
-            {
-                SinkType = "kafka",
-                WriterConfig = new SinkWriterConfig
-                {
-                    ClassName = "KafkaWriter",
-                    BatchingConfig = new BatchingConfig
-                    {
-                        MaxBatchSize = 1000,
-                        MaxBatchSizeInBytes = 5242880
-                    }
-                }
-            },
-            Metadata = new JobMetadata
-            {
-                StateBackendConfig = new StateBackendConfig
-                {
-                    Type = "rocksdb",
-                    CheckpointDir = "s3://bucket/checkpoints",
-                    IncrementalCheckpoints = true,
-                    PredefinedProfile = "flash_ssd_optimized"
-                }
-            }
-        };
-
-        Assert.That(job.Metadata.StateBackendConfig, Is.Not.Null);
-        Assert.That(job.Metadata.StateBackendConfig!.Type, Is.EqualTo("rocksdb"));
-
-        var sink = job.Sink as UnifiedSinkV2Definition;
-        Assert.That(sink, Is.Not.Null);
-        Assert.That(sink!.WriterConfig.BatchingConfig, Is.Not.Null);
-        Assert.That(sink.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(1000));
     }
 
     #endregion
@@ -687,78 +502,6 @@ public class PerformanceConfigModelTests
         Assert.That(metadata.StateBackendConfig!.Type, Is.EqualTo("rocksdb"));
         Assert.That(metadata.ExecutionPlanConfig!.Format, Is.EqualTo("smile"));
         Assert.That(metadata.OptimizerConfig!.EnableMultiJoinOptimization, Is.True);
-    }
-
-    #endregion
-
-    #region Complete Job Definition Tests (All 4 Features)
-
-    [Test]
-    public void JobDefinition_WithAll4PerformanceFeatures_StoresAllConfigs()
-    {
-        var job = new JobDefinition
-        {
-            Source = new KafkaSourceDefinition { Topic = "input" },
-            Sink = new UnifiedSinkV2Definition
-            {
-                SinkType = "kafka",
-                WriterConfig = new SinkWriterConfig
-                {
-                    ClassName = "KafkaWriter",
-                    BatchingConfig = new BatchingConfig
-                    {
-                        MaxBatchSize = 1000,
-                        MaxBatchSizeInBytes = 5242880,
-                        MaxTimeInBufferMs = 1000
-                    }
-                }
-            },
-            Metadata = new JobMetadata
-            {
-                StateBackendConfig = new StateBackendConfig
-                {
-                    Type = "rocksdb",
-                    CheckpointDir = "s3://production/checkpoints",
-                    IncrementalCheckpoints = true,
-                    PredefinedProfile = "flash_ssd_optimized"
-                },
-                ExecutionPlanConfig = new ExecutionPlanConfig
-                {
-                    Format = "smile",
-                    EnableCompression = true
-                },
-                OptimizerConfig = new OptimizerConfig
-                {
-                    EnableMultiJoinOptimization = true,
-                    JoinReorderingStrategy = "bushy",
-                    EnableJoinPredicatePushdown = true,
-                    EnableFilterPushdown = true
-                }
-            }
-        };
-
-        // Assert: All 4 performance features configured
-        Assert.That(job.Metadata.StateBackendConfig, Is.Not.Null);
-        Assert.That(job.Metadata.ExecutionPlanConfig, Is.Not.Null);
-        Assert.That(job.Metadata.OptimizerConfig, Is.Not.Null);
-
-        var sink = job.Sink as UnifiedSinkV2Definition;
-        Assert.That(sink!.WriterConfig.BatchingConfig, Is.Not.Null);
-
-        // Feature 1: Custom Async Sink Batching
-        Assert.That(sink.WriterConfig.BatchingConfig!.MaxBatchSize, Is.EqualTo(1000));
-
-        // Feature 2: Enhanced State Backend Configuration
-        Assert.That(job.Metadata.StateBackendConfig!.Type, Is.EqualTo("rocksdb"));
-        Assert.That(job.Metadata.StateBackendConfig.PredefinedProfile, Is.EqualTo("flash_ssd_optimized"));
-
-        // Feature 3: Smile Format for Compiled Plans
-        Assert.That(job.Metadata.ExecutionPlanConfig!.Format, Is.EqualTo("smile"));
-        Assert.That(job.Metadata.ExecutionPlanConfig.EnableCompression, Is.True);
-
-        // Feature 4: MultiJoin Optimization Configuration
-        Assert.That(job.Metadata.OptimizerConfig!.EnableMultiJoinOptimization, Is.True);
-        Assert.That(job.Metadata.OptimizerConfig.JoinReorderingStrategy, Is.EqualTo("bushy"));
     }
 
     #endregion

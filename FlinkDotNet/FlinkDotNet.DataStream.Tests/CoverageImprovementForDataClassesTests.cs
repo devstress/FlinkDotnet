@@ -208,40 +208,6 @@ namespace FlinkDotNet.DataStream.Tests
 
         #endregion
 
-        #region SinkWriterContext Property Coverage
-
-        [Test]
-        public void SinkWriterContext_AllProperties_AreCovered()
-        {
-            // Create instance with init properties
-            var context = new SinkWriterContext
-            {
-                SubtaskId = 0,
-                NumberOfParallelSubtasks = 4,
-                AttemptNumber = 0,
-                Properties = new System.Collections.Generic.Dictionary<string, string>
-                {
-                    ["key"] = "value"
-                }
-            };
-
-            // Access all properties
-            Assert.That(context.SubtaskId, Is.EqualTo(0));
-            Assert.That(context.NumberOfParallelSubtasks, Is.EqualTo(4));
-            Assert.That(context.AttemptNumber, Is.EqualTo(0));
-            Assert.That(context.Properties, Has.Count.EqualTo(1));
-
-            // Use reflection
-            var type = typeof(SinkWriterContext);
-            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                var value = prop.GetValue(context);
-                Assert.That(value, Is.Not.Null, $"Property {prop.Name} should not be null");
-            }
-        }
-
-        #endregion
-
         #region RocksDBOptions Property Coverage
 
         [Test]

@@ -68,16 +68,6 @@ public class AdditionalDataClassesCoverageImprovementTests
         Assert.That(options, Is.Not.Null);
     }
 
-    [Test]
-    public void SinkWriterContext_CanBeCreated()
-    {
-        // Arrange & Act
-        var context = new SinkWriterContext();
-
-        // Assert
-        Assert.That(context, Is.Not.Null);
-    }
-
     #endregion
 
     #region OutputTag Tests

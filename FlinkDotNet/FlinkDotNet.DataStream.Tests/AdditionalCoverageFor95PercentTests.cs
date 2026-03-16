@@ -73,43 +73,6 @@ namespace FlinkDotNet.DataStream.Tests
 
         #endregion
 
-        #region SinkWriterContext Tests
-
-        [Test]
-        public void SinkWriterContext_SubtaskId_CanBeSet()
-        {
-            // Arrange & Act
-            var context = new SinkWriterContext
-            {
-                SubtaskId = 5
-            };
-
-            // Assert
-            Assert.That(context.SubtaskId, Is.EqualTo(5));
-        }
-
-        [Test]
-        public void SinkWriterContext_SubtaskId_DefaultIsZero()
-        {
-            // Arrange & Act
-            var context = new SinkWriterContext();
-
-            // Assert
-            Assert.That(context.SubtaskId, Is.EqualTo(0));
-        }
-
-        [Test]
-        public void SinkWriterContext_WithValidSubtaskId_InitializesCorrectly()
-        {
-            // Arrange & Act
-            var context = new SinkWriterContext { SubtaskId = 127 };
-
-            // Assert
-            Assert.That(context.SubtaskId, Is.EqualTo(127));
-        }
-
-        #endregion
-
         #region RocksDBOptions Additional Tests
 
         [Test]
