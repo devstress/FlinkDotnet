@@ -104,3 +104,8 @@ Console.WriteLine("Jobs API: http://localhost:8081/api/jobs");
 Console.WriteLine("===========================================");
 
 app.Run();
+
+// Make Program accessible for WebApplicationFactory in tests
+#pragma warning disable S1118 // Utility classes should not have public constructors
+public partial class Program { }
+#pragma warning restore S1118
