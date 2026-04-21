@@ -14,7 +14,7 @@
     <maven.compiler.source>${java.release}</maven.compiler.source>
     <maven.compiler.target>${java.release}</maven.compiler.target>
     <flink.version>2.1.0</flink.version>
-    <jackson.version>2.17.1</jackson.version>
+    <jackson.version>2.18.6</jackson.version>
     <shade.plugin.version>3.5.0</shade.plugin.version>
     <runner.finalName>flink-ir-runner</runner.finalName>
     
@@ -54,7 +54,7 @@
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka-clients</artifactId>
-      <version>3.9.1</version>
+      <version>3.9.2</version>
     </dependency>
 
     <!-- Flink SQL Connector for Kafka - included in JAR for SQL job support -->
@@ -122,7 +122,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.5.20</version>
+      <version>1.5.25</version>
     </dependency>
   </dependencies>
 
