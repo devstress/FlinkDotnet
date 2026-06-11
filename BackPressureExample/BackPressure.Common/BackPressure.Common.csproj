@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="2.11.0" />
     <PackageReference Include="Aspire.Hosting" Version="9.5.1" />
+    <PackageReference Include="MessagePack" Version="2.5.301" />
   </ItemGroup>
 
 </Project>
